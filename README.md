@@ -49,38 +49,22 @@ docs/           API spec, DB schema, production, TLS, Xdebug and troubleshooting
 ### Prerequisites
 
 - [Docker Compose](https://docs.docker.com/compose/install/) v2.10+
-- Node.js and npm (only needed to run the frontend outside Docker)
 - OAuth credentials for GitHub (see `config/packages/knpu_oauth2_client.yaml` for the required
-  environment variables)
+  environment variables) -> Store them in `.env.local`
 
-### Backend
+### Development
 
 1. Build fresh images: `docker compose build --pull --no-cache`
 2. Start the containers: `docker compose up --wait`
 3. Open `http://localhost`
-   and [accept the auto-generated TLS certificate](https://stackoverflow.com/a/15076602/1352334)
-4. Run the database migrations: `docker compose exec php bin/console doctrine:migrations:migrate`
-5. Optional, load sample data: `docker compose exec php bin/console doctrine:fixtures:load`
+4. Run the database migrations: `docker compose exec app bin/console doctrine:migrations:migrate`
+5. Optional, load sample data: `docker compose exec app bin/console doctrine:fixtures:load`
 6. Stop the containers: `docker compose down --remove-orphans`
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev        # start the Vite dev server
-npm run test:unit  # run Vitest
-npm run lint       # run ESLint
-```
 
 ## Documentation
 
 - [`docs/api.yaml`](docs/api.yaml): OpenAPI specification
 - [`docs/db.sql`](docs/db.sql): database schema
-- [`docs/production.md`](docs/production.md): production deployment
-- [`docs/tls.md`](docs/tls.md): TLS setup
-- [`docs/xdebug.md`](docs/xdebug.md): debugging with Xdebug
-- [`docs/troubleshooting.md`](docs/troubleshooting.md): common problems
 
 ## License
 

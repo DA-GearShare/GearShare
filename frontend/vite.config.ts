@@ -1,10 +1,13 @@
-import { fileURLToPath, URL } from 'node:url';
+import {fileURLToPath, URL} from 'node:url';
 
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
-// https://vite.dev/config/
+const apiTarget = process.env.VITE_API_TARGET || 'http://localhost'
+const publicPort = Number(process.env.VITE_PUBLIC_PORT || 80)
+const polling = process.env.CHOKIDAR_USEPOLLING === 'true'
+
 export default defineConfig({
     plugins: [
         vue(),
@@ -16,12 +19,17 @@ export default defineConfig({
         },
     },
     server: {
+        host: true,
+        port: 5173,
+        strictPort: true,
+        watch: { usePolling: polling },
+        hmr: { clientPort: publicPort },
         proxy: {
             '/api': {
-                target: 'http://localhost',
+                target: apiTarget,
                 changeOrigin: true,
-                secure: false,
             },
         },
     },
+
 });

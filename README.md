@@ -1,217 +1,93 @@
-# Symfony
+# GearShare
 
-A starting point for students who want to build **with the Symfony framework**.
+GearShare is a web application for managing and reserving shared laboratory equipment. Users sign in with their GitHub account, browse the equipment inventory, and reserve items for a given time slot. Administrators maintain
+equipment, equipment pools, photos and opening hours, and can follow reservation changes and transfers.
 
-- **`src/Controller/`** — your controllers (routes live in attributes)
-- **`src/Entity/`** — your Doctrine entities
-- **`templates/`** — your Twig templates
-- **`public/`** — the only folder reachable over HTTP
+## Features
 
-## Requirements
+- Sign in via OAuth (GitHub)
+- Equipment inventory with search, status and photos
+- Reservations with multiple items, status tracking, change log and transfer log
+- Condition photos (documenting equipment state at hand-over and return)
+- Opening hours (recurring rules and exceptions)
+- Notification log
+- REST API with OpenAPI documentation
 
-- [Docker](https://docs.docker.com/get-docker/) must be installed.
+## Tech Stack
 
-## Project structure
+**Backend**
+
+- PHP / [Symfony](https://symfony.com) with Doctrine ORM and Doctrine Migrations
+- [FrankenPHP](https://frankenphp.dev) (Caddy) as application server
+- KnpU OAuth2 Client for GitHub login
+- NelmioApiDocBundle (OpenAPI docs) and NelmioCorsBundle
+- Twig
+
+**Frontend** (`frontend/`)
+
+- [Vue 3](https://vuejs.org) with TypeScript, Vue Router and Pinia stores
+- [Vite](https://vite.dev) as build tool
+- Vitest for tests, ESLint for linting
+
+**Infrastructure**
+
+- Docker Compose (development and production configurations)
+
+## Project Structure
 
 ```
-├── src/                 # your PHP code (controllers, entities, forms)
-├── templates/           # your Twig templates
-├── config/              # Symfony configuration
-├── public/              # document root — only this is served (Port 80)
-├── var/                 # cache, logs and the SQLite database (generated)
-├── vendor/              # Composer dependencies (ships with the project)
-├── .env                 # development defaults
-├── Dockerfile           # PHP 8.4 + Apache image
-├── docker-compose.yml   # Docker Compose configuration
-├── docker-entrypoint.sh # restores vendor/, prepares var/, starts Apache
-├── start.sh             # start/stop containers, run console commands
-└── build.sh             # build and export images
+src/            Symfony application (Controller, Entity, Enum, Repository, Security)
+config/         Symfony configuration
+migrations/     Doctrine migrations
+frontend/       Vue 3 single-page application
+frankenphp/     Caddyfile, PHP ini files and entrypoint
+docs/           API spec, DB schema, production, TLS, Xdebug and troubleshooting notes
 ```
 
-The whole folder is *mapped* into the container, but only `public/` is *served*.
-Those are two different things: the container can see all your files (that is why
-editing them works instantly), while Apache will only ever hand out what is under
-`public/`. Your source, `.env`, `config/` and the database sit outside the
-document root and cannot be fetched over HTTP.
+## Getting Started
 
-## Start the environment
+### Prerequisites
+
+- [Docker Compose](https://docs.docker.com/compose/install/) v2.10+
+- Node.js and npm (only needed to run the frontend outside Docker)
+- OAuth credentials for GitHub (see `config/packages/knpu_oauth2_client.yaml` for the required
+  environment variables)
+
+### Backend
+
+1. Build fresh images: `docker compose build --pull --no-cache`
+2. Start the containers: `docker compose up --wait`
+3. Open `http://localhost`
+   and [accept the auto-generated TLS certificate](https://stackoverflow.com/a/15076602/1352334)
+4. Run the database migrations: `docker compose exec php bin/console doctrine:migrations:migrate`
+5. Optional, load sample data: `docker compose exec php bin/console doctrine:fixtures:load`
+6. Stop the containers: `docker compose down --remove-orphans`
+
+### Frontend
 
 ```bash
-./start.sh
+cd frontend
+npm install
+npm run dev        # start the Vite dev server
+npm run test:unit  # run Vitest
+npm run lint       # run ESLint
 ```
 
-- **http://localhost** → the Symfony app
+## Documentation
 
-Until you add your first controller, Symfony shows its welcome page.
+- [`docs/api.yaml`](docs/api.yaml): OpenAPI specification
+- [`docs/db.sql`](docs/db.sql): database schema
+- [`docs/production.md`](docs/production.md): production deployment
+- [`docs/tls.md`](docs/tls.md): TLS setup
+- [`docs/xdebug.md`](docs/xdebug.md): debugging with Xdebug
+- [`docs/troubleshooting.md`](docs/troubleshooting.md): common problems
 
-### Where to work
+## License
 
-**You work directly in this project folder on your own machine.** The *entire*
-directory is mapped into the container:
-
-```
-your project folder  ->  /var/www/html   (inside the container)
-```
-
-So there is no separate place to put your code and nothing to copy anywhere: the
-files you see here are exactly the files the web server runs. Edit `src/`,
-`templates/` and `config/` right where they are.
-
-The mapping goes both ways — files the application creates (the SQLite database,
-Symfony's cache and logs in `var/`) appear in this folder too, owned by you and
-editable as normal.
-
-### Live editing
-
-Because the folder is mapped rather than copied, **edit a file, reload the
-browser, done** — no rebuild and no restart. This applies to controllers,
-templates and configuration alike; the app runs in Symfony's `dev` environment,
-which rebuilds its cache automatically.
-
-You only need `./build.sh` or `./start.sh -b` when the `Dockerfile` changes.
-
-Run in the background:
-
-```bash
-./start.sh -d
-```
-
-## Stop the environment
-
-```bash
-./start.sh -s
-```
-
-## Symfony console
-
-Run any Symfony command inside the container with `-c`:
-
-```bash
-./start.sh -c about                      # environment overview
-./start.sh -c doctrine:database:create   # create the SQLite database
-./start.sh -c make:controller            # generate a controller
-./start.sh -c cache:clear
-```
-
-## Further commands
-
-| Command | Description |
-|---------|-------------|
-| `./start.sh -b` | Rebuild the image and start — **needs internet, do not use during the exam** |
-| `./start.sh -r` | Restart the container |
-| `./start.sh -l` | Show logs |
-| `./start.sh -c <cmd>` | Run a Symfony console command |
-| `./start.sh --status` | Show container status |
-
-## Exam setup (no internet)
-
-During the exam there is no internet connection, so **nothing may be built on the
-exam machine**. The image is prepared in advance and only started on the day.
-
-**Beforehand, on a machine with internet:**
-
-```bash
-./build.sh -e      # builds the image and writes _images/webt-symfony.tar
-```
-
-**On each exam machine, once, with the .tar copied over:**
-
-```bash
-docker load -i _images/webt-symfony.tar
-```
-
-**During the exam:**
-
-```bash
-./start.sh
-```
-
-That is all. `./start.sh` never builds — it uses the image that is already there
-— so it works completely offline. `vendor/` does not need to be present either:
-if it is missing, the container restores it on first start.
-
-> **Do not run `./build.sh` or `./start.sh -b` during the exam.** Both rebuild the
-> image, which downloads system packages and fails without internet, leaving you
-> with no working environment. `start.sh` refuses `-b` for this reason; the
-> refusal can be overridden with `ALLOW_BUILD=1` when you do have internet.
-
-These commands are all safe offline: `./start.sh`, `-d`, `-s`, `-r`, `-l`,
-`--status` and `-c`.
-
-## Build and export images
-
-Build the image (without starting it):
-
-```bash
-./build.sh
-```
-
-Clean build (without the Docker cache):
-
-```bash
-./build.sh -c
-```
-
-Build and export as a `.tar` file (to `_images/`):
-
-```bash
-./build.sh -e
-```
-
-Options can be combined:
-
-```bash
-./build.sh -c -e        # clean build and export
-```
-
-Load an exported image on another machine:
-
-```bash
-docker load -i _images/webt-symfony.tar
-```
-
-## Ports
-
-| Service | URL |
-|---------|-----|
-| Symfony app | http://localhost:80 |
-
-The port can be changed with the `HTTP_PORT` environment variable:
-
-```bash
-HTTP_PORT=8080 ./start.sh
-```
-
-## Configuration
-
-`.env` holds the development defaults (environment, database, secret). Values in
-`docker-compose.yml` take precedence over it, and both can be overridden from
-the shell:
-
-```bash
-APP_ENV=prod ./start.sh
-```
-
-Put anything genuinely secret in `.env.local`, which should never be committed.
-
-## Dependencies
-
-`vendor/` is **not** in git — `composer.lock` is. Building the image installs the
-exact versions pinned in that lockfile, so every machine ends up with the same
-dependencies. A fresh clone therefore builds fine; it just needs internet for
-that one step.
-
-Once built, no network is needed again: `vendor/` is baked into the image, and if
-your working copy has no `vendor/` the container restores it on first start.
-
-Composer itself is available inside the container:
-
-```bash
-docker compose exec app composer <command>
-```
+Released under the MIT License, see [LICENSE](LICENSE).
 
 ## Credits
 
-Originally based on [symfony-docker](https://github.com/dunglas/symfony-docker)
-by [Kévin Dunglas](https://dunglas.dev), available under the MIT License. The
-FrankenPHP/Caddy runtime has been replaced with PHP 8.4 + Apache for this course.
+The Docker setup is based on [Symfony Docker](https://github.com/dunglas/symfony-docker)
+by [Kévin Dunglas](https://dunglas.dev), co-maintained by [Maxime Helias](https://twitter.com/maxhelias) and sponsored
+by [Les-Tilleuls.coop](https://les-tilleuls.coop).

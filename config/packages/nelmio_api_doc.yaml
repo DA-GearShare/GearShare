@@ -1,0 +1,9 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: GearShare
+            description: REST-API für die Verwaltung, Reservierung und Ausgabe/Rückgabe von Equipment. Authentifizierung erfolgt über das bestehende O365-Konto (OAuth2 / OpenID Connect); alle nachfolgenden API-Aufrufe verwenden das vom Backend ausgestellte Bearer-JWT.
+            version: 1.0.0
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/api(?!/doc$) # Accepts routes under /api except /api/doc

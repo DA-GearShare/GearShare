@@ -1,0 +1,2440 @@
+openapi: 3.0.3
+info:
+    title: GearShare API
+    description: >
+        REST-API für die Verwaltung, Reservierung und Ausgabe/Rückgabe von
+        Equipment. Authentifizierung erfolgt
+        über das bestehende O365-Konto (OAuth2 / OpenID Connect); alle
+        nachfolgenden API-Aufrufe verwenden das vom Backend ausgestellte
+        Bearer-JWT.
+    version: 1.0.0
+    contact:
+        name: Projektteam GearShare
+servers:
+    - url: http://localhost/api/v1
+      description: Local
+    - url: https://staging.gearshare.at/api/v1
+      description: Staging
+
+tags:
+    - name: Auth
+      description: O365-Anmeldung und Session-Verwaltung
+    - name: Users
+      description: Benutzerverwaltung und Rollenzuweisung (Admin/LehrerIn)
+    - name: Equipment
+      description: Anlegen, Bearbeiten, Suchen und Kalender einzelner Geräte
+    - name: EquipmentPools
+      description: Gruppierung gleichartiger Geräte zu Pools
+    - name: Reservations
+      description: Reservierungsanfragen, Genehmigung, Übertragung, Ausgabe/Rückgabe
+    - name: OpeningHours
+      description: Serielle und einzelne Ausgabe-/Rückgabezeiten
+    - name: Dashboard
+      description: Statistik-Dashboard für aktuell und historisch ausgeliehenes Equipment
+    - name: Notifications
+      description: Einsicht in versendete System-E-Mails (Audit)
+
+security:
+    - BearerAuth: []
+
+paths:
+    # ============================================================
+    # AUTH
+    # ============================================================
+    /auth/login:
+        get:
+            tags: [Auth]
+            summary: O365-Login starten
+            description: >
+                Leitet die BenutzerIn zum O365-OAuth2/OIDC-Login von Microsoft   weiter. Es findet keine separate Registrierung statt.
+            security: []
+            parameters:
+                - name: redirectUri
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      format: uri
+                  description: Ziel-URL im Frontend nach erfolgreichem Login.
+            responses:
+                '302':
+                    description: Weiterleitung zum O365-Identity-Provider.
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /auth/callback:
+        get:
+            tags: [Auth]
+            summary: OAuth2-Callback von O365
+            description: >
+                Tauscht den von O365 gelieferten Authorization-Code gegen ein
+                Session-JWT des Backends. Bei fehlgeschlagener Anmeldung wird ein
+                verständlicher Fehler zurückgegeben (siehe Akzeptanzkriterien
+                "Anmelde-Seite").
+            security: []
+            parameters:
+                - name: code
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                - name: state
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Login erfolgreich, Session-Token ausgestellt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthToken'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    description: O365-Anmeldung fehlgeschlagen oder Code ungültig/abgelaufen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /auth/logout:
+        post:
+            tags: [Auth]
+            summary: Aktuelle Session beenden
+            responses:
+                '204':
+                    description: Erfolgreich abgemeldet.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /auth/me:
+        get:
+            tags: [Auth]
+            summary: Angemeldete BenutzerIn abrufen
+            description: Liefert Profil und Rollen der aktuell authentifizierten Person (steuert Sichtbarkeit von Navigation/UI im Frontend).
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+
+    # ============================================================
+    # USERS
+    # ============================================================
+    /users:
+        get:
+            tags: [Users]
+            summary: Alle BenutzerInnen mit aktueller Rolle auflisten (Admin)
+            parameters:
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                  description: Freitextsuche über E-Mail und Anzeigename.
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserListResponse'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /users/{userId}:
+        parameters:
+            - $ref: '#/components/parameters/UserIdPath'
+        get:
+            tags: [Users]
+            summary: Einzelne BenutzerIn abrufen
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /users/{userId}/roles:
+        parameters:
+            - $ref: '#/components/parameters/UserIdPath'
+        patch:
+            tags: [Users]
+            summary: Admin- und/oder LehrerIn-Rolle zuweisen oder entziehen
+            description: >
+                Setzt die Rollen `isAdmin` und/oder `isTeacher` einer BenutzerIn.
+                Änderungen wirken sich unmittelbar auf Berechtigungen aus
+                (Front-/Backend-Absicherung nach Benutzerrolle).
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserRoleUpdate'
+            responses:
+                '200':
+                    description: Rollen aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    # ============================================================
+    # EQUIPMENT
+    # ============================================================
+    /equipment:
+        get:
+            tags: [Equipment]
+            summary: Equipment-Übersicht anzeigen und sortieren
+            description: Liste aller (nicht gelöschten) Geräte, sortier- und filterbar.
+            parameters:
+                - name: sort
+                  in: query
+                  schema:
+                      type: string
+                      enum: [name, location, type, availability]
+                      default: name
+                - name: order
+                  in: query
+                  schema:
+                      type: string
+                      enum: [asc, desc]
+                      default: asc
+                - name: poolId
+                  in: query
+                  schema:
+                      type: string
+                      format: uuid
+                - name: status
+                  in: query
+                  schema:
+                      $ref: '#/components/schemas/EquipmentStatus'
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentListResponse'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+        post:
+            tags: [Equipment]
+            summary: Neues Gerät anlegen (Admin)
+            description: >
+                Wird kein Barcode übermittelt, generiert das System automatisch
+                einen eindeutigen Code.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EquipmentCreate'
+            responses:
+                '201':
+                    description: Gerät angelegt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Equipment'
+                    headers:
+                        Location:
+                            schema:
+                                type: string
+                            description: URL des neu angelegten Geräts.
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '409':
+                    description: Barcode bereits vergeben.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /equipment/scan:
+        post:
+            tags: [Equipment]
+            summary: Gerät per Barcode/QR-Code auflösen
+            description: >
+                Wird u. a. beim Anlegen ("Scannen beim Anlegen"), bei der Ausgabe und
+                bei der Rückgabe verwendet, um ein Gerät anhand des gescannten Codes
+                zu identifizieren.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [barcode]
+                            properties:
+                                barcode:
+                                    type: string
+                                    example: "EQ-2026-00042"
+            responses:
+                '200':
+                    description: Gerät gefunden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Equipment'
+                '400':
+                    description: Code nicht lesbar/ungültig formatiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: Kein Gerät mit diesem Code gefunden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /equipment/calendar:
+        post:
+            tags: [Equipment]
+            summary: Gemeinsamen Kalender für mehrere Geräte berechnen
+            description: >
+                Liefert Zeiträume, in denen ALLE ausgewählten Geräte gleichzeitig
+                verfügbar sind (max. 30 Geräte gleichzeitig auswählbar).
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CombinedCalendarRequest'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/CalendarSlot'
+                '400':
+                    description: Ungültige Anfrage, z. B. mehr als 30 Geräte-IDs.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /equipment/{equipmentId}:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Equipment]
+            summary: Geräte-Detailansicht abrufen
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Equipment'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        put:
+            tags: [Equipment]
+            summary: Gerätedaten bearbeiten (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EquipmentUpdate'
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Equipment'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Barcode bereits vergeben.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+        delete:
+            tags: [Equipment]
+            summary: Gerät entfernen (Admin, Soft-Delete)
+            description: >
+                Setzt `deletedAt`. Das Gerät verschwindet aus der Übersicht,
+                bestehende bzw. vergangene Reservierungen bleiben zur
+                Nachvollziehbarkeit erhalten (Datenintegrität/Historie).
+            responses:
+                '204':
+                    description: Gelöscht.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Gerät ist Teil einer aktiven Reservierung und kann nicht gelöscht werden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /equipment/{equipmentId}/barcode:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Equipment]
+            summary: Automatisch generierten Code exportieren (Admin)
+            parameters:
+                - name: format
+                  in: query
+                  schema:
+                      type: string
+                      enum: [png, pdf]
+                      default: png
+            responses:
+                '200':
+                    description: Bild/PDF des Barcodes bzw. QR-Codes.
+                    content:
+                        image/png:
+                            schema:
+                                type: string
+                                format: binary
+                        application/pdf:
+                            schema:
+                                type: string
+                                format: binary
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment/{equipmentId}/calendar:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Equipment]
+            summary: Verfügbarkeits-/Reservierungskalender eines Geräts
+            parameters:
+                - $ref: '#/components/parameters/FromParam'
+                - $ref: '#/components/parameters/ToParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/CalendarSlot'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment/{equipmentId}/loan-history:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Dashboard]
+            summary: Historie vergangener Ausleihen eines Geräts (Admin)
+            parameters:
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    items:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/LoanHistoryEntry'
+                                    meta:
+                                        $ref: '#/components/schemas/PageMeta'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment/{equipmentId}/photos:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Equipment]
+            summary: Referenzfotos eines Geräts auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/EquipmentPhoto'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        post:
+            tags: [Equipment]
+            summary: Referenzfoto hochladen (Admin)
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required: [file]
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                isMain:
+                                    type: boolean
+                                    default: false
+            responses:
+                '201':
+                    description: Foto gespeichert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentPhoto'
+                '400':
+                    description: Unzulässiges Dateiformat oder -größe.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment/{equipmentId}/photos/{photoId}:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+            - $ref: '#/components/parameters/PhotoIdPath'
+        patch:
+            tags: [Equipment]
+            summary: Foto als Hauptbild markieren (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                isMain:
+                                    type: boolean
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentPhoto'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        delete:
+            tags: [Equipment]
+            summary: Referenzfoto entfernen (Admin)
+            responses:
+                '204':
+                    description: Entfernt.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment/{equipmentId}/accessories:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Equipment]
+            summary: Zubehörempfehlungen eines Geräts abrufen
+            description: >
+                Wird auch von BenutzerInnen bei der Reservierungserstellung
+                genutzt, um passendes Zubehör per Checkbox hinzuzufügen; enthält je
+                Empfehlung zusätzlich die Verfügbarkeit im angefragten Zeitraum.
+            parameters:
+                - name: from
+                  in: query
+                  schema:
+                      type: string
+                      format: date-time
+                  description: Optional, für Verfügbarkeitsprüfung im gewünschten Reservierungszeitraum.
+                - name: to
+                  in: query
+                  schema:
+                      type: string
+                      format: date-time
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/AccessoryRecommendation'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        post:
+            tags: [Equipment]
+            summary: Zubehörempfehlung zuweisen (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [accessoryEquipmentId]
+                            properties:
+                                accessoryEquipmentId:
+                                    type: string
+                                    format: uuid
+            responses:
+                '201':
+                    description: Verknüpfung angelegt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AccessoryRecommendation'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Verknüpfung besteht bereits.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /equipment/{equipmentId}/accessories/{accessoryEquipmentId}:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+            - $ref: '#/components/parameters/AccessoryEquipmentIdPath'
+        delete:
+            tags: [Equipment]
+            summary: Zubehörempfehlung entfernen (Admin)
+            responses:
+                '204':
+                    description: Entfernt.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    # ============================================================
+    # EQUIPMENT POOLS
+    # ============================================================
+    /equipment-pools:
+        get:
+            tags: [EquipmentPools]
+            summary: Alle Pools auflisten
+            parameters:
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/EquipmentPool'
+        post:
+            tags: [EquipmentPools]
+            summary: Neuen Pool anlegen (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EquipmentPoolCreate'
+            responses:
+                '201':
+                    description: Pool angelegt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentPool'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /equipment-pools/{poolId}:
+        parameters:
+            - $ref: '#/components/parameters/PoolIdPath'
+        get:
+            tags: [EquipmentPools]
+            summary: Pool-Detailansicht
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentPool'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        put:
+            tags: [EquipmentPools]
+            summary: Pool bearbeiten (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EquipmentPoolCreate'
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EquipmentPool'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        delete:
+            tags: [EquipmentPools]
+            summary: Pool auflösen (Admin)
+            description: Löst nur die Gruppierung auf; die enthaltenen Geräte bleiben erhalten.
+            responses:
+                '204':
+                    description: Aufgelöst.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment-pools/{poolId}/equipment:
+        parameters:
+            - $ref: '#/components/parameters/PoolIdPath'
+        get:
+            tags: [EquipmentPools]
+            summary: Geräte eines Pools auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Equipment'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        post:
+            tags: [EquipmentPools]
+            summary: Gerät einem Pool zuordnen (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [equipmentId]
+                            properties:
+                                equipmentId:
+                                    type: string
+                                    format: uuid
+            responses:
+                '200':
+                    description: Zugeordnet.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Equipment'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment-pools/{poolId}/equipment/{equipmentId}:
+        parameters:
+            - $ref: '#/components/parameters/PoolIdPath'
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        delete:
+            tags: [EquipmentPools]
+            summary: Gerät aus Pool entfernen (Admin)
+            responses:
+                '204':
+                    description: Entfernt.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /equipment-pools/{poolId}/calendar:
+        parameters:
+            - $ref: '#/components/parameters/PoolIdPath'
+        get:
+            tags: [EquipmentPools]
+            summary: Pool-Verfügbarkeitskalender
+            description: Zeigt je Zeitpunkt die Anzahl verfügbarer Einheiten des Pools.
+            parameters:
+                - $ref: '#/components/parameters/FromParam'
+                - $ref: '#/components/parameters/ToParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/PoolCalendarSlot'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    # ============================================================
+    # RESERVATIONS
+    # ============================================================
+    /reservations:
+        get:
+            tags: [Reservations]
+            summary: Reservierungen auflisten
+            description: >
+                Reguläre BenutzerInnen sehen ausschließlich ihre eigenen
+                Reservierungen (angefragt oder verantwortlich); Admins sehen alle
+                Reservierungen und können zusätzlich nach BenutzerIn filtern.
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                      type: string
+                      format: uuid
+                  description: Nur für Admins auswertbar.
+                - name: status
+                  in: query
+                  schema:
+                      $ref: '#/components/schemas/ReservationStatus'
+                - name: overdue
+                  in: query
+                  schema:
+                      type: boolean
+                  description: Nur überfällige Reservierungen anzeigen.
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReservationListResponse'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+        post:
+            tags: [Reservations]
+            summary: Reservierungsanfrage stellen
+            description: Prüft serverseitig die Verfügbarkeit aller angefragten Positionen.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReservationCreate'
+            responses:
+                '201':
+                    description: Reservierungsanfrage gespeichert (Status "pending").
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '409':
+                    description: Mindestens eine angefragte Position ist im gewünschten Zeitraum nicht verfügbar.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/overdue:
+        get:
+            tags: [Reservations]
+            summary: Überfällige Reservierungen auflisten (Admin)
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Reservation'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /reservations/{reservationId}:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        get:
+            tags: [Reservations]
+            summary: Reservierungs-Detailansicht
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        patch:
+            tags: [Reservations]
+            summary: Reservierungszeitraum verlängern/verkürzen (Admin)
+            description: >
+                Erzeugt automatisch einen Eintrag im Änderungsverlauf
+                (`/reservations/{reservationId}/changes`) und löst die
+                Benachrichtigungs-E-Mail an die BenutzerIn aus.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReservationUpdate'
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Neuer Zeitraum kollidiert mit anderer Reservierung.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/{reservationId}/approve:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        post:
+            tags: [Reservations]
+            summary: Reservierungsanfrage annehmen (Admin)
+            responses:
+                '200':
+                    description: Angenommen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Reservierung befindet sich nicht (mehr) im Status "pending".
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/{reservationId}/reject:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        post:
+            tags: [Reservations]
+            summary: Reservierungsanfrage ablehnen (Admin)
+            description: Löst automatisch eine Ablehnungs-E-Mail an die BenutzerIn aus.
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                reason:
+                                    type: string
+                                    example: "Gerät wird zeitgleich für Unterricht benötigt."
+            responses:
+                '200':
+                    description: Abgelehnt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Reservierung befindet sich nicht (mehr) im Status "pending".
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/{reservationId}/transfer:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        post:
+            tags: [Reservations]
+            summary: Reservierung an andere BenutzerIn übertragen (LehrerIn/Admin)
+            description: >
+                Die Ziel-BenutzerIn erhält Verantwortung und Zugriff (u. a. für
+                Zustandsdokumentation und Rückgabe); die ursprüngliche LehrerIn
+                bleibt als Ersteller/in nachvollziehbar. Löst automatisch eine
+                Benachrichtigungs-E-Mail mit den Reservierungsdetails aus.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [toUserId]
+                            properties:
+                                toUserId:
+                                    type: string
+                                    format: uuid
+            responses:
+                '200':
+                    description: Übertragen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    description: Nur die ursprünglich verantwortliche LehrerIn oder ein Admin darf übertragen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /reservations/{reservationId}/changes:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        get:
+            tags: [Reservations]
+            summary: Änderungsverlauf einer Reservierung (alte/neue Zeiträume)
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ReservationChangeLogEntry'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /reservations/{reservationId}/transfers:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        get:
+            tags: [Reservations]
+            summary: Übertragungsverlauf einer Reservierung
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ReservationTransferLogEntry'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /reservations/{reservationId}/items:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        get:
+            tags: [Reservations]
+            summary: Positionen (Geräte/Pools) einer Reservierung auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ReservationItem'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /reservations/{reservationId}/items/{itemId}/issue:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+            - $ref: '#/components/parameters/ItemIdPath'
+        post:
+            tags: [Reservations]
+            summary: Position per Scan als ausgegeben markieren (Admin)
+            description: >
+                Wird ein anderes verfügbares Gerät gescannt als ursprünglich
+                angefragt, gilt dies als Ersatzgerät und wird der Position als
+                `assignedEquipmentId` hinzugefügt.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [scannedBarcode]
+                            properties:
+                                scannedBarcode:
+                                    type: string
+                                    example: "EQ-2026-00042"
+            responses:
+                '200':
+                    description: Als ausgegeben markiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReservationItem'
+                '400':
+                    description: Gescanntes Gerät passt nicht zur angefragten Kategorie/zum Pool.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    description: Reservierung, Position oder gescanntes Gerät nicht gefunden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '409':
+                    description: Position wurde bereits ausgegeben oder gescanntes Gerät ist nicht verfügbar.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/{reservationId}/items/{itemId}/return:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+            - $ref: '#/components/parameters/ItemIdPath'
+        post:
+            tags: [Reservations]
+            summary: Position per Scan oder manueller Bestätigung zurücknehmen (Admin)
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                scannedBarcode:
+                                    type: string
+                                    description: Optional; falls weggelassen, gilt die Rückgabe als manuell bestätigt.
+            responses:
+                '200':
+                    description: Gerätestatus auf "verfügbar" gesetzt, Rückgabezeitpunkt dokumentiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReservationItem'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '409':
+                    description: Position wurde bereits zurückgenommen oder ist nicht im Status "issued".
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /reservations/{reservationId}/condition-photos:
+        parameters:
+            - $ref: '#/components/parameters/ReservationIdPath'
+        get:
+            tags: [Reservations]
+            summary: Zustandsfotos einer Reservierung auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ConditionPhoto'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        post:
+            tags: [Reservations]
+            summary: Zustandsfoto zu Ausgabe oder Rückgabe hochladen
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required: [file, phase]
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                phase:
+                                    $ref: '#/components/schemas/ConditionPhotoPhase'
+            responses:
+                '201':
+                    description: Foto gespeichert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConditionPhoto'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    # ============================================================
+    # OPENING HOURS
+    # ============================================================
+    /opening-hours/effective:
+        get:
+            tags: [OpeningHours]
+            summary: Effektive Ausgabe-/Rückgabezeiten für einen Zeitraum
+            description: >
+                Löst serielle Zeitbereiche und Einzel-Ausnahmen zu den tatsächlich
+                gültigen Öffnungszeiten je Tag auf (Einzel-Einträge überschreiben
+                serielle Einträge vollständig).
+            parameters:
+                - $ref: '#/components/parameters/FromParam'
+                - $ref: '#/components/parameters/ToParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/EffectiveOpeningHours'
+
+    /opening-hours/recurring:
+        get:
+            tags: [OpeningHours]
+            summary: Serielle Ausgabe-/Rückgabezeiten auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/OpeningHoursRecurring'
+        post:
+            tags: [OpeningHours]
+            summary: Serielle Zeitbereiche anlegen (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/OpeningHoursRecurringCreate'
+            responses:
+                '201':
+                    description: Angelegt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OpeningHoursRecurring'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /opening-hours/recurring/{openingHoursRecurringId}:
+        parameters:
+            - $ref: '#/components/parameters/OpeningHoursRecurringIdPath'
+        put:
+            tags: [OpeningHours]
+            summary: Seriellen Zeitbereich bearbeiten (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/OpeningHoursRecurringCreate'
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OpeningHoursRecurring'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        delete:
+            tags: [OpeningHours]
+            summary: Seriellen Zeitbereich löschen (Admin)
+            responses:
+                '204':
+                    description: Gelöscht.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    /opening-hours/exceptions:
+        get:
+            tags: [OpeningHours]
+            summary: Einzelne Ausgabe-/Rückgabezeiten (Ausnahmen) auflisten
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/OpeningHoursException'
+        post:
+            tags: [OpeningHours]
+            summary: Einzel-Ausnahme anlegen (Admin)
+            description: Einzel-Einträge haben höhere Priorität als serielle Einträge.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/OpeningHoursExceptionCreate'
+            responses:
+                '201':
+                    description: Angelegt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OpeningHoursException'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /opening-hours/exceptions/{openingHoursExceptionId}:
+        parameters:
+            - $ref: '#/components/parameters/OpeningHoursExceptionIdPath'
+        put:
+            tags: [OpeningHours]
+            summary: Einzel-Ausnahme bearbeiten (Admin)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/OpeningHoursExceptionCreate'
+            responses:
+                '200':
+                    description: Aktualisiert.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OpeningHoursException'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+        delete:
+            tags: [OpeningHours]
+            summary: Einzel-Ausnahme löschen (Admin)
+            responses:
+                '204':
+                    description: Gelöscht.
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+
+    # ============================================================
+    # DASHBOARD
+    # ============================================================
+    /dashboard/active-loans:
+        get:
+            tags: [Dashboard]
+            summary: Gesamtübersicht aktuell ausgeliehener Geräte (Admin)
+            parameters:
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ActiveLoan'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+    /dashboard/active-loans/{equipmentId}:
+        parameters:
+            - $ref: '#/components/parameters/EquipmentIdPath'
+        get:
+            tags: [Dashboard]
+            summary: Detailinformationen zu einer aktiven Ausleihe (Admin)
+            description: Zeigt BenutzerIn und erwartetes Rückgabedatum.
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ActiveLoan'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    description: Für dieses Gerät besteht aktuell keine aktive Ausleihe.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    # ============================================================
+    # NOTIFICATIONS
+    # ============================================================
+    /notifications:
+        get:
+            tags: [Notifications]
+            summary: Versendete Benachrichtigungen einsehen (Admin, Audit)
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                      type: string
+                      format: uuid
+                - name: reservationId
+                  in: query
+                  schema:
+                      type: string
+                      format: uuid
+                - $ref: '#/components/parameters/PageParam'
+                - $ref: '#/components/parameters/PageSizeParam'
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    items:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/NotificationLogEntry'
+                                    meta:
+                                        $ref: '#/components/schemas/PageMeta'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+
+components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: >
+                Vom Backend nach erfolgreichem O365-Login ausgestelltes Session-JWT
+                (siehe `/auth/callback`). Wird als `Authorization: Bearer <token>`
+                gesendet.
+        O365OAuth2:
+            type: oauth2
+            description: >
+                Dient ausschließlich der Dokumentation des zugrunde liegenden
+                O365/Azure-AD-Login-Flows; die eigentliche API-Autorisierung
+                erfolgt über BearerAuth.
+            flows:
+                authorizationCode:
+                    authorizationUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize
+                    tokenUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+                    scopes:
+                        openid: OpenID-Connect-Anmeldung
+                        email: Zugriff auf die E-Mail-Adresse
+                        profile: Zugriff auf Basisprofil (Anzeigename)
+
+    parameters:
+        PageParam:
+            name: page
+            in: query
+            schema:
+                type: integer
+                minimum: 1
+                default: 1
+        PageSizeParam:
+            name: pageSize
+            in: query
+            schema:
+                type: integer
+                minimum: 1
+                maximum: 100
+                default: 20
+        FromParam:
+            name: from
+            in: query
+            required: true
+            schema:
+                type: string
+                format: date-time
+            example: "2026-09-01T00:00:00Z"
+        ToParam:
+            name: to
+            in: query
+            required: true
+            schema:
+                type: string
+                format: date-time
+            example: "2026-09-30T23:59:59Z"
+        UserIdPath:
+            name: userId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        EquipmentIdPath:
+            name: equipmentId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        AccessoryEquipmentIdPath:
+            name: accessoryEquipmentId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        PhotoIdPath:
+            name: photoId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        PoolIdPath:
+            name: poolId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        ReservationIdPath:
+            name: reservationId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        ItemIdPath:
+            name: itemId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        OpeningHoursRecurringIdPath:
+            name: openingHoursRecurringId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+        OpeningHoursExceptionIdPath:
+            name: openingHoursExceptionId
+            in: path
+            required: true
+            schema:
+                type: string
+                format: uuid
+
+    responses:
+        BadRequest:
+            description: Anfrage ist fehlerhaft (z. B. Validierungsfehler).
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        Unauthorized:
+            description: Keine oder ungültige Authentifizierung.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        Forbidden:
+            description: Authentifiziert, aber Rolle berechtigt nicht zu dieser Aktion.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        NotFound:
+            description: Ressource nicht gefunden.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        ServerError:
+            description: Unerwarteter interner Fehler.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+
+    schemas:
+        Error:
+            type: object
+            required: [code, message]
+            properties:
+                code:
+                    type: string
+                    example: VALIDATION_ERROR
+                message:
+                    type: string
+                    example: "Das Feld 'startDatetime' muss vor 'endDatetime' liegen."
+                details:
+                    type: object
+                    additionalProperties: true
+                    nullable: true
+
+        PageMeta:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    example: 1
+                pageSize:
+                    type: integer
+                    example: 20
+                totalItems:
+                    type: integer
+                    example: 137
+                totalPages:
+                    type: integer
+                    example: 7
+
+        AuthToken:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                tokenType:
+                    type: string
+                    example: Bearer
+                expiresIn:
+                    type: integer
+                    description: Gültigkeit in Sekunden.
+                    example: 3600
+                user:
+                    $ref: '#/components/schemas/User'
+
+        # ---------------- Users ----------------
+        User:
+            type: object
+            required: [id, email, isAdmin, isTeacher]
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    description: Entspricht der O365 `subject_id`.
+                    example: "8f14e45f-ceea-4b19-9c1a-2b4b1c3c2a10"
+                email:
+                    type: string
+                    format: email
+                    example: "max.mustermann@htl-rennweg.at"
+                displayName:
+                    type: string
+                    nullable: true
+                    example: "Max Mustermann"
+                isAdmin:
+                    type: boolean
+                    default: false
+                isTeacher:
+                    type: boolean
+                    default: false
+
+        UserRoleUpdate:
+            type: object
+            properties:
+                isAdmin:
+                    type: boolean
+                isTeacher:
+                    type: boolean
+            description: Mindestens eines der beiden Felder muss angegeben werden.
+
+        UserListResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
+                meta:
+                    $ref: '#/components/schemas/PageMeta'
+
+        # ---------------- Equipment ----------------
+        EquipmentStatus:
+            type: string
+            enum: [available, reserved, issued, in_maintenance, retired]
+            example: available
+
+        Equipment:
+            type: object
+            required: [id, name, location, type, model, status, createdAt]
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                poolId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                    example: "Digitalmultimeter Fluke 87V"
+                location:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                    example: "Labor E1.03, Schrank 4"
+                type:
+                    type: string
+                    maxLength: 255
+                    example: "Messgerät"
+                model:
+                    type: string
+                    maxLength: 255
+                    example: "Fluke 87V"
+                barcode:
+                    type: string
+                    nullable: true
+                    maxLength: 255
+                    example: "EQ-2026-00042"
+                status:
+                    $ref: '#/components/schemas/EquipmentStatus'
+                mainPhotoUrl:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: Aus den zugeordneten Referenzfotos abgeleitet (`isMain = true`).
+                createdAt:
+                    type: string
+                    format: date-time
+                deletedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+
+        EquipmentCreate:
+            type: object
+            required: [name, location, type, model]
+            properties:
+                poolId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                location:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                type:
+                    type: string
+                    maxLength: 255
+                model:
+                    type: string
+                    maxLength: 255
+                barcode:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    description: Optional; wird bei Nichtangabe automatisch generiert.
+
+        EquipmentUpdate:
+            allOf:
+                - $ref: '#/components/schemas/EquipmentCreate'
+                - type: object
+                  properties:
+                      status:
+                          $ref: '#/components/schemas/EquipmentStatus'
+
+        EquipmentListResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Equipment'
+                meta:
+                    $ref: '#/components/schemas/PageMeta'
+
+        EquipmentPhoto:
+            type: object
+            required: [id, equipmentId, url, isMain, uploadedAt]
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                equipmentId:
+                    type: string
+                    format: uuid
+                url:
+                    type: string
+                    format: uri
+                isMain:
+                    type: boolean
+                uploadedAt:
+                    type: string
+                    format: date-time
+
+        AccessoryRecommendation:
+            type: object
+            properties:
+                accessoryEquipmentId:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: "Messleitungs-Set CAT III"
+                availableInRequestedPeriod:
+                    type: boolean
+                    nullable: true
+                    description: Nur gesetzt, wenn `from`/`to` in der Anfrage angegeben wurden.
+
+        LoanHistoryEntry:
+            type: object
+            properties:
+                reservationId:
+                    type: string
+                    format: uuid
+                userDisplayName:
+                    type: string
+                startDatetime:
+                    type: string
+                    format: date-time
+                endDatetime:
+                    type: string
+                    format: date-time
+                returnedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+
+        # ---------------- Equipment Pools ----------------
+        EquipmentPool:
+            type: object
+            required: [id, name, createdAt]
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    maxLength: 255
+                    example: "Multimeter Fluke 87V (Pool)"
+                description:
+                    type: string
+                    nullable: true
+                    maxLength: 255
+                createdAt:
+                    type: string
+                    format: date-time
+                equipmentCount:
+                    type: integer
+                    description: Aggregiert aus der Anzahl zugeordneter Geräte.
+                    example: 8
+
+        EquipmentPoolCreate:
+            type: object
+            required: [name]
+            properties:
+                name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                description:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+
+        CalendarSlot:
+            type: object
+            properties:
+                start:
+                    type: string
+                    format: date-time
+                end:
+                    type: string
+                    format: date-time
+                status:
+                    type: string
+                    enum: [available, reserved]
+
+        PoolCalendarSlot:
+            type: object
+            properties:
+                start:
+                    type: string
+                    format: date-time
+                end:
+                    type: string
+                    format: date-time
+                availableCount:
+                    type: integer
+                    example: 3
+                totalCount:
+                    type: integer
+                    example: 8
+
+        CombinedCalendarRequest:
+            type: object
+            required: [equipmentIds, from, to]
+            properties:
+                equipmentIds:
+                    type: array
+                    minItems: 1
+                    maxItems: 30
+                    items:
+                        type: string
+                        format: uuid
+                from:
+                    type: string
+                    format: date-time
+                to:
+                    type: string
+                    format: date-time
+
+        # ---------------- Reservations ----------------
+        ReservationStatus:
+            type: string
+            enum: [pending, approved, rejected, active, completed, cancelled]
+            example: pending
+
+        ReservationItemStatus:
+            type: string
+            enum: [requested, approved, rejected, issued, returned]
+            example: requested
+
+        Reservation:
+            type: object
+            required:
+                - id
+                - requestedByUserId
+                - responsibleUserId
+                - status
+                - startDatetime
+                - endDatetime
+                - createdAt
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                requestedByUserId:
+                    type: string
+                    format: uuid
+                responsibleUserId:
+                    type: string
+                    format: uuid
+                    description: >
+                        Bei Übertragung abweichend von `requestedByUserId`; trägt aktuell
+                        Verantwortung für Zustandsdokumentation und Rückgabe.
+                status:
+                    $ref: '#/components/schemas/ReservationStatus'
+                startDatetime:
+                    type: string
+                    format: date-time
+                endDatetime:
+                    type: string
+                    format: date-time
+                isOverdue:
+                    type: boolean
+                    description: Serverseitig berechnet (endDatetime < now UND nicht alle Positionen zurückgegeben).
+                createdAt:
+                    type: string
+                    format: date-time
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReservationItem'
+
+        ReservationCreate:
+            type: object
+            required: [startDatetime, endDatetime, items]
+            properties:
+                startDatetime:
+                    type: string
+                    format: date-time
+                endDatetime:
+                    type: string
+                    format: date-time
+                items:
+                    type: array
+                    minItems: 1
+                    items:
+                        type: object
+                        properties:
+                            requestedEquipmentId:
+                                type: string
+                                format: uuid
+                                nullable: true
+                            requestedPoolId:
+                                type: string
+                                format: uuid
+                                nullable: true
+                        description: Genau eines von `requestedEquipmentId` oder `requestedPoolId` muss gesetzt sein.
+
+        ReservationUpdate:
+            type: object
+            required: [startDatetime, endDatetime]
+            properties:
+                startDatetime:
+                    type: string
+                    format: date-time
+                endDatetime:
+                    type: string
+                    format: date-time
+
+        ReservationItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                reservationId:
+                    type: string
+                    format: uuid
+                requestedEquipmentId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                requestedPoolId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                assignedEquipmentId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    description: Tatsächlich ausgegebenes Gerät (kann vom angefragten abweichen, z. B. Ersatzgerät).
+                status:
+                    $ref: '#/components/schemas/ReservationItemStatus'
+                issuedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                returnedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+
+        ReservationListResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Reservation'
+                meta:
+                    $ref: '#/components/schemas/PageMeta'
+
+        ConditionPhotoPhase:
+            type: string
+            enum: [pickup, return]
+            example: pickup
+
+        ConditionPhoto:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                reservationId:
+                    type: string
+                    format: uuid
+                takenByUserId:
+                    type: string
+                    format: uuid
+                phase:
+                    $ref: '#/components/schemas/ConditionPhotoPhase'
+                url:
+                    type: string
+                    format: uri
+                createdAt:
+                    type: string
+                    format: date-time
+
+        ReservationChangeLogEntry:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                reservationId:
+                    type: string
+                    format: uuid
+                changedByUserId:
+                    type: string
+                    format: uuid
+                oldStartDatetime:
+                    type: string
+                    format: date-time
+                oldEndDatetime:
+                    type: string
+                    format: date-time
+                newStartDatetime:
+                    type: string
+                    format: date-time
+                newEndDatetime:
+                    type: string
+                    format: date-time
+                changedAt:
+                    type: string
+                    format: date-time
+
+        ReservationTransferLogEntry:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                reservationId:
+                    type: string
+                    format: uuid
+                byUserId:
+                    type: string
+                    format: uuid
+                toUserId:
+                    type: string
+                    format: uuid
+                transferredAt:
+                    type: string
+                    format: date-time
+
+        # ---------------- Opening Hours ----------------
+        OpeningHoursRecurring:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                weekday:
+                    type: integer
+                    minimum: 0
+                    maximum: 6
+                    description: 0 = Montag ... 6 = Sonntag.
+                    example: 1
+                startTime:
+                    type: string
+                    format: time
+                    example: "13:30:00"
+                endTime:
+                    type: string
+                    format: time
+                    example: "16:00:00"
+                validFrom:
+                    type: string
+                    format: date
+                validUntil:
+                    type: string
+                    format: date
+                    nullable: true
+                createdBy:
+                    type: string
+                    format: uuid
+
+        OpeningHoursRecurringCreate:
+            type: object
+            required: [weekday, startTime, endTime, validFrom]
+            properties:
+                weekday:
+                    type: integer
+                    minimum: 0
+                    maximum: 6
+                startTime:
+                    type: string
+                    format: time
+                endTime:
+                    type: string
+                    format: time
+                validFrom:
+                    type: string
+                    format: date
+                validUntil:
+                    type: string
+                    format: date
+                    nullable: true
+
+        OpeningHoursException:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                exceptionDate:
+                    type: string
+                    format: date
+                startTime:
+                    type: string
+                    format: time
+                    nullable: true
+                endTime:
+                    type: string
+                    format: time
+                    nullable: true
+                isClosed:
+                    type: boolean
+                    default: false
+                validUntil:
+                    type: string
+                    format: date
+                createdBy:
+                    type: string
+                    format: uuid
+
+        OpeningHoursExceptionCreate:
+            type: object
+            required: [exceptionDate, isClosed, validUntil]
+            properties:
+                exceptionDate:
+                    type: string
+                    format: date
+                startTime:
+                    type: string
+                    format: time
+                    nullable: true
+                endTime:
+                    type: string
+                    format: time
+                    nullable: true
+                isClosed:
+                    type: boolean
+                    default: false
+                validUntil:
+                    type: string
+                    format: date
+
+        EffectiveOpeningHours:
+            type: object
+            description: Aufgelöstes Ergebnis aus seriellen Zeitbereichen und Einzel-Ausnahmen für einen Tag.
+            properties:
+                date:
+                    type: string
+                    format: date
+                isClosed:
+                    type: boolean
+                startTime:
+                    type: string
+                    format: time
+                    nullable: true
+                endTime:
+                    type: string
+                    format: time
+                    nullable: true
+                source:
+                    type: string
+                    enum: [recurring, exception]
+
+        # ---------------- Dashboard ----------------
+        ActiveLoan:
+            type: object
+            properties:
+                equipmentId:
+                    type: string
+                    format: uuid
+                equipmentName:
+                    type: string
+                reservationId:
+                    type: string
+                    format: uuid
+                userId:
+                    type: string
+                    format: uuid
+                userDisplayName:
+                    type: string
+                issuedAt:
+                    type: string
+                    format: date-time
+                expectedReturnAt:
+                    type: string
+                    format: date-time
+                isOverdue:
+                    type: boolean
+
+        # ---------------- Notifications ----------------
+        NotificationLogEntry:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                userId:
+                    type: string
+                    format: uuid
+                reservationId:
+                    type: string
+                    format: uuid
+                templateName:
+                    type: string
+                    example: "reservation_transferred"
+                sentAt:
+                    type: string
+                    format: date-time

@@ -1,0 +1,17 @@
+# config/packages/knpu_oauth2_client.yaml
+knpu_oauth2_client:
+    clients:
+        github:
+            type: github
+            client_id: '%env(OAUTH_GITHUB_CLIENT_ID)%'
+            client_secret: '%env(OAUTH_GITHUB_CLIENT_SECRET)%'
+            redirect_route: auth_connect_check
+            redirect_params: { provider: github }
+
+#        microsoft:
+#            type: azure
+#            client_id: '%env(OAUTH_MS_CLIENT_ID)%'
+#            client_secret: '%env(OAUTH_MS_CLIENT_SECRET)%'
+#            tenant: '%env(OAUTH_MS_TENANT_ID)%'
+#            redirect_route: auth_connect_check
+#            redirect_params: { provider: microsoft }

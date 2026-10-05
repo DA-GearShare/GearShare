@@ -17,7 +17,7 @@ usage() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+COMPOSE_FILE="$SCRIPT_DIR/compose.yaml"
 
 ACTION="up"
 BUILD=""

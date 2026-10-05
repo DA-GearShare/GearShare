@@ -1,0 +1,41 @@
+:root {
+  --color-navy: #12273c;             /* Navigation, Hauptbuttons, Badge, aktive Elemente */
+  --color-text-primary: #111827;     /* Überschriften, primärer Text */
+  --color-text-secondary: #374151;   /* Beschreibungstexte */
+  --color-muted: #6b7280;            /* Zusatzinfos, Metadaten */
+  --color-border: #e5e7eb;           /* Linien, Buttons, Karten */
+  --color-background: #f7f8fa;       /* App-Hintergrund */
+  --color-background-areas: #f4f4f4; /* Hintergrund, footer, header */
+  --color-surface: #ffffff;          /* Karten und Navigation */
+  --color-soft-surface: #f3f4f6;     /* Tags, kleine Informationsflächen */
+  --color-available: #e1eddc;        /* Verfügbare Zeiträume */
+
+  --font-main: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text-primary);
+  background: var(--color-background);
+  line-height: 1.6;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

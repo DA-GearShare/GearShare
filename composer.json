@@ -26,6 +26,7 @@
         "symfony/security-bundle": "8.1.*",
         "symfony/twig-bundle": "8.1.*",
         "symfony/uid": "8.1.*",
+        "symfony/validator": "8.1.*",
         "symfony/yaml": "8.1.*",
         "thenetworg/oauth2-azure": "^2.2",
         "twig/extra-bundle": "^2.12|^3.0",

@@ -21,7 +21,6 @@ equipment, equipment pools, photos and opening hours, and can follow reservation
 - [FrankenPHP](https://frankenphp.dev) (Caddy) as application server
 - KnpU OAuth2 Client for GitHub login
 - NelmioApiDocBundle (OpenAPI docs) and NelmioCorsBundle
-- Twig
 
 **Frontend** (`frontend/`)
 
@@ -40,8 +39,7 @@ src/            Symfony application (Controller, Entity, Enum, Repository, Secur
 config/         Symfony configuration
 migrations/     Doctrine migrations
 frontend/       Vue 3 single-page application
-frankenphp/     Caddyfile, PHP ini files and entrypoint
-docs/           API spec, DB schema, production, TLS, Xdebug and troubleshooting notes
+docs/           API spec, DB schema
 ```
 
 ## Getting Started

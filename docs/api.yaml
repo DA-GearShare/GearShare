@@ -41,7 +41,7 @@ paths:
     # ============================================================
     # AUTH
     # ============================================================
-    /auth/login:
+    /auth/connect/microsoft:
         get:
             tags: [Auth]
             summary: O365-Login starten
@@ -62,7 +62,7 @@ paths:
                 '500':
                     $ref: '#/components/responses/ServerError'
 
-    /auth/callback:
+    /auth/connect/microsoft/check:
         get:
             tags: [Auth]
             summary: OAuth2-Callback von O365

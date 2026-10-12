@@ -18,7 +18,6 @@ equipment, equipment pools, photos and opening hours, and can follow reservation
 **Backend**
 
 - PHP / [Symfony](https://symfony.com) with Doctrine ORM and Doctrine Migrations
-- [FrankenPHP](https://frankenphp.dev) (Caddy) as application server
 - KnpU OAuth2 Client for GitHub login
 - NelmioApiDocBundle (OpenAPI docs) and NelmioCorsBundle
 

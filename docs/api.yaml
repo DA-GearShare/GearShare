@@ -11,31 +11,31 @@ info:
     contact:
         name: Projektteam GearShare
 servers:
-    - url: http://localhost/api/v1
-      description: Local
-    - url: https://staging.gearshare.at/api/v1
-      description: Staging
+    -   url: http://localhost/api/v1
+        description: Local
+    -   url: https://staging.gearshare.at/api/v1
+        description: Staging
 
 tags:
-    - name: Auth
-      description: O365-Anmeldung und Session-Verwaltung
-    - name: Users
-      description: Benutzerverwaltung und Rollenzuweisung (Admin/LehrerIn)
-    - name: Equipment
-      description: Anlegen, Bearbeiten, Suchen und Kalender einzelner Geräte
-    - name: EquipmentPools
-      description: Gruppierung gleichartiger Geräte zu Pools
-    - name: Reservations
-      description: Reservierungsanfragen, Genehmigung, Übertragung, Ausgabe/Rückgabe
-    - name: OpeningHours
-      description: Serielle und einzelne Ausgabe-/Rückgabezeiten
-    - name: Dashboard
-      description: Statistik-Dashboard für aktuell und historisch ausgeliehenes Equipment
-    - name: Notifications
-      description: Einsicht in versendete System-E-Mails (Audit)
+    -   name: Auth
+        description: O365-Anmeldung und Session-Verwaltung
+    -   name: Users
+        description: Benutzerverwaltung und Rollenzuweisung (Admin/LehrerIn)
+    -   name: Equipment
+        description: Anlegen, Bearbeiten, Suchen und Kalender einzelner Geräte
+    -   name: EquipmentPools
+        description: Gruppierung gleichartiger Geräte zu Pools
+    -   name: Reservations
+        description: Reservierungsanfragen, Genehmigung, Übertragung, Ausgabe/Rückgabe
+    -   name: OpeningHours
+        description: Serielle und einzelne Ausgabe-/Rückgabezeiten
+    -   name: Dashboard
+        description: Statistik-Dashboard für aktuell und historisch ausgeliehenes Equipment
+    -   name: Notifications
+        description: Einsicht in versendete System-E-Mails (Audit)
 
 security:
-    - BearerAuth: []
+    -   BearerAuth: [ ]
 
 paths:
     # ============================================================
@@ -43,19 +43,19 @@ paths:
     # ============================================================
     /auth/connect/microsoft:
         get:
-            tags: [Auth]
+            tags: [ Auth ]
             summary: O365-Login starten
             description: >
                 Leitet die BenutzerIn zum O365-OAuth2/OIDC-Login von Microsoft   weiter. Es findet keine separate Registrierung statt.
-            security: []
+            security: [ ]
             parameters:
-                - name: redirectUri
-                  in: query
-                  required: false
-                  schema:
-                      type: string
-                      format: uri
-                  description: Ziel-URL im Frontend nach erfolgreichem Login.
+                -   name: redirectUri
+                    in: query
+                    required: false
+                    schema:
+                        type: string
+                        format: uri
+                    description: Ziel-URL im Frontend nach erfolgreichem Login.
             responses:
                 '302':
                     description: Weiterleitung zum O365-Identity-Provider.
@@ -64,25 +64,25 @@ paths:
 
     /auth/connect/microsoft/check:
         get:
-            tags: [Auth]
+            tags: [ Auth ]
             summary: OAuth2-Callback von O365
             description: >
                 Tauscht den von O365 gelieferten Authorization-Code gegen ein
                 Session-JWT des Backends. Bei fehlgeschlagener Anmeldung wird ein
                 verständlicher Fehler zurückgegeben (siehe Akzeptanzkriterien
                 "Anmelde-Seite").
-            security: []
+            security: [ ]
             parameters:
-                - name: code
-                  in: query
-                  required: true
-                  schema:
-                      type: string
-                - name: state
-                  in: query
-                  required: true
-                  schema:
-                      type: string
+                -   name: code
+                    in: query
+                    required: true
+                    schema:
+                        type: string
+                -   name: state
+                    in: query
+                    required: true
+                    schema:
+                        type: string
             responses:
                 '200':
                     description: Login erfolgreich, Session-Token ausgestellt.
@@ -103,7 +103,7 @@ paths:
 
     /auth/logout:
         post:
-            tags: [Auth]
+            tags: [ Auth ]
             summary: Aktuelle Session beenden
             responses:
                 '204':
@@ -115,7 +115,7 @@ paths:
 
     /auth/me:
         get:
-            tags: [Auth]
+            tags: [ Auth ]
             summary: Angemeldete BenutzerIn abrufen
             description: Liefert Profil und Rollen der aktuell authentifizierten Person (steuert Sichtbarkeit von Navigation/UI im Frontend).
             responses:
@@ -133,16 +133,16 @@ paths:
     # ============================================================
     /users:
         get:
-            tags: [Users]
+            tags: [ Users ]
             summary: Alle BenutzerInnen mit aktueller Rolle auflisten (Admin)
             parameters:
-                - name: search
-                  in: query
-                  schema:
-                      type: string
-                  description: Freitextsuche über E-Mail und Anzeigename.
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   name: search
+                    in: query
+                    schema:
+                        type: string
+                    description: Freitextsuche über E-Mail und Anzeigename.
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -157,9 +157,9 @@ paths:
 
     /users/{userId}:
         parameters:
-            - $ref: '#/components/parameters/UserIdPath'
+            -   $ref: '#/components/parameters/UserIdPath'
         get:
-            tags: [Users]
+            tags: [ Users ]
             summary: Einzelne BenutzerIn abrufen
             responses:
                 '200':
@@ -177,9 +177,9 @@ paths:
 
     /users/{userId}/roles:
         parameters:
-            - $ref: '#/components/parameters/UserIdPath'
+            -   $ref: '#/components/parameters/UserIdPath'
         patch:
-            tags: [Users]
+            tags: [ Users ]
             summary: Admin- und/oder LehrerIn-Rolle zuweisen oder entziehen
             description: >
                 Setzt die Rollen `isAdmin` und/oder `isTeacher` einer BenutzerIn.
@@ -212,37 +212,37 @@ paths:
     # ============================================================
     /equipment:
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Equipment-Übersicht anzeigen und sortieren
             description: Liste aller (nicht gelöschten) Geräte, sortier- und filterbar.
             parameters:
-                - name: sort
-                  in: query
-                  schema:
-                      type: string
-                      enum: [name, location, type, availability]
-                      default: name
-                - name: order
-                  in: query
-                  schema:
-                      type: string
-                      enum: [asc, desc]
-                      default: asc
-                - name: poolId
-                  in: query
-                  schema:
-                      type: string
-                      format: uuid
-                - name: status
-                  in: query
-                  schema:
-                      $ref: '#/components/schemas/EquipmentStatus'
-                - name: search
-                  in: query
-                  schema:
-                      type: string
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   name: sort
+                    in: query
+                    schema:
+                        type: string
+                        enum: [ name, location, type ]
+                        default: name
+                -   name: order
+                    in: query
+                    schema:
+                        type: string
+                        enum: [ asc, desc ]
+                        default: asc
+                -   name: poolId
+                    in: query
+                    schema:
+                        type: string
+                        format: uuid
+                -   name: status
+                    in: query
+                    schema:
+                        $ref: '#/components/schemas/EquipmentStatus'
+                -   name: search
+                    in: query
+                    schema:
+                        type: string
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -253,10 +253,10 @@ paths:
                 '401':
                     $ref: '#/components/responses/Unauthorized'
         post:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Neues Gerät anlegen (Admin)
             description: >
-                Wird kein Barcode übermittelt, generiert das System automatisch
+                Wird kein code übermittelt, generiert das System automatisch
                 einen eindeutigen Code.
             requestBody:
                 required: true
@@ -283,7 +283,7 @@ paths:
                 '403':
                     $ref: '#/components/responses/Forbidden'
                 '409':
-                    description: Barcode bereits vergeben.
+                    description: code bereits vergeben.
                     content:
                         application/json:
                             schema:
@@ -291,7 +291,7 @@ paths:
 
     /equipment/scan:
         post:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Gerät per Barcode/QR-Code auflösen
             description: >
                 Wird u. a. beim Anlegen ("Scannen beim Anlegen"), bei der Ausgabe und
@@ -303,9 +303,9 @@ paths:
                     application/json:
                         schema:
                             type: object
-                            required: [barcode]
+                            required: [ code ]
                             properties:
-                                barcode:
+                                code:
                                     type: string
                                     example: "EQ-2026-00042"
             responses:
@@ -321,6 +321,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     description: Kein Gerät mit diesem Code gefunden.
                     content:
@@ -330,7 +332,7 @@ paths:
 
     /equipment/calendar:
         post:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Gemeinsamen Kalender für mehrere Geräte berechnen
             description: >
                 Liefert Zeiträume, in denen ALLE ausgewählten Geräte gleichzeitig
@@ -356,12 +358,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Error'
+                '404':
+                    description: Eines der Geräte nicht gefunden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
 
     /equipment/{equipmentId}:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Geräte-Detailansicht abrufen
             responses:
                 '200':
@@ -370,10 +378,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Equipment'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
         put:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Gerätedaten bearbeiten (Admin)
             requestBody:
                 required: true
@@ -397,13 +407,13 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '409':
-                    description: Barcode bereits vergeben.
+                    description: code bereits vergeben.
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Error'
         delete:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Gerät entfernen (Admin, Soft-Delete)
             description: >
                 Setzt `deletedAt`. Das Gerät verschwindet aus der Übersicht,
@@ -425,19 +435,19 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Error'
 
-    /equipment/{equipmentId}/barcode:
+    /equipment/{equipmentId}/code:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Automatisch generierten Code exportieren (Admin)
             parameters:
-                - name: format
-                  in: query
-                  schema:
-                      type: string
-                      enum: [png, pdf]
-                      default: png
+                -   name: format
+                    in: query
+                    schema:
+                        type: string
+                        enum: [ png, pdf ]
+                        default: png
             responses:
                 '200':
                     description: Bild/PDF des Barcodes bzw. QR-Codes.
@@ -450,18 +460,22 @@ paths:
                             schema:
                                 type: string
                                 format: binary
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
 
     /equipment/{equipmentId}/calendar:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Verfügbarkeits-/Reservierungskalender eines Geräts
             parameters:
-                - $ref: '#/components/parameters/FromParam'
-                - $ref: '#/components/parameters/ToParam'
+                -   $ref: '#/components/parameters/FromParam'
+                -   $ref: '#/components/parameters/ToParam'
             responses:
                 '200':
                     description: OK
@@ -471,18 +485,20 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/CalendarSlot'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
 
     /equipment/{equipmentId}/loan-history:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Dashboard]
+            tags: [ Dashboard ]
             summary: Historie vergangener Ausleihen eines Geräts (Admin)
             parameters:
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -506,9 +522,9 @@ paths:
 
     /equipment/{equipmentId}/photos:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Referenzfotos eines Geräts auflisten
             responses:
                 '200':
@@ -519,10 +535,12 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/EquipmentPhoto'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
         post:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Referenzfoto hochladen (Admin)
             requestBody:
                 required: true
@@ -530,7 +548,7 @@ paths:
                     multipart/form-data:
                         schema:
                             type: object
-                            required: [file]
+                            required: [ file ]
                             properties:
                                 file:
                                     type: string
@@ -560,10 +578,10 @@ paths:
 
     /equipment/{equipmentId}/photos/{photoId}:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
-            - $ref: '#/components/parameters/PhotoIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/PhotoIdPath'
         patch:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Foto als Hauptbild markieren (Admin)
             requestBody:
                 required: true
@@ -588,7 +606,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         delete:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Referenzfoto entfernen (Admin)
             responses:
                 '204':
@@ -602,26 +620,26 @@ paths:
 
     /equipment/{equipmentId}/accessories:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Zubehörempfehlungen eines Geräts abrufen
             description: >
                 Wird auch von BenutzerInnen bei der Reservierungserstellung
                 genutzt, um passendes Zubehör per Checkbox hinzuzufügen; enthält je
                 Empfehlung zusätzlich die Verfügbarkeit im angefragten Zeitraum.
             parameters:
-                - name: from
-                  in: query
-                  schema:
-                      type: string
-                      format: date-time
-                  description: Optional, für Verfügbarkeitsprüfung im gewünschten Reservierungszeitraum.
-                - name: to
-                  in: query
-                  schema:
-                      type: string
-                      format: date-time
+                -   name: from
+                    in: query
+                    schema:
+                        type: string
+                        format: date-time
+                    description: Optional, für Verfügbarkeitsprüfung im gewünschten Reservierungszeitraum.
+                -   name: to
+                    in: query
+                    schema:
+                        type: string
+                        format: date-time
             responses:
                 '200':
                     description: OK
@@ -631,10 +649,12 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/AccessoryRecommendation'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
         post:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Zubehörempfehlung zuweisen (Admin)
             requestBody:
                 required: true
@@ -642,7 +662,7 @@ paths:
                     application/json:
                         schema:
                             type: object
-                            required: [accessoryEquipmentId]
+                            required: [ accessoryEquipmentId ]
                             properties:
                                 accessoryEquipmentId:
                                     type: string
@@ -671,10 +691,10 @@ paths:
 
     /equipment/{equipmentId}/accessories/{accessoryEquipmentId}:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
-            - $ref: '#/components/parameters/AccessoryEquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/AccessoryEquipmentIdPath'
         delete:
-            tags: [Equipment]
+            tags: [ Equipment ]
             summary: Zubehörempfehlung entfernen (Admin)
             responses:
                 '204':
@@ -691,11 +711,11 @@ paths:
     # ============================================================
     /equipment-pools:
         get:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Alle Pools auflisten
             parameters:
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -705,8 +725,10 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/EquipmentPool'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
         post:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Neuen Pool anlegen (Admin)
             requestBody:
                 required: true
@@ -730,9 +752,9 @@ paths:
 
     /equipment-pools/{poolId}:
         parameters:
-            - $ref: '#/components/parameters/PoolIdPath'
+            -   $ref: '#/components/parameters/PoolIdPath'
         get:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Pool-Detailansicht
             responses:
                 '200':
@@ -741,10 +763,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/EquipmentPool'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
         put:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Pool bearbeiten (Admin)
             requestBody:
                 required: true
@@ -768,7 +792,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         delete:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Pool auflösen (Admin)
             description: Löst nur die Gruppierung auf; die enthaltenen Geräte bleiben erhalten.
             responses:
@@ -783,9 +807,9 @@ paths:
 
     /equipment-pools/{poolId}/equipment:
         parameters:
-            - $ref: '#/components/parameters/PoolIdPath'
+            -   $ref: '#/components/parameters/PoolIdPath'
         get:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Geräte eines Pools auflisten
             responses:
                 '200':
@@ -796,10 +820,12 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/Equipment'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
         post:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Gerät einem Pool zuordnen (Admin)
             requestBody:
                 required: true
@@ -807,7 +833,7 @@ paths:
                     application/json:
                         schema:
                             type: object
-                            required: [equipmentId]
+                            required: [ equipmentId ]
                             properties:
                                 equipmentId:
                                     type: string
@@ -830,10 +856,10 @@ paths:
 
     /equipment-pools/{poolId}/equipment/{equipmentId}:
         parameters:
-            - $ref: '#/components/parameters/PoolIdPath'
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/PoolIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         delete:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Gerät aus Pool entfernen (Admin)
             responses:
                 '204':
@@ -847,14 +873,14 @@ paths:
 
     /equipment-pools/{poolId}/calendar:
         parameters:
-            - $ref: '#/components/parameters/PoolIdPath'
+            -   $ref: '#/components/parameters/PoolIdPath'
         get:
-            tags: [EquipmentPools]
+            tags: [ EquipmentPools ]
             summary: Pool-Verfügbarkeitskalender
             description: Zeigt je Zeitpunkt die Anzahl verfügbarer Einheiten des Pools.
             parameters:
-                - $ref: '#/components/parameters/FromParam'
-                - $ref: '#/components/parameters/ToParam'
+                -   $ref: '#/components/parameters/FromParam'
+                -   $ref: '#/components/parameters/ToParam'
             responses:
                 '200':
                     description: OK
@@ -864,6 +890,8 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/PoolCalendarSlot'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
                     $ref: '#/components/responses/NotFound'
 
@@ -872,30 +900,30 @@ paths:
     # ============================================================
     /reservations:
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierungen auflisten
             description: >
                 Reguläre BenutzerInnen sehen ausschließlich ihre eigenen
                 Reservierungen (angefragt oder verantwortlich); Admins sehen alle
                 Reservierungen und können zusätzlich nach BenutzerIn filtern.
             parameters:
-                - name: userId
-                  in: query
-                  schema:
-                      type: string
-                      format: uuid
-                  description: Nur für Admins auswertbar.
-                - name: status
-                  in: query
-                  schema:
-                      $ref: '#/components/schemas/ReservationStatus'
-                - name: overdue
-                  in: query
-                  schema:
-                      type: boolean
-                  description: Nur überfällige Reservierungen anzeigen.
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   name: userId
+                    in: query
+                    schema:
+                        type: string
+                        format: uuid
+                    description: Nur für Admins auswertbar.
+                -   name: status
+                    in: query
+                    schema:
+                        $ref: '#/components/schemas/ReservationStatus'
+                -   name: overdue
+                    in: query
+                    schema:
+                        type: boolean
+                    description: Nur überfällige Reservierungen anzeigen.
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -906,7 +934,7 @@ paths:
                 '401':
                     $ref: '#/components/responses/Unauthorized'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierungsanfrage stellen
             description: Prüft serverseitig die Verfügbarkeit aller angefragten Positionen.
             requestBody:
@@ -917,7 +945,7 @@ paths:
                             $ref: '#/components/schemas/ReservationCreate'
             responses:
                 '201':
-                    description: Reservierungsanfrage gespeichert (Status "pending").
+                    description: Reservierungsanfrage gespeichert (Status "requested").
                     content:
                         application/json:
                             schema:
@@ -935,7 +963,7 @@ paths:
 
     /reservations/overdue:
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Überfällige Reservierungen auflisten (Admin)
             responses:
                 '200':
@@ -953,9 +981,9 @@ paths:
 
     /reservations/{reservationId}:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierungs-Detailansicht
             responses:
                 '200':
@@ -971,7 +999,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         patch:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierungszeitraum verlängern/verkürzen (Admin)
             description: >
                 Erzeugt automatisch einen Eintrag im Änderungsverlauf
@@ -1005,37 +1033,37 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Error'
 
-    /reservations/{reservationId}/approve:
-        parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
-        post:
-            tags: [Reservations]
-            summary: Reservierungsanfrage annehmen (Admin)
-            responses:
-                '200':
-                    description: Angenommen.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Reservation'
-                '401':
-                    $ref: '#/components/responses/Unauthorized'
-                '403':
-                    $ref: '#/components/responses/Forbidden'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '409':
-                    description: Reservierung befindet sich nicht (mehr) im Status "pending".
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
+    #    /reservations/{reservationId}/approve:
+    #        parameters:
+    #            -   $ref: '#/components/parameters/ReservationIdPath'
+    #        post:
+    #            tags: [ Reservations ]
+    #            summary: Reservierungsanfrage annehmen (Admin)
+    #            responses:
+    #                '200':
+    #                    description: Angenommen.
+    #                    content:
+    #                        application/json:
+    #                            schema:
+    #                                $ref: '#/components/schemas/Reservation'
+    #                '401':
+    #                    $ref: '#/components/responses/Unauthorized'
+    #                '403':
+    #                    $ref: '#/components/responses/Forbidden'
+    #                '404':
+    #                    $ref: '#/components/responses/NotFound'
+    #                '409':
+    #                    description: Reservierung befindet sich nicht (mehr) im Status "pending".
+    #                    content:
+    #                        application/json:
+    #                            schema:
+    #                                $ref: '#/components/schemas/Error'
 
     /reservations/{reservationId}/reject:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierungsanfrage ablehnen (Admin)
             description: Löst automatisch eine Ablehnungs-E-Mail an die BenutzerIn aus.
             requestBody:
@@ -1062,7 +1090,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '409':
-                    description: Reservierung befindet sich nicht (mehr) im Status "pending".
+                    description: Reservierung befindet sich nicht (mehr) im Status "requested".
                     content:
                         application/json:
                             schema:
@@ -1070,9 +1098,9 @@ paths:
 
     /reservations/{reservationId}/transfer:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Reservierung an andere BenutzerIn übertragen (LehrerIn/Admin)
             description: >
                 Die Ziel-BenutzerIn erhält Verantwortung und Zugriff (u. a. für
@@ -1085,7 +1113,7 @@ paths:
                     application/json:
                         schema:
                             type: object
-                            required: [toUserId]
+                            required: [ toUserId ]
                             properties:
                                 toUserId:
                                     type: string
@@ -1112,9 +1140,9 @@ paths:
 
     /reservations/{reservationId}/changes:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Änderungsverlauf einer Reservierung (alte/neue Zeiträume)
             responses:
                 '200':
@@ -1134,9 +1162,9 @@ paths:
 
     /reservations/{reservationId}/transfers:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Übertragungsverlauf einer Reservierung
             responses:
                 '200':
@@ -1156,9 +1184,9 @@ paths:
 
     /reservations/{reservationId}/items:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Positionen (Geräte/Pools) einer Reservierung auflisten
             responses:
                 '200':
@@ -1178,10 +1206,10 @@ paths:
 
     /reservations/{reservationId}/items/{itemId}/issue:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
-            - $ref: '#/components/parameters/ItemIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ItemIdPath'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Position per Scan als ausgegeben markieren (Admin)
             description: >
                 Wird ein anderes verfügbares Gerät gescannt als ursprünglich
@@ -1193,9 +1221,9 @@ paths:
                     application/json:
                         schema:
                             type: object
-                            required: [scannedBarcode]
+                            required: [ scannedCode ]
                             properties:
-                                scannedBarcode:
+                                scannedCode:
                                     type: string
                                     example: "EQ-2026-00042"
             responses:
@@ -1230,10 +1258,10 @@ paths:
 
     /reservations/{reservationId}/items/{itemId}/return:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
-            - $ref: '#/components/parameters/ItemIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ItemIdPath'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Position per Scan oder manueller Bestätigung zurücknehmen (Admin)
             requestBody:
                 required: false
@@ -1242,12 +1270,12 @@ paths:
                         schema:
                             type: object
                             properties:
-                                scannedBarcode:
+                                scannedCode:
                                     type: string
                                     description: Optional; falls weggelassen, gilt die Rückgabe als manuell bestätigt.
             responses:
                 '200':
-                    description: Gerätestatus auf "verfügbar" gesetzt, Rückgabezeitpunkt dokumentiert.
+                    description: Gerätestatus auf "available" gesetzt, Rückgabezeitpunkt dokumentiert.
                     content:
                         application/json:
                             schema:
@@ -1267,9 +1295,9 @@ paths:
 
     /reservations/{reservationId}/condition-photos:
         parameters:
-            - $ref: '#/components/parameters/ReservationIdPath'
+            -   $ref: '#/components/parameters/ReservationIdPath'
         get:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Zustandsfotos einer Reservierung auflisten
             responses:
                 '200':
@@ -1287,7 +1315,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         post:
-            tags: [Reservations]
+            tags: [ Reservations ]
             summary: Zustandsfoto zu Ausgabe oder Rückgabe hochladen
             requestBody:
                 required: true
@@ -1295,7 +1323,7 @@ paths:
                     multipart/form-data:
                         schema:
                             type: object
-                            required: [file, phase]
+                            required: [ file, phase ]
                             properties:
                                 file:
                                     type: string
@@ -1321,15 +1349,15 @@ paths:
     # ============================================================
     /opening-hours/effective:
         get:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Effektive Ausgabe-/Rückgabezeiten für einen Zeitraum
             description: >
                 Löst serielle Zeitbereiche und Einzel-Ausnahmen zu den tatsächlich
                 gültigen Öffnungszeiten je Tag auf (Einzel-Einträge überschreiben
                 serielle Einträge vollständig).
             parameters:
-                - $ref: '#/components/parameters/FromParam'
-                - $ref: '#/components/parameters/ToParam'
+                -   $ref: '#/components/parameters/FromParam'
+                -   $ref: '#/components/parameters/ToParam'
             responses:
                 '200':
                     description: OK
@@ -1339,11 +1367,13 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/EffectiveOpeningHours'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
 
     /opening-hours/recurring:
         get:
-            tags: [OpeningHours]
-            summary: Serielle Ausgabe-/Rückgabezeiten auflisten
+            tags: [ OpeningHours ]
+            summary: Serielle Ausgabe-/Rückgabezeiten auflisten (Admin)
             responses:
                 '200':
                     description: OK
@@ -1353,8 +1383,12 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/OpeningHoursRecurring'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
         post:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Serielle Zeitbereiche anlegen (Admin)
             requestBody:
                 required: true
@@ -1378,9 +1412,9 @@ paths:
 
     /opening-hours/recurring/{openingHoursRecurringId}:
         parameters:
-            - $ref: '#/components/parameters/OpeningHoursRecurringIdPath'
+            -   $ref: '#/components/parameters/OpeningHoursRecurringIdPath'
         put:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Seriellen Zeitbereich bearbeiten (Admin)
             requestBody:
                 required: true
@@ -1404,7 +1438,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         delete:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Seriellen Zeitbereich löschen (Admin)
             responses:
                 '204':
@@ -1418,8 +1452,8 @@ paths:
 
     /opening-hours/exceptions:
         get:
-            tags: [OpeningHours]
-            summary: Einzelne Ausgabe-/Rückgabezeiten (Ausnahmen) auflisten
+            tags: [ OpeningHours ]
+            summary: Einzelne Ausgabe-/Rückgabezeiten (Ausnahmen) auflisten (Admin)
             responses:
                 '200':
                     description: OK
@@ -1429,8 +1463,12 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/OpeningHoursException'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
         post:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Einzel-Ausnahme anlegen (Admin)
             description: Einzel-Einträge haben höhere Priorität als serielle Einträge.
             requestBody:
@@ -1455,9 +1493,9 @@ paths:
 
     /opening-hours/exceptions/{openingHoursExceptionId}:
         parameters:
-            - $ref: '#/components/parameters/OpeningHoursExceptionIdPath'
+            -   $ref: '#/components/parameters/OpeningHoursExceptionIdPath'
         put:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Einzel-Ausnahme bearbeiten (Admin)
             requestBody:
                 required: true
@@ -1481,7 +1519,7 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
         delete:
-            tags: [OpeningHours]
+            tags: [ OpeningHours ]
             summary: Einzel-Ausnahme löschen (Admin)
             responses:
                 '204':
@@ -1498,11 +1536,11 @@ paths:
     # ============================================================
     /dashboard/active-loans:
         get:
-            tags: [Dashboard]
+            tags: [ Dashboard ]
             summary: Gesamtübersicht aktuell ausgeliehener Geräte (Admin)
             parameters:
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -1519,9 +1557,9 @@ paths:
 
     /dashboard/active-loans/{equipmentId}:
         parameters:
-            - $ref: '#/components/parameters/EquipmentIdPath'
+            -   $ref: '#/components/parameters/EquipmentIdPath'
         get:
-            tags: [Dashboard]
+            tags: [ Dashboard ]
             summary: Detailinformationen zu einer aktiven Ausleihe (Admin)
             description: Zeigt BenutzerIn und erwartetes Rückgabedatum.
             responses:
@@ -1547,21 +1585,21 @@ paths:
     # ============================================================
     /notifications:
         get:
-            tags: [Notifications]
+            tags: [ Notifications ]
             summary: Versendete Benachrichtigungen einsehen (Admin, Audit)
             parameters:
-                - name: userId
-                  in: query
-                  schema:
-                      type: string
-                      format: uuid
-                - name: reservationId
-                  in: query
-                  schema:
-                      type: string
-                      format: uuid
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
+                -   name: userId
+                    in: query
+                    schema:
+                        type: string
+                        format: uuid
+                -   name: reservationId
+                    in: query
+                    schema:
+                        type: string
+                        format: uuid
+                -   $ref: '#/components/parameters/PageParam'
+                -   $ref: '#/components/parameters/PageSizeParam'
             responses:
                 '200':
                     description: OK
@@ -1737,7 +1775,7 @@ components:
     schemas:
         Error:
             type: object
-            required: [code, message]
+            required: [ code, message ]
             properties:
                 code:
                     type: string
@@ -1785,7 +1823,7 @@ components:
         # ---------------- Users ----------------
         User:
             type: object
-            required: [id, email, isAdmin, isTeacher]
+            required: [ id, email, isAdmin, isTeacher ]
             properties:
                 id:
                     type: string
@@ -1829,12 +1867,12 @@ components:
         # ---------------- Equipment ----------------
         EquipmentStatus:
             type: string
-            enum: [available, reserved, issued, in_maintenance, retired]
+            enum: [ available, reserved, issued ]
             example: available
 
         Equipment:
             type: object
-            required: [id, name, location, type, model, status, createdAt]
+            required: [ id, name, location, type, model, status, createdAt ]
             properties:
                 id:
                     type: string
@@ -1861,7 +1899,7 @@ components:
                     type: string
                     maxLength: 255
                     example: "Fluke 87V"
-                barcode:
+                code:
                     type: string
                     nullable: true
                     maxLength: 255
@@ -1883,7 +1921,7 @@ components:
 
         EquipmentCreate:
             type: object
-            required: [name, location, type, model]
+            required: [ name, location, type, model ]
             properties:
                 poolId:
                     type: string
@@ -1903,19 +1941,34 @@ components:
                 model:
                     type: string
                     maxLength: 255
-                barcode:
+                code:
                     type: string
                     maxLength: 255
                     nullable: true
                     description: Optional; wird bei Nichtangabe automatisch generiert.
 
         EquipmentUpdate:
-            allOf:
-                - $ref: '#/components/schemas/EquipmentCreate'
-                - type: object
-                  properties:
-                      status:
-                          $ref: '#/components/schemas/EquipmentStatus'
+            type: object
+            required: [ name, location, type, model ]
+            properties:
+                name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                location:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                type:
+                    type: string
+                    maxLength: 255
+                model:
+                    type: string
+                    maxLength: 255
+                code:
+                    type: string
+                    maxLength: 255
+                    nullable: true
 
         EquipmentListResponse:
             type: object
@@ -1929,7 +1982,7 @@ components:
 
         EquipmentPhoto:
             type: object
-            required: [id, equipmentId, url, isMain, uploadedAt]
+            required: [ id, equipmentId, url, isMain, uploadedAt ]
             properties:
                 id:
                     type: string
@@ -1982,7 +2035,7 @@ components:
         # ---------------- Equipment Pools ----------------
         EquipmentPool:
             type: object
-            required: [id, name, createdAt]
+            required: [ id, name, createdAt ]
             properties:
                 id:
                     type: string
@@ -2005,7 +2058,7 @@ components:
 
         EquipmentPoolCreate:
             type: object
-            required: [name]
+            required: [ name ]
             properties:
                 name:
                     type: string
@@ -2027,7 +2080,7 @@ components:
                     format: date-time
                 status:
                     type: string
-                    enum: [available, reserved]
+                    enum: [ available, reserved ]
 
         PoolCalendarSlot:
             type: object
@@ -2047,7 +2100,7 @@ components:
 
         CombinedCalendarRequest:
             type: object
-            required: [equipmentIds, from, to]
+            required: [ equipmentIds, from, to ]
             properties:
                 equipmentIds:
                     type: array
@@ -2066,12 +2119,12 @@ components:
         # ---------------- Reservations ----------------
         ReservationStatus:
             type: string
-            enum: [pending, approved, rejected, active, completed, cancelled]
-            example: pending
+            enum: [ requested, accepted, denied, active, returned, cancelled ]
+            example: requested
 
         ReservationItemStatus:
             type: string
-            enum: [requested, approved, rejected, issued, returned]
+            enum: [ requested, approved, rejected, issued, returned ]
             example: requested
 
         Reservation:
@@ -2118,7 +2171,7 @@ components:
 
         ReservationCreate:
             type: object
-            required: [startDatetime, endDatetime, items]
+            required: [ startDatetime, endDatetime, items ]
             properties:
                 startDatetime:
                     type: string
@@ -2144,7 +2197,7 @@ components:
 
         ReservationUpdate:
             type: object
-            required: [startDatetime, endDatetime]
+            required: [ startDatetime, endDatetime ]
             properties:
                 startDatetime:
                     type: string
@@ -2198,7 +2251,7 @@ components:
 
         ConditionPhotoPhase:
             type: string
-            enum: [pickup, return]
+            enum: [ pickup, return ]
             example: pickup
 
         ConditionPhoto:
@@ -2303,7 +2356,7 @@ components:
 
         OpeningHoursRecurringCreate:
             type: object
-            required: [weekday, startTime, endTime, validFrom]
+            required: [ weekday, startTime, endTime, validFrom ]
             properties:
                 weekday:
                     type: integer
@@ -2312,9 +2365,11 @@ components:
                 startTime:
                     type: string
                     format: time
+                    example: "16:00:00"
                 endTime:
                     type: string
                     format: time
+                    example: "18:00:00"
                 validFrom:
                     type: string
                     format: date
@@ -2336,10 +2391,12 @@ components:
                     type: string
                     format: time
                     nullable: true
+                    example: "16:00:00"
                 endTime:
                     type: string
                     format: time
                     nullable: true
+                    example: "18:00:00"
                 isClosed:
                     type: boolean
                     default: false
@@ -2352,7 +2409,7 @@ components:
 
         OpeningHoursExceptionCreate:
             type: object
-            required: [exceptionDate, isClosed, validUntil]
+            required: [ exceptionDate, isClosed, validUntil ]
             properties:
                 exceptionDate:
                     type: string
@@ -2361,10 +2418,12 @@ components:
                     type: string
                     format: time
                     nullable: true
+                    example: "16:00:00"
                 endTime:
                     type: string
                     format: time
                     nullable: true
+                    example: "18:00:00"
                 isClosed:
                     type: boolean
                     default: false
@@ -2391,7 +2450,7 @@ components:
                     nullable: true
                 source:
                     type: string
-                    enum: [recurring, exception]
+                    enum: [ recurring, exception ]
 
         # ---------------- Dashboard ----------------
         ActiveLoan:

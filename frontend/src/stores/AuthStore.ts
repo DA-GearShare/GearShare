@@ -4,13 +4,22 @@ import { defineStore } from 'pinia';
 export type Role = 'student' | 'teacher' | 'admin';
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref<{ name: string; email: string; role: Role } | null>(null);
+    const user = ref<{ id: string; email: string; displayName: string; isAdmin: boolean; isTeacher: boolean; } | null>(null);
+    const error = ref<string | null>(null);
+
+    const role = computed<Role | null>(() => {
+        if (!user.value) return null;
+        if (user.value.isAdmin) return 'admin';
+        if (user.value.isTeacher) return 'teacher';
+        return 'student';
+    });
 
     const isLoggedIn = computed(() => {
         return user.value !== null;
     });
 
     async function fetchUser() {
+        error.value = null;
         try {
             const res = await fetch('/api/v1/auth/me', {
                 credentials: 'include',
@@ -18,6 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = res.ok ? await res.json() : null;
         } catch {
             user.value = null;
+            error.value = "Benutzer konnte nicht geladen werden.";
         }
     }
 
@@ -34,8 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     function hasRole(roles?: Role[]) {
         if (!roles || roles.length === 0) return true;
-        return user.value !== null && roles.includes(user.value.role);
+        return role.value !== null && roles.includes(role.value);
     }
 
-    return { user, isLoggedIn, hasRole, fetchUser, logout };
+    return { user, isLoggedIn, role, error, hasRole, fetchUser, logout };
 });

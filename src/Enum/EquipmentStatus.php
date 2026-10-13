@@ -6,7 +6,7 @@ namespace App\Enum;
 
 enum EquipmentStatus: string
 {
-    case Available = 'verfügbar';
-    case Reserved = 'reserviert';
-    case Usage = 'ausgegeben';
+    case Available = 'available';
+    case Reserved = 'reserved';
+    case Usage = 'issued';
 }

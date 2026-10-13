@@ -6,7 +6,7 @@ namespace App\Enum;
 
 enum ReservationItemStatus: string
 {
-    case Requested = 'angefragt';
-    case Issued = 'ausgegeben';
-    case Returned = 'zurückgegeben';
+    case Requested = 'requested';
+    case Issued = 'issued';
+    case Returned = 'returned';
 }

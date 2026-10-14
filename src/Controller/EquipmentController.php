@@ -23,7 +23,7 @@ final class EquipmentController extends AbstractController
         #[MapQueryParameter] int     $pageSize = 20,
     ): JsonResponse
     {
-        if (!in_array($sort, ['name', 'location', 'type', 'availability']) || !in_array($order, ['asc', 'desc'])) {
+        if (!in_array($sort, ['name', 'location', 'type']) || !in_array($order, ['asc', 'desc'])) {
             throw new BadRequestHttpException('Ungültige Sortierung.');
         }
 

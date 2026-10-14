@@ -9,29 +9,26 @@ const store = useEquipmentStore();
 onMounted(() => {
     return store.fetchEquipment();
 });
-const searchTerm = ref('');
-const filteredItems = computed(()=>{
-    return store.equipment.filter((item) => {
-        return item.name.includes(searchTerm.value);
-    });
-});
+const applyFilter = () => {
+    store.filters.page = 1;
+    store.fetchEquipment();
+}
 const handleSearch = (search:string) => {
-    searchTerm.value = search;
+    store.filters.search = search;
+    applyFilter();
 };
 const handleFilter = (sort:string, order:string) => {
     store.filters.sort= sort;
     store.filters.order = order;
-    store.filters.page = 1;
-    store.fetchEquipment();
+    applyFilter();
 }
 </script>
 
 <template>
     <SearchForm @search="handleSearch"/>
-    <FilterDropdown @filter=""/>
-    <EquipmentCard v-for="item in filteredItems" :key="item.id" :name="item.name" :model="item.model" :type="item.type" :status="item.status"/>
+    <FilterDropdown @filter="handleFilter"/>
+    <EquipmentCard v-for="item in store.equipment" :name="item.name" :model="item.model" :type="item.type" :status="item.status" :key="item.id"/>
 </template>
 
 <style scoped>
-
 </style>

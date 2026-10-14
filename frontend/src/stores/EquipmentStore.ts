@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 
 export const useEquipmentStore = defineStore('equipment', () => {
     const equipment = ref([]);
-    const filters = reactive({ sort: 'name', order: 'asc', page: 1, pageSize: 20 });
+    const filters = reactive({ sort: 'name', order: 'asc', status: '', search: '', page: 1, pageSize: 20 });
     const meta = ref([]);
     async function fetchEquipment(){
         const params = new URLSearchParams();

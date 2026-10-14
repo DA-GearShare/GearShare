@@ -1,10 +1,10 @@
 <script setup lang="ts">
-defineProps<{
-    name: string
-    model: string
-    type: string
-    status: string
-}>();
+    defineProps<{
+        name: string
+        model: string
+        type: string
+        status: string
+    }>();
 </script>
 
 <template>

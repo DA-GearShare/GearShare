@@ -15,7 +15,7 @@ onMounted(usersStore.fetchUsers);
     <p v-else-if="usersStore.users.length === 0">Keine Benutzer vorhanden.</p>
     <ul v-else>
         <li v-for="u in usersStore.users" :key="u.id">
-            {{ u.displayName }} ({{ u.email }})
+            {{ u.displayname }} ({{ u.email }})
             Aktuelle Rolle:
             <p v-if="u.isAdmin">Admin</p>
             <p v-else-if="u.isTeacher">Lehrer</p>

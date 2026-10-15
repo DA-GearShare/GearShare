@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
-export type User = { id: string; email: string; displayName: string; isAdmin: boolean; isTeacher: boolean; };
+export type User = { id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; };
 
 export const useUsersStore  = defineStore('users', () => {
     const users = ref<User[]>([]);

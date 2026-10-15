@@ -16,12 +16,10 @@ async function logout() {
 
     <p v-if="auth.error">{{ auth.error }}</p>
     <div v-if="auth.user">
-        <p>Name: {{ auth.user.displayName }}</p>
-        <p>E-Mail: {{ auth.user.email }}</p>
+        <p>Name: {{ auth.user.payload.displayname }}</p>
+        <p>E-Mail: {{ auth.user.payload.email }}</p>
         <p>Rolle: {{ auth.role }}</p>
-        <p>ID: {{ auth.user.id }}</p>
     </div>
-    <pre>{{ auth.user }}</pre>
     <br>
     <button class="btn-primary" @click="logout">Logout</button>
 </template>

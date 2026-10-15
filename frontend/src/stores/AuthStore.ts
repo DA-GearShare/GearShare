@@ -1,17 +1,17 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
-export type Role = 'student' | 'teacher' | 'admin';
+export type Role = 'Schüler' | 'Lehrer' | 'Admin';
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref<{ id: string; email: string; displayName: string; isAdmin: boolean; isTeacher: boolean; } | null>(null);
+    const user = ref<{ payload: {id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; }} | null>(null);
     const error = ref<string | null>(null);
 
     const role = computed<Role | null>(() => {
         if (!user.value) return null;
-        if (user.value.isAdmin) return 'admin';
-        if (user.value.isTeacher) return 'teacher';
-        return 'student';
+        if (user.value.payload.isAdmin) return 'Admin';
+        if (user.value.payload.isTeacher) return 'Lehrer';
+        return 'Schüler';
     });
 
     const isLoggedIn = computed(() => {

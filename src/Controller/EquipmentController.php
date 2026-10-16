@@ -2,7 +2,6 @@
 namespace App\Controller;
 
 use App\Repository\EquipmentRepository;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
@@ -29,26 +28,11 @@ final class EquipmentController extends AbstractController
         if ($page < 1 || $pageSize < 1) {
             throw new BadRequestHttpException('Ungültige Paginierung');
         }
-
-        $qb = $repository->createQueryBuilder('e')
-            ->where('e.deletedAt IS NULL')
-            ->orderBy('e.' . $sort, $order)
-            ->setFirstResult(($page - 1) * $pageSize)
-            ->setMaxResults($pageSize);
-
-        if ($status) {
-            if (!in_array($status, ['available', 'reserved', 'issued'])){
-                throw new BadRequestHttpException('Ungültiger Status.');
-            }
-            $qb->andWhere('e.status = :status')->setParameter('status', $status);
+        if ($status && !in_array($status, ['available', 'reserved', 'issued'])){
+            throw new BadRequestHttpException('Ungültiger Status.');
         }
 
-        if ($search) {
-            $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%' . $search . '%');
-        }
-
-        $paginator = new Paginator($qb);
-        $totalItems = count($paginator);
+        $result = $repository->findPaginated($sort, $order, $status, $search, $page, $pageSize);
 
         $items = array_map(fn($e) => [
             'id' => $e->getId(),
@@ -59,15 +43,15 @@ final class EquipmentController extends AbstractController
             'status' => $e->getStatus(),
             'created_at' => $e->getCreatedAt(),
             'deleted_at' => $e->getDeletedAt(),
-        ], iterator_to_array($paginator));
+        ], $result['items']);
 
         return $this->json([
             'items' => $items,
             'meta' => [
                 'page' => $page,
                 'pageSize' => $pageSize,
-                'totalItems' => $totalItems,
-                'totalPages' => (int)ceil($totalItems / $pageSize),
+                'totalItems' => $result['totalItems'],
+                'totalPages' => (int) ceil($result['totalItems'] / $pageSize),
             ],
         ]);
     }

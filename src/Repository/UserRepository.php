@@ -4,6 +4,8 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
+use Doctrine\ORM\Tools\Pagination\Window;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -27,5 +29,25 @@ class UserRepository extends ServiceEntityRepository
             ->setParameter('val', $id)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @param string|null $search
+     * @param int $page
+     * @param int $pageSize
+     * @return mixed
+     */
+    public function findPaginated(?string $search, int $page, int $pageSize)
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->orderBy('u.userId', 'ASC');
+
+        if ($search !== null && $search !== '') {
+            $qb->andWhere('u.displayName LIKE :search OR u.email LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        return new OffsetPaginator()
+            ->paginate($qb->getQuery(), new Window(($page - 1) * $pageSize, $pageSize));
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,35 +18,30 @@ final class UserController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(
-        UserRepository               $repository,
-        #[MapQueryParameter] ?string $search = null,
-        #[MapQueryParameter] int     $page = 1,
-        #[MapQueryParameter] int     $pageSize = 20,
+        UserRepository                         $repository,
+        #[MapQueryParameter] ?string           $search = null,
+        #[MapQueryParameter(name: 'page')] int $pageNumber = 1,
+        #[MapQueryParameter] int               $pageSize = 20,
     ): JsonResponse
     {
-        $qb = $repository->createQueryBuilder('u')
-            ->setFirstResult(($page - 1) * $pageSize)
-            ->setMaxResults($pageSize);
+        $pageNumber = max(1, $pageNumber);
+        $pageSize = max(1, min(100, $pageSize));
 
-        if ($search) {
-            $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%' . $search . '%');
-        }
+        $page = $repository->findPaginated($search, $pageNumber, $pageSize);
+        $totalItems = $page->getTotalCount();
 
-        $paginator = new Paginator($qb);
-        $totalItems = count($paginator);
-
-        $items = array_map(fn($e) => [
-            'id' => $e->getUserId(),
-            'name' => $e->getDisplayName(),
-            'email' => $e->getEmail(),
-            'is_admin' => $e->isAdmin(),
-            'is_teacher' => $e->isAdmin(),
-        ], iterator_to_array($paginator));
+        $items = array_map(fn(User $u) => [
+            'id' => $u->getUserId(),
+            'name' => $u->getDisplayName(),
+            'email' => $u->getEmail(),
+            'is_admin' => $u->isAdmin(),
+            'is_teacher' => $u->isTeacher(),
+        ], iterator_to_array($page));
 
         return $this->json([
             'items' => $items,
             'meta' => [
-                'page' => $page,
+                'page' => $pageNumber,
                 'pageSize' => $pageSize,
                 'totalItems' => $totalItems,
                 'totalPages' => (int)ceil($totalItems / $pageSize),

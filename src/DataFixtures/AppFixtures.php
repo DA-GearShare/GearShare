@@ -13,6 +13,7 @@ class AppFixtures extends Fixture
      * Alle Geräte: [Code, Name, Standort, Typ, Modell]
      */
     private const EQUIPMENT = [
+        // ── Verfügbar ─────────────────────────────────────────────────────────────
         ['EQ-0001', 'Laptop',                'IT-Labor',   'Laptop',          'Lenovo ThinkPad T14'],
         ['EQ-0002', 'Laptop Netzteil',       'IT-Labor',   'Netzteil',        'Lenovo 65W USB-C'],
         ['EQ-0003', 'Beamer Aula',           'Aula',       'Beamer',          'Epson EB-2250U'],
@@ -39,6 +40,44 @@ class AppFixtures extends Fixture
         ['EQ-0023', 'Arduino Starter Kit',   'IT-Labor',   'Mikrocontroller', 'Arduino Uno R4 Starter Kit'],
         ['EQ-0024', 'Drohne',                'Medienraum', 'Drohne',          'DJI Mini 4 Pro'],
         ['EQ-0025', 'Gimbal',                'Medienraum', 'Gimbal',          'DJI RS 3 Mini'],
+
+        // ── Reserviert ────────────────────────────────────────────────────────────
+        ['EQ-0026', 'Laptop 3',              'IT-Labor',   'Laptop',          'Lenovo ThinkPad T14'],
+        ['EQ-0027', 'Laptop Netzteil 3',     'IT-Labor',   'Netzteil',        'Lenovo 65W USB-C'],
+        ['EQ-0028', 'Kamera 2',              'Medienraum', 'Kamera',          'Sony Alpha 7 IV'],
+        ['EQ-0029', 'Kamera-Akku 2',         'Medienraum', 'Akku',            'Sony NP-FZ100'],
+        ['EQ-0030', 'Beamer mobil',          'Raum 2.04',  'Beamer',          'Epson EB-L210W'],
+        ['EQ-0031', 'Tablet 2',              'Medienraum', 'Tablet',          'Apple iPad 10. Generation'],
+
+        // ── Ausgegeben ────────────────────────────────────────────────────────────
+        ['EQ-0032', 'Laptop 4',              'IT-Labor',   'Laptop',          'Lenovo ThinkPad T14'],
+        ['EQ-0033', 'Laptop Netzteil 4',     'IT-Labor',   'Netzteil',        'Lenovo 65W USB-C'],
+        ['EQ-0034', 'Funkmikrofon 2',        'Aula',       'Mikrofon',        'Sennheiser EW-D SKM-S'],
+        ['EQ-0035', 'Action-Kamera',         'Medienraum', 'Kamera',          'GoPro HERO13 Black'],
+        ['EQ-0036', 'microSD-Karte',         'Medienraum', 'Speicherkarte',   'SanDisk Extreme microSD 128 GB'],
+        ['EQ-0037', 'VR-Brille 2',           'IT-Labor',   'VR-Brille',       'Meta Quest 3'],
+    ];
+
+    /**
+     * Status-Abweichungen: Code => Status
+     * Alle Geräte, die hier nicht stehen, sind "Available".
+     */
+    private const STATUS = [
+        // Reserviert
+        'EQ-0026' => EquipmentStatus::Reserved,
+        'EQ-0027' => EquipmentStatus::Reserved,
+        'EQ-0028' => EquipmentStatus::Reserved,
+        'EQ-0029' => EquipmentStatus::Reserved,
+        'EQ-0030' => EquipmentStatus::Reserved,
+        'EQ-0031' => EquipmentStatus::Reserved,
+
+        // Ausgegeben
+        'EQ-0032' => EquipmentStatus::Usage,
+        'EQ-0033' => EquipmentStatus::Usage,
+        'EQ-0034' => EquipmentStatus::Usage,
+        'EQ-0035' => EquipmentStatus::Usage,
+        'EQ-0036' => EquipmentStatus::Usage,
+        'EQ-0037' => EquipmentStatus::Usage,
     ];
 
     /**
@@ -50,6 +89,11 @@ class AppFixtures extends Fixture
         'EQ-0004' => ['EQ-0009', 'EQ-0010', 'EQ-0011'], // Kamera → Stativ, Speicherkarte, Akku
         'EQ-0005' => ['EQ-0012', 'EQ-0013'],            // Mikrofon → Ständer, XLR-Kabel
         'EQ-0003' => ['EQ-0017'],                       // Beamer → HDMI-Kabel
+
+        'EQ-0026' => ['EQ-0027'],                       // Laptop 3 → Netzteil 3 (reserviert)
+        'EQ-0028' => ['EQ-0029'],                       // Kamera 2 → Akku 2 (reserviert)
+        'EQ-0032' => ['EQ-0033'],                       // Laptop 4 → Netzteil 4 (ausgegeben)
+        'EQ-0035' => ['EQ-0036'],                       // Action-Kamera → microSD (ausgegeben)
     ];
 
     public function load(ObjectManager $manager): void
@@ -63,7 +107,7 @@ class AppFixtures extends Fixture
                 ->setType($type)
                 ->setModel($model)
                 ->setCode($code)
-                ->setStatus(EquipmentStatus::Available);
+                ->setStatus(self::STATUS[$code] ?? EquipmentStatus::Available);
 
             $manager->persist($equipment);
             $items[$code] = $equipment;

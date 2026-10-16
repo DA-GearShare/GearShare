@@ -5,9 +5,10 @@
     const show = ref(false)
     const sort = ref('name');
     const order = ref('asc');
+    const status = ref(null);
 
     const onChange = () => {
-        emit('filter', sort.value, order.value)
+        emit('filter', sort.value, order.value, status.value)
     }
 </script>
 
@@ -27,6 +28,12 @@
             <ul>
                 <li><label><input type="radio" value="asc" v-model="order" @change="onChange"> Aufsteigend</label></li>
                 <li><label><input type="radio" value="desc" v-model="order" @change="onChange"> Absteigend</label></li>
+            </ul>
+            <h6>Status</h6>
+            <ul>
+                <li><label><input type="radio" value="available" v-model="status" @change="onChange">Verfügbar</label></li>
+                <li><label><input type="radio" value="reserved" v-model="status" @change="onChange">Reserviert</label></li>
+                <li><label><input type="radio" value="issued" v-model="status" @change="onChange">Kaputt</label></li>
             </ul>
         </div>
     </div>

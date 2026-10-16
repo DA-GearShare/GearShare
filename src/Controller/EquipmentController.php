@@ -26,6 +26,9 @@ final class EquipmentController extends AbstractController
         if (!in_array($sort, ['name', 'location', 'type']) || !in_array($order, ['asc', 'desc'])) {
             throw new BadRequestHttpException('Ungültige Sortierung.');
         }
+        if ($page < 1 || $pageSize < 1) {
+            throw new BadRequestHttpException('Ungültige Paginierung');
+        }
 
         $qb = $repository->createQueryBuilder('e')
             ->where('e.deletedAt IS NULL')
@@ -34,6 +37,9 @@ final class EquipmentController extends AbstractController
             ->setMaxResults($pageSize);
 
         if ($status) {
+            if (!in_array($status, ['available', 'reserved', 'issued'])){
+                throw new BadRequestHttpException('Ungültiger Status.');
+            }
             $qb->andWhere('e.status = :status')->setParameter('status', $status);
         }
 

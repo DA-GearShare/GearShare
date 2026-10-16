@@ -8,7 +8,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -38,7 +37,7 @@ final class UserController extends AbstractController
             'is_teacher' => $u->isTeacher(),
         ], iterator_to_array($page));
 
-        return $this->json([
+        return new JsonResponse([
             'items' => $items,
             'meta' => [
                 'page' => $pageNumber,
@@ -54,15 +53,15 @@ final class UserController extends AbstractController
     public function roles(UserRepository $userRepository, string $userId): Response
     {
         $user = $userRepository->findOneById($userId);
-        if ($user == null) throw new NotFoundHttpException(sprintf('User "%s" not found.', $userId));
+        if ($user == null) return new Response(sprintf('User "%s" not found.', $userId), Response::HTTP_NOT_FOUND);
 //        $parameters = json_decode($request->getContent(), true);
 //        echo
-        return $this->json([
+        return new JsonResponse([
             'id' => $user->getUserId(),
             'name' => $user->getDisplayName(),
+            'email' => $user->getEmail(),
             'is_admin' => $user->isAdmin(),
             'is_teacher' => $user->isAdmin(),
-            'email' => $user->getEmail(),
         ]);
     }
 
@@ -71,14 +70,14 @@ final class UserController extends AbstractController
     public function listFromId(UserRepository $userRepository, string $userId): Response
     {
         $user = $userRepository->findOneById($userId);
-        if ($user == null) throw new NotFoundHttpException(sprintf('User "%s" not found.', $userId));
+        if ($user == null) return new Response(sprintf('User "%s" not found.', $userId), Response::HTTP_NOT_FOUND);
 
-        return $this->json([
+        return new JsonResponse([
             'id' => $user->getUserId(),
             'name' => $user->getDisplayName(),
+            'email' => $user->getEmail(),
             'is_admin' => $user->isAdmin(),
             'is_teacher' => $user->isAdmin(),
-            'email' => $user->getEmail(),
         ]);
     }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { User, ShoppingCart } from 'lucide-vue-next';
-import { useAuthStore} from "@/stores/AuthStore.ts";
+import { useAuthStore } from "@/stores/AuthStore.ts";
 
 const authStore = useAuthStore();
 </script>
@@ -28,7 +28,7 @@ const authStore = useAuthStore();
             <RouterLink to="/inventar">Inventar</RouterLink>
             <RouterLink to="/anleitung">Anleitung</RouterLink>
             <RouterLink to="/laborzeit">Laborzeit</RouterLink>
-            <RouterLink v-if="authStore.hasRole(['admin'])" to="/admin">Admin</RouterLink>
+            <RouterLink v-if="authStore.hasRole(['Admin'])" to="/admin">Admin</RouterLink>
         </nav>
 
     </header>

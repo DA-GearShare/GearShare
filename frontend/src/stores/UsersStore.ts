@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
-export type User = { id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; };
+export type User = { payload: {id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; }};
 
 export const useUsersStore  = defineStore('users', () => {
     const users = ref<User[]>([]);
@@ -13,8 +13,10 @@ export const useUsersStore  = defineStore('users', () => {
         error.value = null;
         try {
             const res = await fetch('/api/v1/users', { credentials: 'include' });
-            if (!res.ok) throw new Error('Status ' + res.status);
+            console.log('Status:', res.status);
             const data = await res.json();
+            console.log('Antwort:', data);
+            if (!res.ok) throw new Error('Status ' + res.status);
             users.value = data.items;
         } catch {
             users.value = [];

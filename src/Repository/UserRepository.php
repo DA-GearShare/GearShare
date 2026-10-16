@@ -6,6 +6,7 @@ use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
 use Doctrine\ORM\Tools\Pagination\Window;
+use Doctrine\ORM\Tools\Pagination\WindowPage;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -35,9 +36,9 @@ class UserRepository extends ServiceEntityRepository
      * @param string|null $search
      * @param int $page
      * @param int $pageSize
-     * @return mixed
+     * @return WindowPage
      */
-    public function findPaginated(?string $search, int $page, int $pageSize)
+    public function findPaginated(?string $search, int $page, int $pageSize): WindowPage
     {
         $qb = $this->createQueryBuilder('u')
             ->orderBy('u.userId', 'ASC');

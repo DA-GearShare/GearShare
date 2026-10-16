@@ -1,7 +1,11 @@
 services:
   # Single entry point on port 80 (dev):
   #   /api, /_profiler, /_wdt, ...  -> app (Symfony)
+  #   /media/...                    -> seaweedfs (uploaded images, read-only)
   #   everything else               -> frontend (Vite dev server with hot reload)
+  #
+  # /media is reserved for user-uploaded content. Do NOT create frontend/public/media,
+  # the gateway would shadow it. Build-time assets (logos, icons) stay in frontend/public.
   gateway:
     image: nginx:alpine
     restart: unless-stopped
@@ -12,6 +16,7 @@ services:
     depends_on:
       - app
       - frontend
+      - seaweedfs
 
   app:
     build:
@@ -30,6 +35,14 @@ services:
       DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
       CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$$}"
       DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
+      # Image storage (S3 API). The app writes via S3; browsers read via /media.
+      S3_ENDPOINT: "http://seaweedfs:8333"
+      S3_REGION: "eu-central-1"
+      S3_BUCKET: "${S3_BUCKET:-images}"
+      S3_ACCESS_KEY: "${S3_ACCESS_KEY:-gearshare-dev}"
+      S3_SECRET_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+      S3_USE_PATH_STYLE: "true"
+      MEDIA_BASE_URL: "/media"
     volumes:
       # Live editing: changes in src/, templates/ and config/ are served
       # immediately, no rebuild. Only public/ is reachable over HTTP.
@@ -37,6 +50,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully
 
   frontend:
     # Vue 3 + Vite dev server with hot module reload. Not published on its own
@@ -71,6 +86,60 @@ services:
     volumes:
       - database_data:/var/lib/postgresql:rw
 
+  # Object storage for images. In dev, master + volume + filer + S3 run in one
+  # container ("weed server"); No published ports: the app uses S3 on :8333 internally,
+  # browsers read through the gateway (/media -> filer :8888, GET/HEAD only).
+  # To open the master UI for debugging, add: ports: ["9333:9333"]
+  seaweedfs:
+    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-latest}   # pin a release for reproducible builds
+    restart: unless-stopped
+    # For debugging only
+    ports: ["9333:9333"]
+    command: >
+      server
+      -ip=seaweedfs
+      -ip.bind=0.0.0.0
+      -dir=/data
+      -filer
+      -filer.disableDirListing
+      -s3
+      -s3.port=8333
+    environment:
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+    volumes:
+      - seaweedfs_data:/data
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/healthz" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # One-shot job: creates the image bucket if it doesn't exist, then exits.
+  seaweedfs-init:
+    image: amazon/aws-cli
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+      AWS_DEFAULT_REGION: "eu-central-1"
+      BUCKET: "${S3_BUCKET:-images}"
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        EP=http://seaweedfs:8333
+        for i in $$(seq 1 30); do
+          aws --endpoint-url $$EP s3api head-bucket --bucket $$BUCKET 2>/dev/null && echo "bucket $$BUCKET ready" && exit 0
+          aws --endpoint-url $$EP s3 mb s3://$$BUCKET && exit 0
+          sleep 2
+        done
+        echo "could not create bucket $$BUCKET" >&2; exit 1
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
 volumes:
   database_data:
   frontend_node_modules:
+  seaweedfs_data:

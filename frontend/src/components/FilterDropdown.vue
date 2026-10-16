@@ -5,7 +5,7 @@
     const show = ref(false)
     const sort = ref('name');
     const order = ref('asc');
-    const status = ref(null);
+    const status = ref('');
 
     const onChange = () => {
         emit('filter', sort.value, order.value, status.value)
@@ -33,7 +33,8 @@
             <ul>
                 <li><label><input type="radio" value="available" v-model="status" @change="onChange">Verfügbar</label></li>
                 <li><label><input type="radio" value="reserved" v-model="status" @change="onChange">Reserviert</label></li>
-                <li><label><input type="radio" value="issued" v-model="status" @change="onChange">Kaputt</label></li>
+                <li><label><input type="radio" value="issued" v-model="status" @change="onChange">Ausgeliehen</label></li>
+                <li><label><input type="radio" value="" v-model="status" @change="onChange">Statusfilterung entfernen</label></li>
             </ul>
         </div>
     </div>

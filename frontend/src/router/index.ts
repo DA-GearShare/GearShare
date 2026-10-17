@@ -3,9 +3,10 @@ import { createRouter, createWebHistory } from 'vue-router';
 import EquipmentView from '../views/EquipmentView.vue';
 import InstructionsView from '../views/IntstructionsView.vue';
 import LaboratoryView from '../views/LaboratorytimeView.vue';
-import LoginViewView from '../views/LoginView.vue';
-import AccountViewView from '../views/AccountView.vue';
-import { useAuthStore } from '@/stores/AuthStore.ts';
+import LoginView from '../views/LoginView.vue';
+import AccountView from '../views/AccountView.vue';
+import AdminView from '../views/AdminView.vue';
+import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -16,11 +17,11 @@ const router = createRouter({
         },
         {
             path: '/login',
-            component: LoginViewView
+            component: LoginView
         },
         {
             path: '/account',
-            component: AccountViewView,
+            component: AccountView,
             meta: { requiresAuth: true }
         },
         {
@@ -37,6 +38,11 @@ const router = createRouter({
             path: '/laborzeit',
             component: LaboratoryView,
             meta: { requiresAuth: true }
+        },
+        {
+            path: '/admin',
+            component: AdminView,
+            meta: { requiresAuth: true, roles: ['Admin'] }
         }
     ]
 });
@@ -51,10 +57,15 @@ router.beforeEach(async (to) => {
             return '/login';
         }
 
-        if (authStore.isLoggedIn) {
+        if (!authStore.hasRole(to.meta.roles as Role[] | undefined)) {
             return '/inventar';
         }
     }*/
+
+    if (to.path === '/login') {
+        await authStore.fetchUser();
+        if (authStore.isLoggedIn) return '/inventar';
+    }
 
     return true;
 });

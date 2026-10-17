@@ -41,7 +41,7 @@ paths:
     # ============================================================
     # AUTH
     # ============================================================
-    /auth/login:
+    /auth/connect/microsoft:
         get:
             tags: [ Auth ]
             summary: O365-Login starten
@@ -62,7 +62,7 @@ paths:
                 '500':
                     $ref: '#/components/responses/ServerError'
 
-    /auth/callback:
+    /auth/connect/microsoft/check:
         get:
             tags: [ Auth ]
             summary: OAuth2-Callback von O365
@@ -185,6 +185,8 @@ paths:
                 Setzt die Rollen `isAdmin` und/oder `isTeacher` einer BenutzerIn.
                 Änderungen wirken sich unmittelbar auf Berechtigungen aus
                 (Front-/Backend-Absicherung nach Benutzerrolle).
+                Admins können sich die eigene Admin-Rolle nicht selbst entziehen
+                (`409 Conflict`), damit das System nie ohne Admin dasteht.
             requestBody:
                 required: true
                 content:
@@ -206,6 +208,9 @@ paths:
                     $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
+                '409':
+                    $ref: '#/components/responses/Conflict'
+
 
     # ============================================================
     # EQUIPMENT
@@ -1771,6 +1776,16 @@ components:
                 application/json:
                     schema:
                         $ref: '#/components/schemas/Error'
+        Conflict:
+            description: >
+                Die Anfrage steht im Konflikt mit dem aktuellen Zustand,
+                z. B. wenn sich eine Admin-BenutzerIn die eigene Admin-Rolle entziehen will.
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+                    example:
+                        error: You cannot remove your own admin status
 
     schemas:
         Error:
@@ -1867,7 +1882,7 @@ components:
         # ---------------- Equipment ----------------
         EquipmentStatus:
             type: string
-            enum: [ available, reserved, issued ]
+            enum: [ available, reserved, issued  ]
             example: available
 
         Equipment:
@@ -1952,7 +1967,7 @@ components:
             required: [ name, location, type, model ]
             properties:
                 name:
-                    type: string
+                        type: string
                     minLength: 1
                     maxLength: 255
                 location:
@@ -1960,8 +1975,8 @@ components:
                     minLength: 1
                     maxLength: 255
                 type:
-                    type: string
-                    maxLength: 255
+                        type: string
+                            maxLength: 255
                 model:
                     type: string
                     maxLength: 255

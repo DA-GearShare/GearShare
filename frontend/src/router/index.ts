@@ -50,7 +50,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
     const authStore = useAuthStore();
 
-    /*if (to.meta.requiresAuth) {
+    if (to.meta.requiresAuth) {
         await authStore.fetchUser();
 
         if (!authStore.isLoggedIn) {
@@ -60,7 +60,7 @@ router.beforeEach(async (to) => {
         if (!authStore.hasRole(to.meta.roles as Role[] | undefined)) {
             return '/inventar';
         }
-    }*/
+    }
 
     if (to.path === '/login') {
         await authStore.fetchUser();

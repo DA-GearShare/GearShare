@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
-import { onMounted } from 'vue';
+import { RouterView } from 'vue-router';
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
-import { useAuthStore } from '@/stores/AuthStore.ts';
 
-//const authStore = useAuthStore();
-//onMounted(() => authStore.fetchUser());
 </script>
 
 <template>

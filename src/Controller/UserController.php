@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
+use App\Dto\UserRolesDto;
 use App\Entity\User;
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -54,56 +54,35 @@ final class UserController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     #[Route('/{userId}/roles', name: 'set_role', requirements: ['userId' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['PATCH'])]
     public function roles(
-        UserRepository         $userRepository,
-        EntityManagerInterface $em,
-        Request                $request,
-        string                 $userId
+        UserRepository $userRepository,
+        Request        $request,
+        string         $userId
     ): Response
     {
         $user = $userRepository->findOneById($userId);
-        if ($user == null) return new Response(sprintf('User "%s" not found.', $userId), Response::HTTP_NOT_FOUND);
+        if ($user === null) return new Response(sprintf('User "%s" nicht gefunden.', $userId), Response::HTTP_NOT_FOUND);
 
         try {
             $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return new JsonResponse(['error' => 'Malformed JSON'], Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'Malformed JSON'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
-            return new JsonResponse(['error' => 'Body must be a JSON object'], Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'Body muss ein JSON Objekt sein'], Response::HTTP_BAD_REQUEST);
         }
 
-        $allowed = ['isAdmin', 'isTeacher'];
-        $errors = [];
-
-        foreach (array_diff(array_keys($parameters), $allowed) as $key) {
-            $errors[(string)$key] = 'Unknown field';
-        }
-
-        foreach ($allowed as $field) {
-            if (array_key_exists($field, $parameters) && !is_bool($parameters[$field])) {
-                $errors[$field] = 'Must be a boolean';
-            }
-        }
-
-        if (!array_intersect($allowed, array_keys($parameters))) {
-            $errors['body'] = 'Provide at least one of isAdmin or isTeacher';
-        }
-
-        if ($errors) {
-            return new JsonResponse(['error' => 'Invalid request body', 'details' => $errors], Response::HTTP_BAD_REQUEST);
-        }
+        $roles = UserRolesDto::fromArray($parameters);
+        if ($roles->hasErrors()) return new JsonResponse(['message' => 'Invalider Request Body', 'details' => $roles->getErrors()], Response::HTTP_BAD_REQUEST);
 
         $current = $this->getUser();
         if (
-            ($parameters['isAdmin'] ?? true) === false
+            $roles->revokesAdmin()
             && $current instanceof User
             && $current->getUserId() === $user->getUserId()
-        ) return new JsonResponse(['error' => 'You cannot remove your own admin status'], Response::HTTP_CONFLICT);
+        ) return new JsonResponse(['message' => 'Du kannst deinen eigenen Admin Status nicht entfernen'], Response::HTTP_CONFLICT);
 
-        if (array_key_exists('isAdmin', $parameters)) $user->setIsAdmin($parameters['isAdmin']);
-        if (array_key_exists('isTeacher', $parameters)) $user->setIsTeacher($parameters['isTeacher']);
-        $em->flush();
+        $userRepository->applyRoles($user, $roles);
 
         return new JsonResponse([
             'id' => $user->getUserId(),

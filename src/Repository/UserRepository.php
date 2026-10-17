@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Dto\UserRolesDto;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
@@ -51,4 +52,18 @@ class UserRepository extends ServiceEntityRepository
         return new OffsetPaginator()
             ->paginate($qb->getQuery(), new Window(($page - 1) * $pageSize, $pageSize));
     }
+
+    /**
+     * @param User $user
+     * @param UserRolesDto $roles
+     * @param bool $flush
+     * @return void
+     */
+    public function applyRoles(User $user, UserRolesDto $roles, bool $flush = true): void
+    {
+        if ($roles->isAdmin !== null) $user->setIsAdmin($roles->isAdmin);
+        if ($roles->isTeacher !== null) $user->setIsTeacher($roles->isTeacher);
+        if ($flush) $this->getEntityManager()->flush();
+    }
+
 }

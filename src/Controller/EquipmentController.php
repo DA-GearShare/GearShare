@@ -23,13 +23,13 @@ final class EquipmentController extends AbstractController
     ): JsonResponse
     {
         if (!in_array($sort, ['name', 'location', 'type']) || !in_array($order, ['asc', 'desc'])) {
-            throw new BadRequestHttpException('Ungültige Sortierung.');
+            return new Response('Ungültige Sortierung.', Response::HTTP_XXX);
         }
         if ($page < 1 || $pageSize < 1) {
-            throw new BadRequestHttpException('Ungültige Paginierung');
+            return new Response('Ungültige Paginierung.', Response::HTTP_XXX);
         }
         if ($status && !in_array($status, ['available', 'reserved', 'issued'])){
-            throw new BadRequestHttpException('Ungültiger Status.');
+            return new Response('Ungültiger Status.', Response::HTTP_XXX);
         }
 
         $result = $repository->findPaginated($sort, $order, $status, $search, $page, $pageSize);

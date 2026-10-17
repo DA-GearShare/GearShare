@@ -3,9 +3,8 @@ namespace App\Controller;
 
 use App\Repository\EquipmentRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
@@ -20,16 +19,16 @@ final class EquipmentController extends AbstractController
         #[MapQueryParameter] ?string $search = null,
         #[MapQueryParameter] int     $page = 1,
         #[MapQueryParameter] int     $pageSize = 20,
-    ): JsonResponse
+    ): Response
     {
         if (!in_array($sort, ['name', 'location', 'type']) || !in_array($order, ['asc', 'desc'])) {
-            return new Response('Ungültige Sortierung.', Response::HTTP_XXX);
+            return new Response('Ungültige Sortierung.', Response::HTTP_BAD_REQUEST);
         }
         if ($page < 1 || $pageSize < 1) {
-            return new Response('Ungültige Paginierung.', Response::HTTP_XXX);
+            return new Response('Ungültige Paginierung.', Response::HTTP_BAD_REQUEST);
         }
         if ($status && !in_array($status, ['available', 'reserved', 'issued'])){
-            return new Response('Ungültiger Status.', Response::HTTP_XXX);
+            return new Response('Ungültiger Status.', Response::HTTP_BAD_REQUEST);
         }
 
         $result = $repository->findPaginated($sort, $order, $status, $search, $page, $pageSize);

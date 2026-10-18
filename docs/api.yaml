@@ -1882,7 +1882,7 @@ components:
         # ---------------- Equipment ----------------
         EquipmentStatus:
             type: string
-            enum: [ available, reserved, issued  ]
+            enum: [ available, reserved, issued ]
             example: available
 
         Equipment:

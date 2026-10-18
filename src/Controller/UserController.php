@@ -36,8 +36,8 @@ final class UserController extends AbstractController
             'id' => $u->getUserId(),
             'name' => $u->getDisplayName(),
             'email' => $u->getEmail(),
-            'is_admin' => $u->isAdmin(),
-            'is_teacher' => $u->isTeacher(),
+            'isAdmin' => $u->isAdmin(),
+            'isTeacher' => $u->isTeacher(),
         ], iterator_to_array($page));
 
         return new JsonResponse([

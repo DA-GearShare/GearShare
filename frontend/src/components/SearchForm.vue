@@ -12,7 +12,6 @@ const search = (e) => {
         </div>
     </form>
 </template>
-
 <style scoped>
 
 </style>

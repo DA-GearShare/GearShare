@@ -1967,7 +1967,7 @@ components:
             required: [ name, location, type, model ]
             properties:
                 name:
-                        type: string
+                    type: string
                     minLength: 1
                     maxLength: 255
                 location:
@@ -1975,8 +1975,8 @@ components:
                     minLength: 1
                     maxLength: 255
                 type:
-                        type: string
-                            maxLength: 255
+                    type: string
+                    maxLength: 255
                 model:
                     type: string
                     maxLength: 255

@@ -547,6 +547,11 @@ paths:
         post:
             tags: [ Equipment ]
             summary: Referenzfoto hochladen (Admin)
+            description: >
+                Erlaubte Formate: JPEG, PNG, WebP (max. 15 MB). Das erste Foto eines
+                Geräts wird automatisch Hauptbild; `isMain: true` setzt alle anderen
+                Fotos des Geräts auf `isMain: false`. Das Bild ist danach öffentlich
+                unter `url` (`/media/equipment/<uuid>`) abrufbar.
             requestBody:
                 required: true
                 content:
@@ -580,6 +585,12 @@ paths:
                     $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
+                '415':
+                    description: Dateityp nicht erlaubt (nur JPEG, PNG, WebP).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
 
     /equipment/{equipmentId}/photos/{photoId}:
         parameters:

@@ -19,11 +19,11 @@ onMounted(usersStore.fetchUsers);
         <li v-for="u in usersStore.users" :key="u.id">
             {{ u.name }} ({{ u.email }})
             Aktuelle Rolle:
-            <p v-if="u.is_admin">Admin</p>
-            <p v-else-if="u.is_teacher">Lehrer</p>
+            <p v-if="u.isAdmin">Admin</p>
+            <p v-else-if="u.isTeacher">Lehrer</p>
             <p v-else>Benutzer</p>
             <template v-if="u.id !== auth.user?.id">
-                <button v-if="!u.is_admin" @click="usersStore.setAdmin(u, true)" class="btn-primary">
+                <button v-if="!u.isAdmin" @click="usersStore.setAdmin(u, true)" class="btn-primary">
                     Zum Admin machen
                 </button>
                 <button v-else @click="usersStore.setAdmin(u, false)" class="btn-primary">

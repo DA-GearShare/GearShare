@@ -6,12 +6,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(
+    public function getEquipments(
         EquipmentRepository          $repository,
         #[MapQueryParameter] string  $sort = 'name',
         #[MapQueryParameter] string  $order = 'asc',
@@ -40,8 +41,6 @@ final class EquipmentController extends AbstractController
             'type' => $e->getType(),
             'model' => $e->getModel(),
             'status' => $e->getStatus(),
-            'created_at' => $e->getCreatedAt(),
-            'deleted_at' => $e->getDeletedAt(),
         ], $result['items']);
 
         return $this->json([
@@ -53,5 +52,24 @@ final class EquipmentController extends AbstractController
                 'totalPages' => (int) ceil($result['totalItems'] / $pageSize),
             ],
         ]);
+    }
+    #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
+    public function getAccessories(
+        Uuid $equipmentId,
+        EquipmentRepository $repository,
+    ):Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        $accessories = $equipment->getAccessories()->filter(fn($accessory) => !$accessory->isDeleted())->getValues();
+        $items = array_map(fn($e) => [
+            'accessoryEquipmentId' => $e->getId(),
+            'name' => $e->getName(),
+            'availableInRequestedPeriod' => $e->getStatus()->value === 'available',
+        ], $accessories);
+        return $this->json($items);
     }
 }

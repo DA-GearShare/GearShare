@@ -24,7 +24,15 @@ export const useAuthStore = defineStore('auth', () => {
             const res = await fetch('/api/v1/auth/me', {
                 credentials: 'include',
             });
-            user.value = res.ok ? await res.json() : null;
+
+            if (res.ok) {
+                user.value = await res.json();
+            } else if (res.status === 401) {
+                user.value = null;
+            } else {
+                user.value = null;
+                error.value = `Fehler beim Laden (Status ${res.status}).`;
+            }
         } catch {
             user.value = null;
             error.value = "Benutzer konnte nicht geladen werden.";

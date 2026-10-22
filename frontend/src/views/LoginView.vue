@@ -1,20 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/AuthStore.ts';
+const auth = useAuthStore();
 
-const route = useRoute();
-
-const messages: Record<string, string> = {
-    access_denied: 'Die Anmeldung wurde abgebrochen.',
-    invalid_account: 'Bitte melde dich mit deinem HTL-Rennweg-Konto an.',
-    server_error: 'Die Anmeldung ist derzeit nicht möglich. Bitte versuche es später erneut.',
-};
-
-const errorMessage = computed(() => {
-    const code = route.query.error;
-    if (typeof code !== 'string') return null;
-    return messages[code] ?? 'Die Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.';
-});
 </script>
 
 <template>
@@ -23,7 +10,7 @@ const errorMessage = computed(() => {
             <h1>Anmelden</h1>
             <p>Melde dich mit deinem GitHub-Konto an.</p>
 
-            <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
+            <p v-if="auth.error" class="error">{{ auth.error }}</p>
 
             <a class="login-button" href="/api/v1/auth/connect/github">
                 Login with GitHub

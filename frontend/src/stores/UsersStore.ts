@@ -31,11 +31,12 @@ export const useUsersStore  = defineStore('users', () => {
                 method: 'PATCH',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_admin: isAdmin, is_teacher: user.isTeacher }),
+                body: JSON.stringify({ isAdmin: isAdmin, isTeacher: user.isTeacher }),
             });
             if (!res.ok) throw new Error('Status ' + res.status);
             await fetchUsers();
-        } catch {
+        } catch (e){
+            console.error(e);
             error.value = 'Die Rolle konnte nicht geändert werden.';
         }
     }

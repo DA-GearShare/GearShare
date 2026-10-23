@@ -102,38 +102,66 @@ class AppFixtures extends Fixture
     ];
 
     /**
-     * Zubehör: Code des Hauptgeräts => Codes des Zubehörs
-     * Ein Zubehörteil kann zu mehreren Hauptgeräten gehören (z. B. USB-C-Hub).
-     * Ohne Zubehör (zum Testen von []): EQ-0023 Arduino, EQ-0025 Gimbal.
+     * Zubehör / "passt dazu": Code des Geräts => Codes der Empfehlungen
+     * Jedes Gerät hat mindestens 5 Empfehlungen.
+     * Ein Gerät kann bei mehreren anderen als Empfehlung auftauchen (z. B. USB-C-Hub).
      */
     private const ACCESSORIES = [
-        // ── Verfügbare Hauptgeräte ────────────────────────────────────────────────
-        'EQ-0001' => ['EQ-0002', 'EQ-0038', 'EQ-0039'],            // Laptop → Netzteil, Hub, Maus
-        'EQ-0003' => ['EQ-0017', 'EQ-0018', 'EQ-0040'],            // Beamer → HDMI, Leinwand, Presenter
-        'EQ-0004' => ['EQ-0009', 'EQ-0010', 'EQ-0011', 'EQ-0041'], // Kamera → Stativ, Karte, Akku, Objektiv
-        'EQ-0005' => ['EQ-0012', 'EQ-0013', 'EQ-0016'],            // Mikrofon → Ständer, XLR, Mischpult
-        'EQ-0006' => ['EQ-0007', 'EQ-0038', 'EQ-0039'],            // Laptop 2 → Netzteil 2, Hub, Maus
-        'EQ-0008' => ['EQ-0042', 'EQ-0043'],                       // Tablet → Stift, Ladegerät (reserviert)
-        'EQ-0014' => ['EQ-0044', 'EQ-0016'],                       // Funkmikrofon → Akkus, Mischpult
-        'EQ-0015' => ['EQ-0045', 'EQ-0013'],                       // Lautsprecher → Stativ, XLR
-        'EQ-0016' => ['EQ-0013', 'EQ-0015'],                       // Mischpult → XLR, Lautsprecher
-        'EQ-0019' => ['EQ-0017', 'EQ-0030'],                       // Dokumentenkamera → HDMI, Beamer mobil (reserviert)
-        'EQ-0020' => ['EQ-0046', 'EQ-0047'],                       // VR-Brille → Link-Kabel, Ladestation
-        'EQ-0021' => ['EQ-0048'],                                  // 3D-Drucker → Druckplatte
-        'EQ-0022' => ['EQ-0049', 'EQ-0050', 'EQ-0036'],            // Raspberry Pi → Netzteil, Micro-HDMI, microSD (ausgegeben)
-        'EQ-0024' => ['EQ-0051', 'EQ-0036'],                       // Drohne → Akku, microSD (ausgegeben)
+        'EQ-0001' => ['EQ-0002', 'EQ-0038', 'EQ-0039', 'EQ-0017', 'EQ-0040'],            // Laptop → Netzteil, Hub, Maus, HDMI, Presenter
+        'EQ-0002' => ['EQ-0001', 'EQ-0006', 'EQ-0026', 'EQ-0032', 'EQ-0038'],            // Laptop Netzteil → Laptops 1–4, Hub
+        'EQ-0003' => ['EQ-0017', 'EQ-0018', 'EQ-0040', 'EQ-0038', 'EQ-0001', 'EQ-0015'], // Beamer Aula → HDMI, Leinwand, Presenter, Hub, Laptop, Lautsprecher
+        'EQ-0004' => ['EQ-0009', 'EQ-0010', 'EQ-0011', 'EQ-0041', 'EQ-0025'],            // Kamera → Stativ, Karte, Akku, Objektiv, Gimbal
+        'EQ-0005' => ['EQ-0012', 'EQ-0013', 'EQ-0016', 'EQ-0015', 'EQ-0045'],            // Mikrofon → Ständer, XLR, Mischpult, Lautsprecher, LS-Stativ
+        'EQ-0006' => ['EQ-0007', 'EQ-0038', 'EQ-0039', 'EQ-0017', 'EQ-0040'],            // Laptop 2 → Netzteil 2, Hub, Maus, HDMI, Presenter
+        'EQ-0007' => ['EQ-0006', 'EQ-0001', 'EQ-0026', 'EQ-0032', 'EQ-0038'],            // Laptop Netzteil 2 → Laptops, Hub
+        'EQ-0008' => ['EQ-0042', 'EQ-0043', 'EQ-0038', 'EQ-0017', 'EQ-0040'],            // Tablet → Stift, Ladegerät, Hub, HDMI, Presenter
+        'EQ-0009' => ['EQ-0004', 'EQ-0028', 'EQ-0035', 'EQ-0041', 'EQ-0011'],            // Kamerastativ → Kamera, Kamera 2, Action-Kamera, Objektiv, Akku
+        'EQ-0010' => ['EQ-0004', 'EQ-0028', 'EQ-0011', 'EQ-0041', 'EQ-0038'],            // Speicherkarte → Kameras, Akku, Objektiv, Hub (Kartenleser)
+        'EQ-0011' => ['EQ-0004', 'EQ-0028', 'EQ-0029', 'EQ-0010', 'EQ-0025'],            // Kamera-Akku → Kameras, Akku 2, Karte, Gimbal
+        'EQ-0012' => ['EQ-0005', 'EQ-0014', 'EQ-0034', 'EQ-0013', 'EQ-0016'],            // Mikrofonständer → Mikrofone, XLR, Mischpult
+        'EQ-0013' => ['EQ-0005', 'EQ-0016', 'EQ-0015', 'EQ-0012', 'EQ-0014'],            // XLR-Kabel → Mikrofon, Mischpult, Lautsprecher, Ständer, Funkmikro
+        'EQ-0014' => ['EQ-0044', 'EQ-0016', 'EQ-0015', 'EQ-0013', 'EQ-0012'],            // Funkmikrofon → Akkus, Mischpult, Lautsprecher, XLR, Ständer
+        'EQ-0015' => ['EQ-0045', 'EQ-0013', 'EQ-0016', 'EQ-0005', 'EQ-0014'],            // Lautsprecher → Stativ, XLR, Mischpult, Mikrofone
+        'EQ-0016' => ['EQ-0013', 'EQ-0015', 'EQ-0005', 'EQ-0014', 'EQ-0045'],            // Mischpult → XLR, Lautsprecher, Mikrofone, LS-Stativ
+        'EQ-0017' => ['EQ-0003', 'EQ-0030', 'EQ-0019', 'EQ-0001', 'EQ-0006'],            // HDMI-Kabel → Beamer, Beamer mobil, Doku-Kamera, Laptops
+        'EQ-0018' => ['EQ-0003', 'EQ-0030', 'EQ-0040', 'EQ-0019', 'EQ-0017'],            // Leinwand → Beamer, Beamer mobil, Presenter, Doku-Kamera, HDMI
+        'EQ-0019' => ['EQ-0017', 'EQ-0030', 'EQ-0003', 'EQ-0018', 'EQ-0001'],            // Dokumentenkamera → HDMI, Beamer mobil, Beamer, Leinwand, Laptop
+        'EQ-0020' => ['EQ-0046', 'EQ-0047', 'EQ-0001', 'EQ-0044', 'EQ-0038'],            // VR-Brille → Link-Kabel, Ladestation, Laptop, AA-Akkus, Hub
+        'EQ-0021' => ['EQ-0048', 'EQ-0001', 'EQ-0006', 'EQ-0022', 'EQ-0023'],            // 3D-Drucker → Druckplatte, Laptops, Raspberry Pi, Arduino
+        'EQ-0022' => ['EQ-0049', 'EQ-0050', 'EQ-0036', 'EQ-0023', 'EQ-0039'],            // Raspberry Pi → Netzteil, Micro-HDMI, microSD, Arduino, Maus
+        'EQ-0023' => ['EQ-0022', 'EQ-0001', 'EQ-0006', 'EQ-0038', 'EQ-0049'],            // Arduino → Raspberry Pi, Laptops, Hub, RPi-Netzteil
+        'EQ-0024' => ['EQ-0051', 'EQ-0036', 'EQ-0025', 'EQ-0010', 'EQ-0008'],            // Drohne → Akku, microSD, Gimbal, Karte, Tablet
+        'EQ-0025' => ['EQ-0004', 'EQ-0028', 'EQ-0011', 'EQ-0009', 'EQ-0041'],            // Gimbal → Kameras, Akku, Stativ, Objektiv
 
-        // ── Reservierte Hauptgeräte ───────────────────────────────────────────────
-        'EQ-0026' => ['EQ-0027', 'EQ-0038'],                       // Laptop 3 → Netzteil 3, Hub
-        'EQ-0028' => ['EQ-0029', 'EQ-0009', 'EQ-0010'],            // Kamera 2 → Akku 2, Stativ, Karte
-        'EQ-0030' => ['EQ-0017', 'EQ-0018'],                       // Beamer mobil → HDMI, Leinwand
-        'EQ-0031' => ['EQ-0042', 'EQ-0043'],                       // Tablet 2 → Stift, Ladegerät
+        'EQ-0026' => ['EQ-0027', 'EQ-0038', 'EQ-0039', 'EQ-0017', 'EQ-0040'],            // Laptop 3 → Netzteil 3, Hub, Maus, HDMI, Presenter
+        'EQ-0027' => ['EQ-0026', 'EQ-0001', 'EQ-0006', 'EQ-0032', 'EQ-0038'],            // Laptop Netzteil 3 → Laptops, Hub
+        'EQ-0028' => ['EQ-0029', 'EQ-0009', 'EQ-0010', 'EQ-0011', 'EQ-0041'],            // Kamera 2 → Akku 2, Stativ, Karte, Akku, Objektiv
+        'EQ-0029' => ['EQ-0028', 'EQ-0004', 'EQ-0011', 'EQ-0025', 'EQ-0010'],            // Kamera-Akku 2 → Kameras, Akku, Gimbal, Karte
+        'EQ-0030' => ['EQ-0017', 'EQ-0018', 'EQ-0040', 'EQ-0019', 'EQ-0038'],            // Beamer mobil → HDMI, Leinwand, Presenter, Doku-Kamera, Hub
+        'EQ-0031' => ['EQ-0042', 'EQ-0043', 'EQ-0038', 'EQ-0017', 'EQ-0040'],            // Tablet 2 → Stift, Ladegerät, Hub, HDMI, Presenter
 
-        // ── Ausgegebene Hauptgeräte ───────────────────────────────────────────────
-        'EQ-0032' => ['EQ-0033'],                                  // Laptop 4 → Netzteil 4
-        'EQ-0034' => ['EQ-0044', 'EQ-0016'],                       // Funkmikrofon 2 → Akkus, Mischpult
-        'EQ-0035' => ['EQ-0036', 'EQ-0052'],                       // Action-Kamera → microSD, GoPro-Akku
-        'EQ-0037' => ['EQ-0046', 'EQ-0047'],                       // VR-Brille 2 → Link-Kabel, Ladestation
+        'EQ-0032' => ['EQ-0033', 'EQ-0038', 'EQ-0039', 'EQ-0017', 'EQ-0040'],            // Laptop 4 → Netzteil 4, Hub, Maus, HDMI, Presenter
+        'EQ-0033' => ['EQ-0032', 'EQ-0001', 'EQ-0006', 'EQ-0026', 'EQ-0038'],            // Laptop Netzteil 4 → Laptops, Hub
+        'EQ-0034' => ['EQ-0044', 'EQ-0016', 'EQ-0015', 'EQ-0013', 'EQ-0012'],            // Funkmikrofon 2 → Akkus, Mischpult, Lautsprecher, XLR, Ständer
+        'EQ-0035' => ['EQ-0036', 'EQ-0052', 'EQ-0009', 'EQ-0010', 'EQ-0025'],            // Action-Kamera → microSD, GoPro-Akku, Stativ, Karte, Gimbal
+        'EQ-0036' => ['EQ-0035', 'EQ-0022', 'EQ-0024', 'EQ-0038', 'EQ-0008'],            // microSD → Action-Kamera, Raspberry Pi, Drohne, Hub, Tablet
+        'EQ-0037' => ['EQ-0046', 'EQ-0047', 'EQ-0044', 'EQ-0001', 'EQ-0038'],            // VR-Brille 2 → Link-Kabel, Ladestation, AA-Akkus, Laptop, Hub
+
+        'EQ-0038' => ['EQ-0001', 'EQ-0006', 'EQ-0026', 'EQ-0032', 'EQ-0017'],            // USB-C-Hub → Laptops, HDMI
+        'EQ-0039' => ['EQ-0001', 'EQ-0006', 'EQ-0026', 'EQ-0032', 'EQ-0022'],            // Funkmaus → Laptops, Raspberry Pi
+        'EQ-0040' => ['EQ-0003', 'EQ-0030', 'EQ-0001', 'EQ-0006', 'EQ-0018'],            // Presenter → Beamer, Beamer mobil, Laptops, Leinwand
+        'EQ-0041' => ['EQ-0004', 'EQ-0028', 'EQ-0009', 'EQ-0025', 'EQ-0010'],            // Kamera-Objektiv → Kameras, Stativ, Gimbal, Karte
+        'EQ-0042' => ['EQ-0008', 'EQ-0031', 'EQ-0043', 'EQ-0038', 'EQ-0001'],            // Eingabestift → Tablets, Ladegerät, Hub, Laptop
+        'EQ-0043' => ['EQ-0008', 'EQ-0031', 'EQ-0042', 'EQ-0038', 'EQ-0035'],            // Tablet-Ladegerät → Tablets, Stift, Hub, Action-Kamera
+        'EQ-0044' => ['EQ-0014', 'EQ-0034', 'EQ-0020', 'EQ-0037', 'EQ-0039'],            // Akku-Set AA → Funkmikros, VR-Brillen, Maus
+        'EQ-0045' => ['EQ-0015', 'EQ-0016', 'EQ-0013', 'EQ-0005', 'EQ-0012'],            // Lautsprecherstativ → Lautsprecher, Mischpult, XLR, Mikrofon, Ständer
+        'EQ-0046' => ['EQ-0020', 'EQ-0037', 'EQ-0047', 'EQ-0001', 'EQ-0006'],            // VR-Link-Kabel → VR-Brillen, Ladestation, Laptops
+        'EQ-0047' => ['EQ-0020', 'EQ-0037', 'EQ-0046', 'EQ-0044', 'EQ-0043'],            // VR-Ladestation → VR-Brillen, Link-Kabel, AA-Akkus, Ladegerät
+        'EQ-0048' => ['EQ-0021', 'EQ-0001', 'EQ-0006', 'EQ-0022', 'EQ-0023'],            // Ersatz-Druckplatte → 3D-Drucker, Laptops, Raspberry Pi, Arduino
+        'EQ-0049' => ['EQ-0022', 'EQ-0050', 'EQ-0036', 'EQ-0023', 'EQ-0038'],            // RPi-Netzteil → Raspberry Pi, Micro-HDMI, microSD, Arduino, Hub
+        'EQ-0050' => ['EQ-0022', 'EQ-0049', 'EQ-0017', 'EQ-0036', 'EQ-0003'],            // Micro-HDMI → Raspberry Pi, RPi-Netzteil, HDMI, microSD, Beamer
+        'EQ-0051' => ['EQ-0024', 'EQ-0036', 'EQ-0010', 'EQ-0008', 'EQ-0025'],            // Drohnen-Akku → Drohne, microSD, Karte, Tablet, Gimbal
+        'EQ-0052' => ['EQ-0035', 'EQ-0036', 'EQ-0009', 'EQ-0010', 'EQ-0043'],            // GoPro-Akku → Action-Kamera, microSD, Stativ, Karte, Ladegerät
     ];
 
     public function load(ObjectManager $manager): void

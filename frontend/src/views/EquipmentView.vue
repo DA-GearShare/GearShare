@@ -33,7 +33,7 @@
 <template>
     <SearchForm @search="handleSearch"/>
     <FilterDropdown @filter="handleFilter"/>
-    <EquipmentCard v-for="item in store.equipment" :name="item.name" :model="item.model" :type="item.type" :status="item.status" :key="item.id"/>
+    <EquipmentCard v-for="item in store.equipment" :id="item.id" :name="item.name" :model="item.model" :type="item.type" :status="item.status" :key="item.id"/>
     <ButtonsPagination v-if="store.meta.totalPages" :page="store.meta.page" :totalPages="store.meta.totalPages" @changePage="handlePageChange" />
 </template>
 <style scoped>

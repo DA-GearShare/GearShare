@@ -1,5 +1,6 @@
 <script setup lang="ts">
     defineProps<{
+        id: string
         name: string
         model: string
         type: string
@@ -8,20 +9,21 @@
 </script>
 
 <template>
-    <div class="card">
-        <div class="thumb"></div>
+    <RouterLink :to="{name: 'equipment-detail', params: {id}}">
+        <div class="card">
+            <div class="thumb"></div>
 
-        <div class="info">
-            <h3 class="title">{{ name }}</h3>
-            <p class="subtitle">{{ model }}</p>
-            <div class="tags">
-                <span class="tag">{{ type }}</span>
-                <span class="tag">{{ status }}</span>
+            <div class="info">
+                <h3 class="title">{{ name }}</h3>
+                <p class="subtitle">{{ model }}</p>
+                <div class="tags">
+                    <span class="tag">{{ type }}</span>
+                    <span class="tag">{{ status }}</span>
+                </div>
             </div>
+            <span class="chevron">›</span>
         </div>
-
-        <span class="chevron">›</span>
-    </div>
+    </RouterLink>
 </template>
 
 <style scoped>

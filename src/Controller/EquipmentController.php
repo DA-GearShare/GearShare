@@ -7,6 +7,8 @@ use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
+use DateTimeImmutable;
+use App\Repository\ReservationItemRepository;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
@@ -57,6 +59,9 @@ final class EquipmentController extends AbstractController
     public function getAccessories(
         Uuid $equipmentId,
         EquipmentRepository $repository,
+        ReservationItemRepository $reservationItemRepository,
+        #[MapQueryParameter] ?string $from = null,
+        #[MapQueryParameter] ?string $to = null,
     ):Response
     {
         $equipment = $repository->find($equipmentId);
@@ -64,11 +69,34 @@ final class EquipmentController extends AbstractController
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
         }
 
+        if (($from && !$to) || (!$from && $to)) {
+            return new Response('from und to müssen beide angegeben werden.', Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $fromDate = $from ? new DateTimeImmutable($from) : null;
+            $toDate   = $to   ? new DateTimeImmutable($to)   : null;
+        } catch (\Exception) {
+            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($fromDate !== null && $fromDate >= $toDate) {
+            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
+        }
+
         $accessories = $equipment->getAccessories()->filter(fn($accessory) => !$accessory->isDeleted())->getValues();
+
+        $reservedIds = [];
+        if ($fromDate !== null) {
+            $reservedIds = $reservationItemRepository->findReservedEquipmentIds($accessories, $fromDate, $toDate);
+        }
+
         $items = array_map(fn($e) => [
             'accessoryEquipmentId' => $e->getId(),
             'name' => $e->getName(),
-            'availableInRequestedPeriod' => $e->getStatus()->value === 'available',
+            'availableInRequestedPeriod' => $fromDate !== null
+                ? !in_array($e->getId()->toRfc4122(), $reservedIds, true)
+                : $e->getStatus()->value === 'available'
         ], $accessories);
         return $this->json($items);
     }

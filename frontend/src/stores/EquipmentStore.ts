@@ -16,5 +16,19 @@ export const useEquipmentStore = defineStore('equipment', () => {
         meta.value = data.meta;
     }
 
-    return { equipment, meta, fetchEquipment, filters };
+    async function createEquipment(payload: Record<string, string>){
+        try {
+            const res = await fetch('/api/v1/equipment', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( payload ),
+            });
+            if (!res.ok) throw new Error('Status ' + res.status);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    return { equipment, meta, fetchEquipment, filters, createEquipment };
 });

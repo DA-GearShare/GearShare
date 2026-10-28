@@ -104,7 +104,7 @@ final class EquipmentController extends AbstractController
 
     #[Route('/{equipmentId}/accessories', name: 'addAccessories', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN')]
-    public function getAccessories(
+    public function addAccessories(
         Uuid $equipmentId,
         Request $request,
         EquipmentRepository $repository,
@@ -145,7 +145,7 @@ final class EquipmentController extends AbstractController
 
     #[Route('/{equipmentId}/accessories', name: 'removeAccessories', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN')]
-    public function getAccessories(
+    public function removeAccessories(
         Uuid $equipmentId,
         Uuid $accessoryId,
         EquipmentRepository $repository,

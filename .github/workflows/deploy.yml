@@ -18,7 +18,7 @@ jobs:
       - name: Deploy
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
-            cd /opt/gearshare &&
+            cd /opt/GearShare &&
             git pull origin main &&
             docker compose up -d --force-recreate --build
           '

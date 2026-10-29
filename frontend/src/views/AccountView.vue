@@ -16,8 +16,8 @@ async function logout() {
 
     <p v-if="auth.error">{{ auth.error }}</p>
     <div v-if="auth.user">
-        <p>Name: {{ auth.user.payload.displayname }}</p>
-        <p>E-Mail: {{ auth.user.payload.email }}</p>
+        <p>Name: {{ auth.user.displayname }}</p>
+        <p>E-Mail: {{ auth.user.email }}</p>
         <p>Rolle: {{ auth.role }}</p>
     </div>
     <br>

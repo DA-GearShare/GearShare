@@ -547,6 +547,11 @@ paths:
         post:
             tags: [ Equipment ]
             summary: Referenzfoto hochladen (Admin)
+            description: >
+                Erlaubte Formate: JPEG, PNG, WebP (max. 15 MB). Das erste Foto eines
+                Geräts wird automatisch Hauptbild; `isMain: true` setzt alle anderen
+                Fotos des Geräts auf `isMain: false`. Das Bild ist danach öffentlich
+                unter `url` (`/media/equipment/<uuid>`) abrufbar.
             requestBody:
                 required: true
                 content:
@@ -580,6 +585,12 @@ paths:
                     $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
+                '415':
+                    description: Dateityp nicht erlaubt (nur JPEG, PNG, WebP).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
 
     /equipment/{equipmentId}/photos/{photoId}:
         parameters:
@@ -1304,6 +1315,10 @@ paths:
         get:
             tags: [ Reservations ]
             summary: Zustandsfotos einer Reservierung auflisten
+            description: >
+                Zustandsfotos sind sensibel. Admins sehen alle Fotos der
+                Reservierung, alle anderen nur die Fotos, die sie selbst
+                hochgeladen haben (sonst leere Liste).
             responses:
                 '200':
                     description: OK
@@ -1322,6 +1337,9 @@ paths:
         post:
             tags: [ Reservations ]
             summary: Zustandsfoto zu Ausgabe oder Rückgabe hochladen
+            description: >
+                Erlaubt für Admins sowie AnfragerIn und verantwortliche Person
+                der Reservierung. Erlaubte Formate: JPEG, PNG, WebP (max. 15 MB).
             requestBody:
                 required: true
                 content:
@@ -1346,6 +1364,49 @@ paths:
                     $ref: '#/components/responses/BadRequest'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '415':
+                    description: Dateityp nicht erlaubt (nur JPEG, PNG, WebP).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /condition-photos/{photoId}:
+        parameters:
+            -   $ref: '#/components/parameters/PhotoIdPath'
+        get:
+            tags: [ Reservations ]
+            summary: Zustandsfoto abrufen (Bilddaten)
+            description: >
+                Nur für die Person, die das Foto hochgeladen hat, und für Admins.
+                Die Bilddaten werden nach der Berechtigungsprüfung vom Gateway
+                per X-Accel-Redirect aus dem privaten Bucket gestreamt. Antwort
+                ist `Cache-Control: private, no-cache`, d. h. jede Anzeige wird
+                neu autorisiert.
+            responses:
+                '200':
+                    description: Bilddaten.
+                    content:
+                        image/jpeg:
+                            schema:
+                                type: string
+                                format: binary
+                        image/png:
+                            schema:
+                                type: string
+                                format: binary
+                        image/webp:
+                            schema:
+                                type: string
+                                format: binary
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
 
@@ -2286,6 +2347,8 @@ components:
                 url:
                     type: string
                     format: uri
+                    description: Zeigt auf `GET /condition-photos/{photoId}`.
+                    example: "/api/v1/condition-photos/3f2b8c1e-7a4d-4e9b-9c2a-1d5e6f7a8b9c"
                 createdAt:
                     type: string
                     format: date-time

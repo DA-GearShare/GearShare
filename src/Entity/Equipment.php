@@ -236,6 +236,26 @@ class Equipment
         return $this;
     }
 
+    public function getMainPhoto(): ?EquipmentPhoto
+    {
+        foreach ($this->photos as $photo) {
+            if ($photo->isMain()) {
+                return $photo;
+            }
+        }
+
+        return null;
+    }
+
+    public function setMainPhoto(?EquipmentPhoto $main): static
+    {
+        foreach ($this->photos as $photo) {
+            $photo->setIsMain($photo === $main);
+        }
+
+        return $this;
+    }
+
     /** @return Collection<int, Equipment> */
     public function getAccessories(): Collection
     {

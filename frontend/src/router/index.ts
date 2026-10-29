@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import EquipmentAll from '../components/EquipmentAll.vue';
+import EquipmentView from '../views/EquipmentView.vue';
 import InstructionsView from '../views/InstructionsView.vue';
 import LaboratoryView from '../views/LaboratorytimeView.vue';
 import LoginView from '../views/LoginView.vue';
@@ -27,7 +27,7 @@ const router = createRouter({
         },
         {
             path: '/inventar',
-            component: EquipmentAll,
+            component: EquipmentView,
             meta: { requiresAuth: true }
         },
         {

@@ -2,10 +2,16 @@
 
 namespace App\Repository;
 
+use App\Dto\EquipmentCreateDto;
 use App\Entity\Equipment;
+use App\Entity\EquipmentPool;
+use App\Enum\EquipmentStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\Tools\Pagination\Paginator;
+use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @extends ServiceEntityRepository<Equipment>
@@ -39,28 +45,77 @@ class EquipmentRepository extends ServiceEntityRepository
         ];
     }
 
-//    /**
-//     * @return Equipment[] Returns an array of Equipment objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('e')
-//            ->andWhere('e.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('e.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** Prüft auch soft-gelöschte Geräte, weil `code` in der DB unique ist. */
+    public function codeExists(string $code): bool
+    {
+        return $this->count(['code' => $code]) > 0;
+    }
 
-//    public function findOneBySomeField($value): ?Equipment
-//    {
-//        return $this->createQueryBuilder('e')
-//            ->andWhere('e.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * Nächster freier automatischer Code im Format der Fixtures: EQ-0001, EQ-0002, ...
+     * Händisch vergebene Codes in anderen Formaten werden ignoriert.
+     */
+    public function nextGeneratedCode(): string
+    {
+        $codes = $this->createQueryBuilder('e')
+            ->select('e.code')
+            ->where('e.code LIKE :prefix')
+            ->setParameter('prefix', 'EQ-%')
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        $max = 0;
+        foreach ($codes as $code) {
+            if (preg_match('/^EQ-(\d+)$/', (string)$code, $m)) {
+                $max = max($max, (int)$m[1]);
+            }
+        }
+
+        return sprintf('EQ-%04d', $max + 1);
+    }
+
+    public function createFromDto(EquipmentCreateDto $dto): Equipment|Response
+    {
+        $em = $this->getEntityManager();
+
+        $pool = null;
+        if ($dto->poolId !== null) {
+            $pool = $em->find(EquipmentPool::class, $dto->poolId);
+            if ($pool === null) {
+                return new JsonResponse([
+                    'message' => 'Invalider Request Body',
+                    'errors' => ['poolId' => 'Pool not found'],
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        if ($dto->code !== null && $this->codeExists($dto->code)) {
+            return new Response(
+                sprintf('Code "%s" ist bereits vergeben.', $dto->code),
+                Response::HTTP_CONFLICT
+            );
+        }
+
+        $equipment = new Equipment()
+            ->setName($dto->name)
+            ->setLocation($dto->location)
+            ->setType($dto->type)
+            ->setModel($dto->model)
+            ->setCode($dto->code ?? $this->nextGeneratedCode())
+            ->setStatus(EquipmentStatus::Available)
+            ->setPool($pool);
+
+        $em->persist($equipment);
+
+        try {
+            $em->flush();
+        } catch (UniqueConstraintViolationException) {
+            return new Response(
+                'Code ist bereits vergeben, bitte erneut versuchen.',
+                Response::HTTP_CONFLICT
+            );
+        }
+
+        return $equipment;
+    }
 }

@@ -8,7 +8,6 @@ use App\Repository\EquipmentPhotoRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
@@ -17,18 +16,21 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\HasLifecycleCallbacks]
 class EquipmentPhoto
 {
+    /**
+     * Wird beim Upload vergeben, NICHT von Doctrine generiert: dieselbe UUID ist der
+     * Objekt-Key im Equipment-Bucket und Teil der öffentlichen URL /media/equipment/<uuid>.
+     * Muss v4 (zufällig) sein, weil die UUID der einzige Schutz des Bildes ist.
+     */
     #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
     #[ORM\Column(name: 'pk_equipment_photo_id', type: UuidType::NAME)]
-    private ?Uuid $id = null;
+    private Uuid $id;
 
     #[ORM\ManyToOne(targetEntity: Equipment::class, fetch: 'LAZY', inversedBy: 'photos')]
     #[ORM\JoinColumn(name: 'fk_equipment_id', referencedColumnName: 'pk_equipment_id', nullable: false, onDelete: 'CASCADE')]
     private ?Equipment $equipment = null;
 
     #[ORM\Column(name: 'url', type: Types::STRING, length: 255)]
-    private ?string $url = null;
+    private string $url;
 
     #[ORM\Column(name: 'is_main', type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isMain = false;
@@ -36,13 +38,20 @@ class EquipmentPhoto
     #[ORM\Column(name: 'uploaded_at', type: Types::DATETIME_IMMUTABLE)]
     private ?DateTimeImmutable $uploadedAt = null;
 
+    public function __construct(Uuid $id, Equipment $equipment, string $url)
+    {
+        $this->id = $id;
+        $this->url = $url;
+        $equipment->addPhoto($this);
+    }
+
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
         $this->uploadedAt ??= new DateTimeImmutable();
     }
 
-    public function getId(): ?Uuid
+    public function getId(): Uuid
     {
         return $this->id;
     }
@@ -59,16 +68,9 @@ class EquipmentPhoto
         return $this;
     }
 
-    public function getUrl(): ?string
+    public function getUrl(): string
     {
         return $this->url;
-    }
-
-    public function setUrl(string $url): static
-    {
-        $this->url = $url;
-
-        return $this;
     }
 
     public function isMain(): bool

@@ -17,11 +17,6 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\HasLifecycleCallbacks]
 class ConditionPhoto
 {
-    /**
-     * Die ID wird NICHT von Doctrine generiert, sondern beim Upload vergeben:
-     * dieselbe UUID ist der Objekt-Key im Condition-Bucket. So muss die Datei
-     * nicht vor dem DB-Insert hochgeladen und danach umbenannt werden.
-     */
     #[ORM\Id]
     #[ORM\Column(name: 'pk_condition_photo_id', type: UuidType::NAME)]
     private Uuid $id;

@@ -1,31 +1,27 @@
 <script setup lang="ts">
-    import { useAccessoryStore } from '@/stores/AccessoryStore.ts';
-    import { watch } from 'vue';
+    import { useCartStore } from '@/stores/CartStore.ts';
 
     const props = defineProps<{
         id: string
         name: string
         available: boolean
+        isAdmin: boolean
     }>()
 
-    const accessoryStore = useAccessoryStore()
-
-    watch(() => props.available, (available) => {
-        if (!available && accessoryStore.isSelected(props.id)){
-            accessoryStore.toggle(props.id)
-        }
-        }, {immediate: true})
+    const emit = defineEmits(['remove'])
+    const cart = useCartStore()
 </script>
 
 <template>
-    <label :class="{ unavailable: !available }">
+    <div :class="{ unavailable: !available }">
         <h3>{{name}}</h3>
         <span v-if="!available">Nicht verfügbar</span>
-        <input type="checkbox"
-               :checked="accessoryStore.isSelected(props.id)"
-               @change="accessoryStore.toggle(id)"
-               :disabled="!available"/>
-    </label>
+        <button v-if="isAdmin" @click="emit('remove', id)">Entfernen</button>
+        <span v-else>
+            <button :disabled="!available || cart.has(id)" @click="cart.add(id)">{{ cart.has(id) ? '✓' : '+' }}</button>
+            <button :disabled="!available || cart.hasNot(id)" @click="cart.remove(id)">-</button>
+        </span>
+    </div>
 </template>
 
 <style scoped>

@@ -6,6 +6,13 @@
     import FilterDropdown from "@/components/FilterDropdown.vue";
     import ButtonsPagination from "@/components/ButtonsPagination.vue";
 
+    defineProps<{
+        pickerMode?: boolean
+        excludeIds?: string[]
+    }>();
+
+    const emit = defineEmits(['select']);
+
     const store = useEquipmentStore();
     onMounted(() => {
         return store.fetchEquipment();
@@ -33,7 +40,18 @@
 <template>
     <SearchForm @search="handleSearch"/>
     <FilterDropdown @filter="handleFilter"/>
-    <EquipmentCard v-for="item in store.equipment" :id="item.id" :name="item.name" :model="item.model" :type="item.type" :status="item.status" :key="item.id"/>
+    <EquipmentCard
+        v-for="item in store.equipment"
+        :key="item.id"
+        :id="item.id"
+        :name="item.name"
+        :model="item.model"
+        :type="item.type"
+        :status="item.status"
+        :selectable="pickerMode"
+        :select-disabled="excludeIds?.includes(item.id)"
+        @select="(id: string) => emit('select', id)"
+    />
     <ButtonsPagination v-if="store.meta.totalPages" :page="store.meta.page" :totalPages="store.meta.totalPages" @changePage="handlePageChange" />
 </template>
 <style scoped>

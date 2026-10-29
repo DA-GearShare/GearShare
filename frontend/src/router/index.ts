@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import EquipmentView from '../views/EquipmentView.vue';
+import EquipmentAll from '../components/EquipmentAll.vue';
 import InstructionsView from '../views/InstructionsView.vue';
 import LaboratoryView from '../views/LaboratorytimeView.vue';
 import LoginView from '../views/LoginView.vue';
 import AccountView from '../views/AccountView.vue';
 import AdminView from '../views/AdminView.vue';
-import detailPageEquipment from '../views/detailPageEquipment.vue';
+import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -27,13 +27,13 @@ const router = createRouter({
         },
         {
             path: '/inventar',
-            component: EquipmentView,
+            component: EquipmentAll,
             meta: { requiresAuth: true }
         },
         {
             path: '/inventar/:id',
             name: 'equipment-detail',
-            component: detailPageEquipment,
+            component: EquipmentDetailView,
             meta: { requiresAuth: true}
         },
         {

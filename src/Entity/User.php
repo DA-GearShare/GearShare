@@ -136,6 +136,7 @@ class User implements UserInterface
 
         if ($this->isAdmin) {
             $roles[] = 'ROLE_ADMIN';
+            $roles[] = 'ROLE_TEACHER';
         }
 
         if ($this->isTeacher) {

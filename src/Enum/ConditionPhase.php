@@ -6,6 +6,6 @@ namespace App\Enum;
 
 enum ConditionPhase: string
 {
-    case Output = 'ausgabe';
-    case Return = 'rückgabe';
+    case Pickup = 'pickup';
+    case Return = 'return';
 }

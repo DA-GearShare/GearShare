@@ -2,8 +2,12 @@
 
 namespace App\Repository;
 
+use App\Dto\UserRolesDto;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
+use Doctrine\ORM\Tools\Pagination\Window;
+use Doctrine\ORM\Tools\Pagination\WindowPage;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +20,50 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
-//    /**
-//     * @return User[] Returns an array of User objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('u.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * @param $id
+     * @return User|null
+     */
+    public function findOneById($id): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.userId = :val')
+            ->setParameter('val', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 
-//    public function findOneBySomeField($value): ?User
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * @param string|null $search
+     * @param int $page
+     * @param int $pageSize
+     * @return WindowPage
+     */
+    public function findPaginated(?string $search, int $page, int $pageSize): WindowPage
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->orderBy('u.userId', 'ASC');
+
+        if ($search !== null && $search !== '') {
+            $qb->andWhere('u.displayName LIKE :search OR u.email LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        return new OffsetPaginator()
+            ->paginate($qb->getQuery(), new Window(($page - 1) * $pageSize, $pageSize));
+    }
+
+    /**
+     * @param User $user
+     * @param UserRolesDto $roles
+     * @param bool $flush
+     * @return void
+     */
+    public function applyRoles(User $user, UserRolesDto $roles, bool $flush = true): void
+    {
+        if ($roles->isAdmin !== null) $user->setIsAdmin($roles->isAdmin);
+        if ($roles->isTeacher !== null) $user->setIsTeacher($roles->isTeacher);
+        if ($flush) $this->getEntityManager()->flush();
+    }
+
 }

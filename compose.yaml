@@ -1,12 +1,40 @@
 services:
+  # Single entry point on port 80 (dev):
+  #   /api, /_profiler, /_wdt, ...  -> app (Symfony)
+  #   /media/equipment/<uuid>       -> seaweedfs filer, public, GET/HEAD only
+  #                                    (the unguessable UUID is the only protection)
+  #   everything else               -> frontend (Vite dev server with hot reload)
+  #
+  # Two buckets, two access models:
+  #   equipment  non-sensitive. Served straight from the filer by the gateway.
+  #   condition  sensitive. NEVER reachable from outside. The app checks auth
+  #              (GET /api/condition-photos/<id>) and answers with an
+  #              X-Accel-Redirect header; the gateway then streams the bytes from an
+  #              `internal` location that browsers cannot call directly.
+  #
+  # /media is reserved for user-uploaded content. Do NOT create frontend/public/media,
+  # the gateway would shadow it. Build-time assets (logos, icons) stay in frontend/public.
+  gateway:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./gateway/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Media routes (public equipment photos + internal condition photos).
+      - ./gateway/snippets:/etc/nginx/snippets:ro
+    depends_on:
+      - app
+      - frontend
+      - seaweedfs
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     image: gearshare
     restart: unless-stopped
-    ports:
-      - "${HTTP_PORT:-80}:80"
+    # No published port: reached through the gateway.
     environment:
       # This project has no .env file, so Symfony reads its configuration from
       # here. Override any of them from the shell: APP_ENV=prod ./start.sh
@@ -17,6 +45,19 @@ services:
       DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
       CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$$}"
       DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
+      # Image storage (S3 API). The app is the only writer, all uploads go through it.
+      S3_ENDPOINT: "http://seaweedfs:8333"
+      S3_REGION: "${S3_REGION:-eu-central-1}"
+      # Public, non-sensitive photos: browsers read them via MEDIA_BASE_URL/equipment/<uuid>.
+      S3_EQUIPMENT_BUCKET: "${S3_EQUIPMENT_BUCKET:-equipment}"
+      # Sensitive photos: never public. Read only through the auth-checked API endpoint.
+      S3_CONDITION_BUCKET: "${S3_CONDITION_BUCKET:-condition}"
+      S3_ACCESS_KEY: "${S3_ACCESS_KEY:-gearshare-dev}"
+      S3_SECRET_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+      S3_USE_PATH_STYLE: "true"
+      MEDIA_BASE_URL: "/media"
+      # Path the gateway serves internally for X-Accel-Redirect (see gateway/default.conf).
+      CONDITION_ACCEL_PREFIX: "/_internal/condition"
     volumes:
       # Live editing: changes in src/, templates/ and config/ are served
       # immediately, no rebuild. Only public/ is reachable over HTTP.
@@ -24,6 +65,25 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully
+
+  frontend:
+    # Vue 3 + Vite dev server with hot module reload. Not published on its own
+    # port; the gateway forwards to it (see gateway/default.conf).
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    restart: unless-stopped
+    environment:
+      # Port the browser uses for the gateway, so hot reload connects through it.
+      VITE_PUBLIC_PORT: "${HTTP_PORT:-80}"
+      # Set to true if hot reload doesn't pick up changes (Docker Desktop on macOS/Windows).
+      CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-false}"
+    volumes:
+      - ./frontend:/app
+      # Keep node_modules inside Docker so host and container binaries don't clash.
+      - frontend_node_modules:/app/node_modules
 
   database:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
@@ -41,5 +101,72 @@ services:
     volumes:
       - database_data:/var/lib/postgresql:rw
 
+  # Object storage for images. In dev, master + volume + filer + S3 run in one
+  # container ("weed server"). Only the master debug port is published; the S3 API
+  # (:8333) and the filer (:8888) are reachable from inside the Docker network only:
+  #   app      -> S3 :8333     (uploads, with credentials)
+  #   gateway  -> filer :8888  (public equipment/<uuid> and the internal condition route)
+  # The filer has no auth, so it must never get a published port or a catch-all route.
+  seaweedfs:
+    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-latest}   # pin a release for reproducible builds
+    restart: unless-stopped
+    # For debugging only
+    ports: [ "9333:9333" ]
+    command: >
+      server
+      -ip=seaweedfs
+      -ip.bind=0.0.0.0
+      -dir=/data
+      -filer
+      -filer.disableDirListing
+      -s3
+      -s3.port=8333
+    environment:
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+    volumes:
+      - seaweedfs_data:/data
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/healthz" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # One-shot job: creates the equipment and condition buckets if they don't exist, then exits.
+  seaweedfs-init:
+    image: amazon/aws-cli
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+      AWS_DEFAULT_REGION: "eu-central-1"
+      BUCKETS: "${S3_EQUIPMENT_BUCKET:-equipment} ${S3_CONDITION_BUCKET:-condition}"
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        EP=http://seaweedfs:8333
+        for B in $$BUCKETS; do
+          ok=0
+          for i in $$(seq 1 30); do
+            if aws --endpoint-url $$EP s3api head-bucket --bucket $$B 2>/dev/null \
+               || aws --endpoint-url $$EP s3 mb s3://$$B; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          if [ $$ok -ne 1 ]; then
+            echo "could not create bucket $$B" >&2
+            exit 1
+          fi
+          echo "bucket $$B ready"
+        done
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
 volumes:
   database_data:
+  frontend_node_modules:
+  seaweedfs_data:

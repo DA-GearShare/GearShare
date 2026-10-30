@@ -19,6 +19,7 @@ jobs:
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
             cd /opt/GearShare &&
+            sudo /usr/bin/rm -rf /opt/GearShare/vendor &&
             git pull origin main &&
             docker compose build --pull --no-cache &&
             docker compose up -d --force-recreate

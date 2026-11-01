@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router'
 import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 
-const router = useRouter();
 const equipmentStore = useEquipmentStore();
+const error = ref<string | null>(null);
+const created = ref<{ id: string; code: string } | null>(null);
 
 const name = ref('');
 const location = ref('');
@@ -13,6 +13,8 @@ const model = ref('');
 const code = ref('');
 
 async function submit() {
+    error.value = null;
+
     const payload: Record<string, string> = {
         name: name.value.trim(),
         location: location.value.trim(),
@@ -24,19 +26,33 @@ async function submit() {
         payload.code = code.value.trim();
     }
 
-    console.log('Zu speichern:', payload);
-    const ok = await equipmentStore.createEquipment(payload);
-    if (ok) {
-        router.push('/inventar');
+    const result = await equipmentStore.createEquipment(payload);
+    if (result) {
+        created.value = result;
+    } else {
+        error.value = 'Das Equipment konnte nicht gespeichert werden.';
     }
 }
-
 </script>
 
 <template>
     <h1>Equipment hinzufügen</h1>
 
-    <form class="equipment-form" @submit.prevent="submit">
+    <div v-if="created" class="section-card result-card">
+        <h2>Gerät angelegt</h2>
+        <p>Code: <strong>{{ created.code }}</strong></p>
+        <div class="toolbar">
+            <a :href="`/api/v1/equipment/${created.id}/code?format=png`" target="_blank" class="btn-secondary">
+                Code als PNG
+            </a>
+            <a :href="`/api/v1/equipment/${created.id}/code?format=pdf`" target="_blank" class="btn-secondary">
+                Code als PDF
+            </a>
+            <RouterLink to="/inventar" class="btn-primary">Zur Übersicht</RouterLink>
+        </div>
+    </div>
+
+    <form v-else class="equipment-form" @submit.prevent="submit">
         <label>
             Bezeichnung
             <input v-model="name" type="text" required maxlength="255">
@@ -63,38 +79,22 @@ async function submit() {
             <span class="hint">Leer lassen, dann wird automatisch ein Code erzeugt.</span>
         </label>
 
-        <button type="submit" class="btn-primary">Speichern</button>
+        <p v-if="error" class="message-error">{{ error }}</p>
+
+        <div class="toolbar">
+            <button type="submit" class="btn-primary">Speichern</button>
+            <RouterLink to="/inventar" class="btn-secondary">Abbrechen</RouterLink>
+        </div>
     </form>
 </template>
 
 <style scoped>
-.equipment-form {
+.equipment-form,
+.result-card {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-l);
     max-width: 480px;
-    margin-top: 1.5rem;
-}
-
-label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-input {
-    padding: 0.5rem 0.75rem;
-    font-size: 1rem;
-    color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-}
-
-.hint {
-    font-size: 0.8125rem;
-    color: var(--color-muted);
+    margin-top: var(--space-xl);
 }
 </style>

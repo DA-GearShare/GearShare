@@ -25,6 +25,7 @@ export const useEquipmentStore = defineStore('equipment', () => {
                 body: JSON.stringify( payload ),
             });
             if (!res.ok) throw new Error('Status ' + res.status);
+            return await res.json();
         } catch (e) {
             console.error(e);
         }

@@ -4,13 +4,13 @@ import { defineStore } from 'pinia';
 export type Role = 'Schüler' | 'Lehrer' | 'Admin';
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref<{ payload: {id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; }} | null>(null);
+    const user = ref<{ id: string; email: string; displayname: string; isAdmin: boolean; isTeacher: boolean; } | null>(null);
     const error = ref<string | null>(null);
 
     const role = computed<Role | null>(() => {
         if (!user.value) return null;
-        if (user.value.payload.isAdmin) return 'Admin';
-        if (user.value.payload.isTeacher) return 'Lehrer';
+        if (user.value.isAdmin) return 'Admin';
+        if (user.value.isTeacher) return 'Lehrer';
         return 'Schüler';
     });
 
@@ -24,7 +24,15 @@ export const useAuthStore = defineStore('auth', () => {
             const res = await fetch('/api/v1/auth/me', {
                 credentials: 'include',
             });
-            user.value = res.ok ? await res.json() : null;
+
+            if (res.ok) {
+                user.value = await res.json();
+            } else if (res.status === 401) {
+                user.value = null;
+            } else {
+                user.value = null;
+                error.value = `Fehler beim Laden (Status ${res.status}).`;
+            }
         } catch {
             user.value = null;
             error.value = "Benutzer konnte nicht geladen werden.";

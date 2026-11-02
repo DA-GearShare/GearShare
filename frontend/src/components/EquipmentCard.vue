@@ -1,17 +1,16 @@
 <script setup lang="ts">
-    import {RouterLink} from "vue-router";
+import { RouterLink } from "vue-router";
 
-    defineProps<{
-        id: string
-        name: string
-        model: string
-        type: string
-        status: string
-        selectable?: boolean
-        selectDisabled?: boolean
-    }>();
+defineProps<{
+    id: string
+    name: string
+    model: string
+    type: string
+    selectable?: boolean
+    selectDisabled?: boolean
+}>();
 
-    const emit = defineEmits(['select'])
+const emit = defineEmits(['select']);
 </script>
 
 <template>
@@ -26,7 +25,6 @@
                 <p class="meta">{{ model }}</p>
                 <div class="tags">
                     <span class="tag">{{ type }}</span>
-                    <span class="tag">{{ status }}</span>
                 </div>
             </div>
             <span class="chevron">›</span>

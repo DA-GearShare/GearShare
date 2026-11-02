@@ -1,70 +1,76 @@
 <script setup lang="ts">
-    import {useRoute} from "vue-router";
-    import {computed, onMounted, ref, watch} from "vue";
-    import AccessoryCard from "@/components/AccessoryCard.vue";
-    import {useAuthStore} from "@/stores/AuthStore.ts";
-    import EquipmentAll from "@/components/EquipmentAll.vue";
+import { useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import AccessoryCard from "@/components/AccessoryCard.vue";
+import { useAuthStore } from "@/stores/AuthStore.ts";
+import EquipmentAll from "@/components/EquipmentAll.vue";
 
-    interface Accessory {
-        accessoryEquipmentId: string
-        name: string
-        availableInRequestedPeriod: boolean
+interface Accessory {
+    accessoryEquipmentId: string
+    name: string
+    availableInRequestedPeriod: boolean
+}
+const route = useRoute();
+const autStore = useAuthStore();
+const accessories = ref<Accessory[]>([]);
+
+const from = ref('');
+const to = ref('');
+
+async function loadAccessories() {
+    let url = `/api/v1/equipment/${route.params.id}/accessories`;
+
+    if (from.value && to.value){
+        url += `?from=${from.value}&to=${to.value}`;
     }
-    const route = useRoute();
-    const autStore = useAuthStore();
-    const accessories = ref<Accessory[]>([])
+    const res = await fetch(url);
+    if (!res.ok) return;
+    accessories.value = await res.json();
+}
 
-    const from = ref('')
-    const to = ref('')
+watch([from, to], loadAccessories, { immediate: true });
 
-    async function loadAccessories() {
-        let url = `/api/v1/equipment/${route.params.id}/accessories`
+//Für Admins
+const isAdmin = computed(() => {
+    return autStore.hasRole(['Admin']);
+});
+const showPicker = ref(false);
+const error = ref('');
 
-        if (from.value && to.value){
-            url += `?from=${from.value}&to=${to.value}`
-        }
-        const res = await fetch(url)
-        if (!res.ok) return
-        accessories.value = await res.json()
-    }
-
-    watch([from, to], loadAccessories, {immediate: true})
-
-    //Für Admins
-    const isAdmin = computed(() => autStore.hasRole(['Admin']))
-    const showPicker = ref(false)
-    const error = ref('')
-
-    const excludeIds = computed(() => [
+const excludeIds = computed(() => {
+    return [
         route.params.id as string,
-        ...accessories.value.map(a => a.accessoryEquipmentId),
-    ])
+        ...accessories.value.map(a => {
+            return a.accessoryEquipmentId;
+        }),
+    ];
+});
 
-    async function addAccessory(accessoryId: string) {
-        error.value = ''
-        const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accessoryEquipmentId: accessoryId }),
-        })
-        if (!res.ok){
-            error.value = await res.text()
-            return
-        }
-        await loadAccessories()
+async function addAccessory(accessoryId: string) {
+    error.value = '';
+    const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessoryEquipmentId: accessoryId }),
+    });
+    if (!res.ok){
+        error.value = await res.text();
+        return;
     }
-    async function removeAccessory(accessoryId: string) {
-        error.value = ''
-        const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories/${accessoryId}`, {
-            method: 'DELETE',
-        })
+    await loadAccessories();
+}
+async function removeAccessory(accessoryId: string) {
+    error.value = '';
+    const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories/${accessoryId}`, {
+        method: 'DELETE',
+    });
 
-        if (!res.ok) {
-            error.value = await res.text()
-            return
-        }
-        await loadAccessories()
+    if (!res.ok) {
+        error.value = await res.text();
+        return;
     }
+    await loadAccessories();
+}
 </script>
 
 <template>

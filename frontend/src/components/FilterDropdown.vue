@@ -5,18 +5,31 @@ const emit = defineEmits(['filter']);
 const show = ref(false);
 const sort = ref('name');
 const order = ref('asc');
-const status = ref('');
+const from = ref('');
+const to = ref('');
 
 const onChange = () => {
-    emit('filter', sort.value, order.value, status.value);
+    emit('filter', sort.value, order.value, from.value, to.value);
+};
+
+const resetPeriod = () => {
+    from.value = '';
+    to.value = '';
+    onChange();
 };
 </script>
 
 <template>
     <div class="wrapper">
         <button class="btn-secondary filter-btn" type="button" :aria-expanded="show" @click="show = !show">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <svg width="18"
+                 height="18"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 aria-hidden="true">
                 <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
                 <circle cx="16" cy="7" r="2" />
                 <circle cx="8" cy="17" r="2" />
@@ -38,13 +51,19 @@ const onChange = () => {
                 <li><label><input type="radio" value="desc" v-model="order" @change="onChange"> Absteigend</label></li>
             </ul>
 
-            <h6>Status</h6>
-            <ul>
-                <li><label><input type="radio" value="available" v-model="status" @change="onChange"> Verfügbar</label></li>
-                <li><label><input type="radio" value="reserved" v-model="status" @change="onChange"> Reserviert</label></li>
-                <li><label><input type="radio" value="issued" v-model="status" @change="onChange"> Ausgeliehen</label></li>
-                <li><label><input type="radio" value="" v-model="status" @change="onChange"> Statusfilterung entfernen</label></li>
-            </ul>
+            <h6>Verfügbar im Zeitraum</h6>
+            <label class="date-label">
+                Von
+                <input type="datetime-local" v-model="from" @change="onChange">
+            </label>
+            <label class="date-label">
+                Bis
+                <input type="datetime-local" v-model="to" @change="onChange">
+            </label>
+            <button v-if="from || to" class="btn-secondary" type="button" @click="resetPeriod">
+                Zeitraum zurücksetzen
+            </button>
+
         </div>
     </div>
 </template>
@@ -110,5 +129,16 @@ input[type='radio'] {
     min-height: 0;
     padding: 0;
     accent-color: var(--color-navy);
+}
+.date-label {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin-bottom: var(--space-s);
+    cursor: default;
+}
+
+input[type='datetime-local'] {
+    width: 100%;
 }
 </style>

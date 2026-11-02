@@ -1,15 +1,15 @@
 <script setup lang="ts">
-    import { useCartStore } from '@/stores/CartStore.ts';
+import { useCartStore } from '@/stores/CartStore.ts';
 
-    const props = defineProps<{
-        id: string
-        name: string
-        available: boolean
-        isAdmin: boolean
-    }>()
+const props = defineProps<{
+    id: string
+    name: string
+    available: boolean
+    isAdmin: boolean
+}>();
 
-    const emit = defineEmits(['remove'])
-    const cart = useCartStore()
+const emit = defineEmits(['remove']);
+const cart = useCartStore();
 </script>
 
 <template>

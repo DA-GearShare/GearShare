@@ -37,11 +37,13 @@ const handleSearch = (search: string) => {
 const handleFilter = (
     sort: string,
     order: string,
-    status: string
+    from: string,
+    to: string
 ) => {
     store.filters.sort = sort;
     store.filters.order = order;
-    store.filters.status = status;
+    store.filters.from = from;
+    store.filter.to = to;
     applyFilter();
 };
 
@@ -81,7 +83,6 @@ const handleSelect = (id: string) => {
             :name="item.name"
             :model="item.model"
             :type="item.type"
-            :status="item.status"
             :selectable="props.pickerMode"
             :select-disabled="props.excludeIds?.includes(item.id)"
             @select="handleSelect"

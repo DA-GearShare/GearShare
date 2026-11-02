@@ -1,23 +1,36 @@
 <script setup lang="ts">
-defineProps<{
-    name: string
-    model: string
-    type: string
-    status: string
-}>();
+    import {RouterLink} from "vue-router";
+
+    defineProps<{
+        id: string
+        name: string
+        model: string
+        type: string
+        status: string
+        selectable?: boolean
+        selectDisabled?: boolean
+    }>();
+
+    const emit = defineEmits(['select'])
 </script>
 
 <template>
-    <div class="card card-row">
+    <component
+        :is="selectable ? 'div' : RouterLink"
+        :to="selectable ? undefined: {name: 'equipment-detail', params: {id}}"
+    >
         <div class="thumb"></div>
-        <div>
-            <h3>{{ name }}</h3>
-            <p class="meta">{{ model }}</p>
+        <div class="info">
+            <h3 class="title">{{ name }}</h3>
+            <p class="subtitle">{{ model }}</p>
             <div class="tags">
                 <span class="tag">{{ type }}</span>
                 <span class="tag">{{ status }}</span>
             </div>
         </div>
-        <span class="chevron">›</span>
-    </div>
+
+        <button v-if="selectable" :disabled="selectDisabled" @click="emit('select', id)">
+            {{ selectDisabled ? 'Bereits zugeordnet' : 'Hinzufügen' }}
+        </button>
+    </component>
 </template>

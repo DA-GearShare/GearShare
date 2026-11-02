@@ -18,6 +18,7 @@ export const useEquipmentStore = defineStore('equipment', () => {
         }
 
         const response = await fetch(`/api/v1/equipment?${params}`);
+        if (!response.ok) return;
         const data = await response.json();
         equipment.value = data.items;
         meta.value = data.meta;

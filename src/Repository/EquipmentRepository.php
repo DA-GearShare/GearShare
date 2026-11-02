@@ -12,6 +12,8 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use App\Entity\ReservationItem;
+use DateTimeImmutable;
 
 /**
  * @extends ServiceEntityRepository<Equipment>

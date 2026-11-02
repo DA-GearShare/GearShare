@@ -51,8 +51,22 @@ final class EquipmentController extends AbstractController
         if ($page < 1 || $pageSize < 1) {
             return new Response('Ungültige Paginierung.', Response::HTTP_BAD_REQUEST);
         }
+        if (($from && !$to) || (!$from && $to)) {
+            return new Response('from und to müssen beide angegeben werden.', Response::HTTP_BAD_REQUEST);
+        }
 
-        $result = $repository->findPaginated($sort, $order, $status, $search, $page, $pageSize);
+        try {
+            $fromDate = $from ? new DateTimeImmutable($from) : null;
+            $toDate   = $to   ? new DateTimeImmutable($to)   : null;
+        } catch (\Exception) {
+            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($fromDate !== null && $fromDate >= $toDate) {
+            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
+        }
+
+        $result = $repository->findPaginated($sort, $order, $fromDate, $toDate, $search, $page, $pageSize);
 
         $items = array_map(fn($e) => [
             'id' => $e->getId(),
@@ -60,7 +74,6 @@ final class EquipmentController extends AbstractController
             'location' => $e->getLocation(),
             'type' => $e->getType(),
             'model' => $e->getModel(),
-            'status' => $e->getStatus(),
         ], $result['items']);
 
         return $this->json([

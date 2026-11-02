@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
+
 const emit = defineEmits(['filter']);
+const store = useEquipmentStore();
 
 const show = ref(false);
-const sort = ref('name');
-const order = ref('asc');
-const from = ref('');
-const to = ref('');
+const sort = ref(store.filters.sort);
+const order = ref(store.filters.order);
+const from = ref(store.filters.from);
+const to = ref(store.filters.to);
 
 const onChange = () => {
     emit('filter', sort.value, order.value, from.value, to.value);

@@ -43,7 +43,7 @@ const handleFilter = (
     store.filters.sort = sort;
     store.filters.order = order;
     store.filters.from = from;
-    store.filter.to = to;
+    store.filters.to = to;
     applyFilter();
 };
 

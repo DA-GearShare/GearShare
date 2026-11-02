@@ -12,21 +12,21 @@ onMounted(usersStore.fetchUsers);
 <template>
     <h1>Admin Seite</h1>
 
-    <p v-if="usersStore.error" class="message">{{ usersStore.error }}</p>
+    <p v-if="usersStore.error" class="message-error">{{ usersStore.error }}</p>
 
-    <p v-if="usersStore.isLoading" class="message">Lädt ...</p>
-    <p v-else-if="usersStore.users.length === 0" class="message">Keine Benutzer vorhanden.</p>
-    <ul v-else class="user-list">
-        <li v-for="u in usersStore.users" :key="u.id" class="user-row">
+    <p v-if="usersStore.isLoading" class="meta">Lädt ...</p>
+    <p v-else-if="usersStore.users.length === 0" class="meta">Keine Benutzer vorhanden.</p>
+    <ul v-else class="card-list user-list">
+        <li v-for="u in usersStore.users" :key="u.id" class="card card-row user-row">
             <div class="user-info">
-                <span class="user-name">{{ u.name }}</span>
-                <span class="user-email">{{ u.email }}</span>
+                <h3>{{ u.name }}</h3>
+                <p class="meta">{{ u.email }}</p>
             </div>
 
             <div class="user-actions">
-                <span v-if="u.isAdmin" class="badge badge-admin">Admin</span>
-                <span v-if="u.isTeacher" class="badge">Lehrer</span>
-                <span v-else class="badge">Schüler</span>
+                <span v-if="u.isAdmin" class="tag tag-admin">Admin</span>
+                <span v-if="u.isTeacher" class="tag">Lehrer</span>
+                <span v-if="!u.isAdmin && !u.isTeacher" class="tag">Schüler</span>
 
                 <template v-if="u.id !== auth.user?.id">
                     <button v-if="!u.isAdmin" @click="usersStore.setAdmin(u, true)" class="btn-primary">
@@ -42,69 +42,34 @@ onMounted(usersStore.fetchUsers);
 </template>
 
 <style scoped>
-.message {
-    color: var(--color-muted);
-}
-
 .user-list {
-    list-style: none;
-    margin: 1.5rem 0 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    list-style: none;
 }
 
 .user-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.875rem 1.25rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    flex-wrap: wrap;
 }
 
 .user-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
+    flex: 1;
+    min-width: 200px;
 }
 
-.user-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.user-email {
-    font-size: 0.875rem;
-    color: var(--color-muted);
+.user-info h3,
+.user-info p {
+    margin: 0;
 }
 
 .user-actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--space-s);
 }
 
-.badge {
-    padding: 0.25rem 0.625rem;
-    font-size: 0.8125rem;
-    color: var(--color-text-secondary);
-    background: var(--color-soft-surface);
-    border-radius: 999px;
-}
-
-.badge-admin {
+.tag-admin {
     color: var(--color-surface);
     background: var(--color-navy);
-}
-
-@media (max-width: 600px) {
-    .user-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
 }
 </style>

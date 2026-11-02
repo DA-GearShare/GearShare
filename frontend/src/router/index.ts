@@ -6,6 +6,7 @@ import LaboratoryView from '../views/LaboratorytimeView.vue';
 import LoginView from '../views/LoginView.vue';
 import AccountView from '../views/AccountView.vue';
 import AdminView from '../views/AdminView.vue';
+import EquipmentAddView from "@/views/EquipmentAddView.vue";
 import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
@@ -31,6 +32,10 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/inventar/neu',
+            component: EquipmentAddView,
+            meta: { requiresAuth: true, roles: ['Admin']}
+        },
             path: '/inventar/:id',
             name: 'equipment-detail',
             component: EquipmentDetailView,

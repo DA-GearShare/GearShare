@@ -34,13 +34,13 @@ const router = createRouter({
         {
             path: '/inventar/neu',
             component: EquipmentAddView,
-            meta: { requiresAuth: true, roles: ['Admin']}
+            meta: { requiresAuth: true, roles: ['Admin'] }
         },
         {
             path: '/inventar/:id',
             name: 'equipment-detail',
             component: EquipmentDetailView,
-            meta: { requiresAuth: true}
+            meta: { requiresAuth: true }
         },
         {
             path: '/anleitung',

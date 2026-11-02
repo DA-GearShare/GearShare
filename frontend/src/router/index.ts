@@ -36,6 +36,7 @@ const router = createRouter({
             component: EquipmentAddView,
             meta: { requiresAuth: true, roles: ['Admin']}
         },
+        {
             path: '/inventar/:id',
             name: 'equipment-detail',
             component: EquipmentDetailView,

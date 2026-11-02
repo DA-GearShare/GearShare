@@ -13,28 +13,24 @@
 
 <style scoped>
 .footer {
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
-  background-color: var(--color-background-areas);
-  color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs) var(--space-xl);
+    padding: var(--space-xl) var(--space-l);
+    background: var(--color-background-areas);
+    border-top: 1px solid var(--color-border);
 }
 
 .footer p {
-  margin: 0;
+    margin: 0;
 }
 
-/* Mobile */
-@media (max-width: 600px) {
-  .footer {
-    flex-direction: column;
-    gap: 10px;
-  }
-}
-
-p {
-  color: var(--color-muted);
+.footer p,
+.footer a {
+    font-size: var(--text-meta-size);
+    line-height: var(--text-meta-line);
+    color: var(--color-text-secondary);
 }
 </style>

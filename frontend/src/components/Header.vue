@@ -7,126 +7,125 @@ const authStore = useAuthStore();
 
 <template>
     <header class="header">
+        <RouterLink to="/inventar" class="logo-link" aria-label="Zum Inventar">
+            <img src="@/assets/logo.svg" alt="GearShare" class="logo" />
+        </RouterLink>
 
-        <div class="top">
-            <RouterLink to="/inventar">
-                <img src="@/assets/logo.svg" alt="Logo" class="logo" />
-            </RouterLink>
-
-            <div class="actions">
-                <button>
-                    <ShoppingCart />
-                </button>
-
-                <RouterLink to="/account" aria-label="Mein Konto">
-                    <User />
-                </RouterLink>
-            </div>
-        </div>
-
-        <nav>
-            <RouterLink to="/inventar">Inventar</RouterLink>
-            <RouterLink to="/anleitung">Anleitung</RouterLink>
-            <RouterLink to="/laborzeit">Laborzeit</RouterLink>
-            <RouterLink v-if="authStore.hasRole(['Admin'])" to="/admin">Admin</RouterLink>
+        <nav class="nav">
+            <RouterLink to="/inventar" class="nav-link">Inventar</RouterLink>
+            <RouterLink to="/laborzeit" class="nav-link">Laborzeit</RouterLink>
+            <RouterLink to="/anleitung" class="nav-link">Anleitung</RouterLink>
+            <RouterLink v-if="authStore.hasRole(['Admin'])" to="/admin" class="nav-link">Admin</RouterLink>
         </nav>
 
+        <div class="actions">
+            <button type="button" class="icon-button" aria-label="Reservierungen">
+                <ShoppingCart />
+            </button>
+
+            <RouterLink to="/account" class="icon-button" aria-label="Mein Konto">
+                <User />
+            </RouterLink>
+        </div>
     </header>
 </template>
 
 <style scoped>
 .header {
-  padding: 16px 24px;
-  background-color: var(--color-background-areas);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: var(--space-m) var(--space-xl);
+    background: var(--color-background-areas);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.logo-link {
+    justify-self: start;
 }
 
 .logo {
-  height: 40px;
-  max-width: 180px;
+    display: block;
+    height: 40px;
+    max-width: 180px;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xl);
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--space-l);
+    border-radius: var(--radius-tab);
+    white-space: nowrap;
+}
+
+.nav-link:hover {
+    background: var(--color-border);
+}
+
+.nav-link.router-link-active {
+    color: var(--color-surface);
+    background: var(--color-navy);
 }
 
 .actions {
-  display: flex;
-  gap: 16px;
+    display: flex;
+    justify-self: end;
+    gap: var(--space-s);
 }
 
-.actions button,
-.actions a {
-  display: flex;
-  align-items: center;
-  border: none;
-  background: none;
-  padding: 5px;
-  cursor: pointer;
-  color: inherit;
-  text-decoration: none;
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    color: var(--color-text-primary);
+    background: none;
+    border: none;
+    border-radius: var(--radius-tab);
+    cursor: pointer;
 }
 
-.actions svg {
-  width: 26px;
-  height: 26px;
+.icon-button:hover {
+    background: var(--color-border);
 }
 
-nav {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3rem;
-  max-width: 40rem;
-  margin: 1rem auto 0;
+.icon-button svg {
+    width: 24px;
+    height: 24px;
 }
 
-nav a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px;
-  font-size: 16px;
-  font-weight: 600;
-  color: inherit;
-  text-decoration: none;
-  white-space: nowrap;
-  border-radius: 14px;
+/* Tablet und Mobile: Navigation in eigener Zeile */
+@media (max-width: 900px) {
+    .header {
+        grid-template-columns: 1fr auto;
+        padding: var(--space-m) var(--space-l);
+    }
+
+    .logo {
+        height: 32px;
+    }
+
+    .nav {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        margin-top: var(--space-m);
+    }
+
+    .nav-link {
+        padding: 0 var(--space-m);
+    }
 }
-
-nav a:hover {
-  background-color: var(--color-soft-surface);
-}
-
-nav a.router-link-active {
-  background-color: var(--color-navy);
-  color: white;
-}
-
-@media (max-width: 800px) {
-  .header {
-    padding: 12px 16px;
-  }
-
-  .logo {
-    height: 32px;
-    max-width: 140px;
-  }
-
-  .actions {
-    gap: 8px;
-  }
-
-  .actions svg {
-    width: 22px;
-    height: 22px;
-  }
-
-  nav a {
-    font-size: 14px;
-    padding: 8px 10px;
-  }
-}
-
-
 </style>

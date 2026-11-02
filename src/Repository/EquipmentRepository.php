@@ -26,15 +26,27 @@ class EquipmentRepository extends ServiceEntityRepository
     /**
      * @return array{items: Equipment[], totalItems: int}
      */
-    public function findPaginated(string $sort, string $order, ?string $status, ?string $search, int $page, int $pageSize ): array{
+    public function findPaginated(string $sort, string $order, ?DateTimeImmutable $from, ?DateTimeImmutable $to, ?string $search, int $page, int $pageSize ): array{
         $qb = $this->createQueryBuilder('e')
             ->where('e.deletedAt IS NULL')
             ->orderBy('e.' . $sort, $order)
             ->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
-        if ($status){
-            $qb->andWhere('e.status = :status')->setParameter('status', $status);
+
+        if ($from !== null && $to !== null) {
+            $reserved = $this->getEntityManager()->createQueryBuilder()
+                ->select('ri.id')
+                ->from(ReservationItem::class, 'ri')
+                ->innerJoin('ri.reservation', 'r')
+                ->where('ri.requestedEquipment = e OR ri.assignedEquipment = e')
+                ->andWhere('r.startDatetime < :to')
+                ->andWhere('r.endDatetime > :from');
+
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($reserved->getDQL())))
+                ->setParameter('from', $from)
+                ->setParameter('to', $to);
         }
+
         if ($search){
             $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%' . $search . '%');
         }

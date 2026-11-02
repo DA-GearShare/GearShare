@@ -38,7 +38,8 @@ final class EquipmentController extends AbstractController
         EquipmentRepository          $repository,
         #[MapQueryParameter] string  $sort = 'name',
         #[MapQueryParameter] string  $order = 'asc',
-        #[MapQueryParameter] ?string $status = null,
+        #[MapQueryParameter] ?string $from = null,
+        #[MapQueryParameter] ?string $to = null,
         #[MapQueryParameter] ?string $search = null,
         #[MapQueryParameter] int     $page = 1,
         #[MapQueryParameter] int     $pageSize = 20,
@@ -49,9 +50,6 @@ final class EquipmentController extends AbstractController
         }
         if ($page < 1 || $pageSize < 1) {
             return new Response('Ungültige Paginierung.', Response::HTTP_BAD_REQUEST);
-        }
-        if ($status && !in_array($status, ['available', 'reserved', 'issued'])){
-            return new Response('Ungültiger Status.', Response::HTTP_BAD_REQUEST);
         }
 
         $result = $repository->findPaginated($sort, $order, $status, $search, $page, $pageSize);

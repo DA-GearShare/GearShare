@@ -162,7 +162,7 @@ final class EquipmentController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/{equipmentId}/accessories', name: 'removeAccessories', methods: ['DELETE'])]
+    #[Route('/{equipmentId}/accessories/{accessoryId}', name: 'removeAccessories', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN')]
     public function removeAccessories(
         Uuid $equipmentId,
@@ -176,7 +176,7 @@ final class EquipmentController extends AbstractController
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
         }
 
-        $accessory = $repository->find($accessoryEquipmentId);
+        $accessory = $repository->find($accessoryId);
         if ($accessory === null || !$equipment->getAccessories()->contains($accessory)) {
             return new Response('Verknüpfung nicht gefunden.', Response::HTTP_NOT_FOUND);
         }

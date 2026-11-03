@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Dto\EquipmentCreateDto;
+use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -86,6 +87,20 @@ final class EquipmentController extends AbstractController
             ],
         ]);
     }
+    #[Route('/{equipmentId}', name: 'get', methods: ['GET'])]
+    public function getEquipment(
+        Uuid $equipmentId,
+        EquipmentRepository $repository,
+    ): Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($this->serializeEquipment($equipment));
+    }
+
     #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
     public function getAccessories(
         Uuid $equipmentId,
@@ -226,6 +241,44 @@ final class EquipmentController extends AbstractController
         return $this->json($this->serializeEquipment($equipment), Response::HTTP_CREATED, [
             'Location' => '/api/v1/equipment/' . $equipment->getId()?->toRfc4122(),
         ]);
+    }
+
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('/{equipmentId}', name: 'edit', methods: ['PUT'])]
+    public function editEquipment(
+        Uuid $equipmentId,
+        Request $request,
+        EquipmentRepository $repository,
+    ): Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+            return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
+        }
+
+        $dto = EquipmentUpdateDto::fromArray($parameters);
+        if ($dto->hasErrors()) {
+            return new JsonResponse([
+                'message' => 'Invalider Request Body',
+                'errors' => $dto->getErrors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $result = $repository->updateFromDto($equipment, $dto);
+        if ($result instanceof Response) {
+            return $result;
+        }
+
+        return $this->json($this->serializeEquipment($equipment));
     }
 
     /** @return array<string, mixed> */

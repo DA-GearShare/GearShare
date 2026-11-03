@@ -125,9 +125,7 @@ final class EquipmentController extends AbstractController
         $items = array_map(fn($e) => [
             'accessoryEquipmentId' => $e->getId(),
             'name' => $e->getName(),
-            'availableInRequestedPeriod' => $fromDate !== null
-                ? !in_array($e->getId()->toRfc4122(), $reservedIds, true)
-                : $e->getStatus()->value === 'available'
+            'availableInRequestedPeriod' => !in_array($e->getId()->toRfc4122(), $reservedIds, true),
         ], $accessories);
         return $this->json($items);
     }
@@ -169,7 +167,6 @@ final class EquipmentController extends AbstractController
         return $this->json([
             'accessoryEquipmentId' => $accessory->getId(),
             'name' => $accessory->getName(),
-            'availableInRequestedPeriod' => $accessory->getStatus()->value === 'available',
         ], Response::HTTP_CREATED);
     }
 

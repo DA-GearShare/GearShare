@@ -7,7 +7,6 @@ defineProps<{
     name: string
     model: string
     type: string
-    status: string
     selectable?: boolean
     selectDisabled?: boolean
 }>();
@@ -29,7 +28,6 @@ const authStore = useAuthStore();
                 <p class="meta">{{ model }}</p>
                 <div class="tags">
                     <span class="tag">{{ type }}</span>
-                    <span class="tag">{{ status }}</span>
                 </div>
             </div>
             <RouterLink v-if="!selectable && authStore.hasRole(['Admin'])" :to="`/inventar/${id}/bearbeiten`" class="btn-secondary edit-button" @click.stop>

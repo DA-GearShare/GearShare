@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import {computed, onMounted} from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { useAuthStore } from '@/stores/AuthStore.ts';
 import EquipmentCard from "@/components/EquipmentCard.vue";
@@ -11,7 +11,12 @@ import ButtonsPagination from "@/components/ButtonsPagination.vue";
 const props = defineProps<{
     pickerMode?: boolean;
     excludeIds?: string[];
+    hideId?: string;
 }>();
+
+const visibleEquipment = computed(() => {
+    return store.equipment.filter((item: any) => item.id !== props.hideId);
+});
 
 const emit = defineEmits<{
     (e: 'select', id: string): void;
@@ -77,7 +82,7 @@ const handleSelect = (id: string) => {
 
     <div class="card-list">
         <EquipmentCard
-            v-for="item in store.equipment"
+            v-for="item in visibleEquipment"
             :key="item.id"
             :id="item.id"
             :name="item.name"

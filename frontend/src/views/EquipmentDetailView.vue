@@ -114,6 +114,7 @@ function formatDate(value: string) {
             <button @click="showPicker = false">Schließen</button>
             <EquipmentAll
                 picker-mode
+                :hide-id="String(route.params.id)"
                 :exclude-ids="excludeIds"
                 @select="addAccessory"
             />

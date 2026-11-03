@@ -243,7 +243,7 @@ final class EquipmentController extends AbstractController
             'model' => $equipment->getModel(),
             'code' => $equipment->getCode(),
             'status' => $equipment->getStatus()?->value,
-            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
+//            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
             'createdAt' => $equipment->getCreatedAt()?->format(DATE_ATOM),
             'deletedAt' => $equipment->getDeletedAt()?->format(DATE_ATOM),
         ];

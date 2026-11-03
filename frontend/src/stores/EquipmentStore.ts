@@ -3,15 +3,23 @@ import { defineStore } from 'pinia';
 
 export const useEquipmentStore = defineStore('equipment', () => {
     const equipment = ref([]);
-    const filters = reactive({ sort: 'name', order: 'asc', status: '', search: '', page: 1, pageSize: 10 });
+    const filters = reactive({ sort: 'name', order: 'asc', from: '', to: '', search: '', page: 1, pageSize: 10 });
     const meta = ref([]);
 
     async function fetchEquipment(){
         const params = new URLSearchParams();
         for (const [key, value] of Object.entries(filters)){
+            if (value === '' || value === null || value === undefined) continue;
             params.append(key, String(value));
         }
+
+        if (!filters.from || !filters.to) {
+            params.delete('from');
+            params.delete('to');
+        }
+
         const response = await fetch(`/api/v1/equipment?${params}`);
+        if (!response.ok) return;
         const data = await response.json();
         equipment.value = data.items;
         meta.value = data.meta;

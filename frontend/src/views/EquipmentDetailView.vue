@@ -1,83 +1,100 @@
 <script setup lang="ts">
-    import {useRoute} from "vue-router";
-    import {computed, onMounted, ref, watch} from "vue";
-    import AccessoryCard from "@/components/AccessoryCard.vue";
-    import {useAuthStore} from "@/stores/AuthStore.ts";
-    import EquipmentAll from "@/components/EquipmentAll.vue";
+import { useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import AccessoryCard from "@/components/AccessoryCard.vue";
+import { useAuthStore } from "@/stores/AuthStore.ts";
+import EquipmentAll from "@/components/EquipmentAll.vue";
+import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 
-    interface Accessory {
-        accessoryEquipmentId: string
-        name: string
-        availableInRequestedPeriod: boolean
-    }
-    const route = useRoute();
-    const autStore = useAuthStore();
-    const accessories = ref<Accessory[]>([])
+interface Accessory {
+    accessoryEquipmentId: string
+    name: string
+    availableInRequestedPeriod: boolean
+}
+const route = useRoute();
+const autStore = useAuthStore();
+const equipmentStore = useEquipmentStore();
+const accessories = ref<Accessory[]>([]);
 
-    const from = ref('')
-    const to = ref('')
+async function loadAccessories() {
+    let url = `/api/v1/equipment/${route.params.id}/accessories`;
 
-    async function loadAccessories() {
-        let url = `/api/v1/equipment/${route.params.id}/accessories`
-
-        if (from.value && to.value){
-            url += `?from=${from.value}&to=${to.value}`
-        }
-        const res = await fetch(url)
-        if (!res.ok) return
-        accessories.value = await res.json()
+    const { from, to } = equipmentStore.filters;
+    if (from && to) {
+        url += `?from=${from}&to=${to}`;
     }
 
-    watch([from, to], loadAccessories, {immediate: true})
+    const res = await fetch(url);
+    if (!res.ok) return;
+    accessories.value = await res.json();
+}
 
-    //Für Admins
-    const isAdmin = computed(() => autStore.hasRole(['Admin']))
-    const showPicker = ref(false)
-    const error = ref('')
+watch(
+    () => [equipmentStore.filters.from, equipmentStore.filters.to],
+    loadAccessories,
+    { immediate: true }
+);
 
-    const excludeIds = computed(() => [
+//Für Admins
+const isAdmin = computed(() => {
+    return autStore.hasRole(['Admin']);
+});
+const showPicker = ref(false);
+const error = ref('');
+
+const excludeIds = computed(() => {
+    return [
         route.params.id as string,
-        ...accessories.value.map(a => a.accessoryEquipmentId),
-    ])
+        ...accessories.value.map(a => {
+            return a.accessoryEquipmentId;
+        }),
+    ];
+});
 
-    async function addAccessory(accessoryId: string) {
-        error.value = ''
-        const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accessoryEquipmentId: accessoryId }),
-        })
-        if (!res.ok){
-            error.value = await res.text()
-            return
-        }
-        await loadAccessories()
+async function addAccessory(accessoryId: string) {
+    error.value = '';
+    const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessoryEquipmentId: accessoryId }),
+    });
+    if (!res.ok){
+        error.value = await res.text();
+        return;
     }
-    async function removeAccessory(accessoryId: string) {
-        error.value = ''
-        const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories/${accessoryId}`, {
-            method: 'DELETE',
-        })
+    await loadAccessories();
+}
+async function removeAccessory(accessoryId: string) {
+    error.value = '';
+    const res = await fetch(`/api/v1/equipment/${route.params.id}/accessories/${accessoryId}`, {
+        method: 'DELETE',
+    });
 
-        if (!res.ok) {
-            error.value = await res.text()
-            return
-        }
-        await loadAccessories()
+    if (!res.ok) {
+        error.value = await res.text();
+        return;
     }
+    await loadAccessories();
+}
+
+
+function formatDate(value: string) {
+    return new Date(value).toLocaleString('de-AT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
 </script>
 
 <template>
     <h2>Empfehlungen</h2>
 
-    <label>
-        Von
-        <input type="datetime-local" v-model="from" />
-    </label>
-    <label>
-        Bis
-        <input type="datetime-local" v-model="to" />
-    </label>
+    <p v-if="equipmentStore.filters.from && equipmentStore.filters.to">
+        Verfügbarkeit für {{ formatDate(equipmentStore.filters.from) }} bis {{ formatDate(equipmentStore.filters.to) }}
+    </p>
 
     <AccessoryCard
         v-for="item in accessories"
@@ -97,6 +114,7 @@
             <button @click="showPicker = false">Schließen</button>
             <EquipmentAll
                 picker-mode
+                :hide-id="String(route.params.id)"
                 :exclude-ids="excludeIds"
                 @select="addAccessory"
             />

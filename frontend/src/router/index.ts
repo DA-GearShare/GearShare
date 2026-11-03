@@ -8,6 +8,7 @@ import AccountView from '../views/AccountView.vue';
 import AdminView from '../views/AdminView.vue';
 import EquipmentAddView from "@/views/EquipmentAddView.vue";
 import EquipmentDetailView from '../views/EquipmentDetailView.vue';
+import EquipmentEditView from '../views/EquipmentEditView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -41,6 +42,12 @@ const router = createRouter({
             name: 'equipment-detail',
             component: EquipmentDetailView,
             meta: { requiresAuth: true }
+        },
+        {
+            path: '/inventar/:id/bearbeiten',
+            name: 'equipment-edit',
+            component: EquipmentEditView,
+            meta: { requiresAuth: true, roles: ['Admin'] }
         },
         {
             path: '/anleitung',

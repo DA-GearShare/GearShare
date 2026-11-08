@@ -7,11 +7,11 @@ use App\Entity\EquipmentPhoto;
 use App\Repository\EquipmentPhotoRepository;
 use App\Repository\EquipmentRepository;
 use App\Storage\PhotoStorage;
+use JsonException;
 use League\Flysystem\FilesystemException;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -129,14 +129,12 @@ final class EquipmentPhotoController extends AbstractController
      * @param EquipmentPhotoRepository $photoRepository
      * @param EquipmentRepository $equipmentRepository
      * @return Response
-     * @throws \JsonException
      */
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_isMain_update', methods: ['PATCH'])]
-    public function updatePhoto(
+    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_mark_isMain', methods: ['PATCH'])]
+    public function markAsMainPhoto(
         Uuid                     $equipmentId,
         Uuid                     $photoId,
-        Request                  $request,
         EquipmentPhotoRepository $photoRepository,
         EquipmentRepository      $equipmentRepository,
     ): Response
@@ -148,16 +146,7 @@ final class EquipmentPhotoController extends AbstractController
             return $notFound;
         }
 
-        try {
-            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
-        }
-        if (!is_array($parameters) || !array_key_exists('isMain', $parameters) || !is_bool($parameters['isMain'])) {
-            return new Response('Invalider Request Body', Response::HTTP_BAD_REQUEST, ['isMain' => 'Must be a boolean']);
-        }
-
-        $photoRepository->updateIsMain($photo, $equipment, $parameters['isMain']);
+        $photoRepository->markAsIsMain($photo, $equipment);
 
         return $this->json($this->serializePhoto($photo));
     }

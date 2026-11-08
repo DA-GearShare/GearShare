@@ -595,15 +595,6 @@ paths:
         patch:
             tags: [ Equipment ]
             summary: Foto als Hauptbild markieren (Admin)
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            properties:
-                                isMain:
-                                    type: boolean
             responses:
                 '200':
                     description: Aktualisiert.

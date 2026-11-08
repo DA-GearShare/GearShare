@@ -61,17 +61,11 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     /**
      * @param EquipmentPhoto $photo
      * @param Equipment $equipment
-     * @param bool $isMain
      * @return void
      */
-    public function updateIsMain(EquipmentPhoto $photo, Equipment $equipment, bool $isMain): void
+    public function markAsIsMain(EquipmentPhoto $photo, Equipment $equipment): void
     {
-        if ($isMain) {
-            $equipment->setMainPhoto($photo);
-        } else {
-            $photo->setIsMain(false);
-        }
-
+        $equipment->setMainPhoto($photo);
         $this->getEntityManager()->flush();
     }
 

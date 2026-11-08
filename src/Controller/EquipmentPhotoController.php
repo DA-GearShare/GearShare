@@ -83,12 +83,11 @@ final class EquipmentPhotoController extends AbstractController
             return new Response($file->getErrorMessage(), Response::HTTP_BAD_REQUEST);
         }
         if ($file->getSize() > self::MAX_PHOTO_BYTES) {
-            return new Response('Maximal 15 MB pro Foto', Response::HTTP_BAD_REQUEST);
+            return new Response(sprintf('Maximal %s MB pro Foto', self::MAX_PHOTO_BYTES / (1024 * 1024)), Response::HTTP_BAD_REQUEST);
         }
 
-        // v4 = 122 Zufallsbits. Die UUID ist der einzige Schutz der öffentlichen URL.
         $id = Uuid::v4();
-        $storage->putEquipment($file, $id); // wirft 415 bei falschem Dateityp
+        $storage->putEquipment($file, $id); // throws 415 when wrong filetype
 
         try {
             $photo = $photoRepository->createForEquipment(
@@ -108,7 +107,10 @@ final class EquipmentPhotoController extends AbstractController
         return $this->json($this->serializePhoto($photo), Response::HTTP_CREATED);
     }
 
-    /** @return array<string, mixed> Form wie components.schemas.EquipmentPhoto in api.yaml */
+    /**
+     * @param EquipmentPhoto $photo
+     * @return array
+     */
     private function serializePhoto(EquipmentPhoto $photo): array
     {
         return [
@@ -120,8 +122,17 @@ final class EquipmentPhotoController extends AbstractController
         ];
     }
 
+    /**
+     * @param Uuid $equipmentId
+     * @param Uuid $photoId
+     * @param Request $request
+     * @param EquipmentPhotoRepository $photoRepository
+     * @param EquipmentRepository $equipmentRepository
+     * @return Response
+     * @throws \JsonException
+     */
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_update', methods: ['PATCH'])]
+    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_isMain_update', methods: ['PATCH'])]
     public function updatePhoto(
         Uuid                     $equipmentId,
         Uuid                     $photoId,
@@ -151,6 +162,11 @@ final class EquipmentPhotoController extends AbstractController
         return $this->json($this->serializePhoto($photo));
     }
 
+    /**
+     * @param EquipmentPhoto|null $photo
+     * @param Equipment|null $equipment
+     * @return Response|null
+     */
     private function checkPhotoBelongsTo(?EquipmentPhoto $photo, ?Equipment $equipment): ?Response
     {
 
@@ -169,6 +185,16 @@ final class EquipmentPhotoController extends AbstractController
         return null;
     }
 
+    /**
+     * @param Uuid $equipmentId
+     * @param Uuid $photoId
+     * @param EquipmentPhotoRepository $photoRepository
+     * @param EquipmentRepository $equipmentRepository
+     * @param PhotoStorage $storage
+     * @param EquipmentPhotoRepository $photos
+     * @param LoggerInterface $logger
+     * @return Response
+     */
     #[IsGranted('ROLE_ADMIN')]
     #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', methods: ['DELETE'])]
     public function deletePhoto(
@@ -190,7 +216,7 @@ final class EquipmentPhotoController extends AbstractController
 
         $id = $photo->getId();
 
-        // Erst DB, dann Bucket: schlägt der Bucket fehl, bleibt nur eine unreferenzierte Datei.
+        // First DB, then bucket: if bucket fails, an unreferenced file proceeds to exist
         $photos->removeFromEquipment($photo, $equipment);
 
         try {

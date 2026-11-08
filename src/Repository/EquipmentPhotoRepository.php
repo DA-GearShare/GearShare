@@ -21,9 +21,10 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Hauptbild zuerst, dann nach Upload-Zeitpunkt.
+     * Main Image first, then by upload-timing
      *
-     * @return list<EquipmentPhoto>
+     * @param Equipment $equipment
+     * @return array
      */
     public function findForEquipment(Equipment $equipment): array
     {
@@ -34,8 +35,13 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Legt ein Foto an. Es wird Hauptbild, wenn das gewünscht ist
-     * oder das Gerät noch keines hat.
+     * Create photo. Will be main image if requested or if first image
+     *
+     * @param Equipment $equipment
+     * @param Uuid $id
+     * @param string $url
+     * @param bool $isMain
+     * @return EquipmentPhoto
      */
     public function createForEquipment(Equipment $equipment, Uuid $id, string $url, bool $isMain): EquipmentPhoto
     {
@@ -52,6 +58,12 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
         return $photo;
     }
 
+    /**
+     * @param EquipmentPhoto $photo
+     * @param Equipment $equipment
+     * @param bool $isMain
+     * @return void
+     */
     public function updateIsMain(EquipmentPhoto $photo, Equipment $equipment, bool $isMain): void
     {
         if ($isMain) {
@@ -64,9 +76,13 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Entfernt das Foto aus der DB (orphanRemoval löscht die Zeile).
-     * War es das Hauptbild, wird das älteste verbleibende Foto zum Hauptbild.
-     * Die Datei im Bucket löscht der Aufrufer, erst nach diesem Aufruf.
+     * Deletes the image from DB
+     * If main image, changes oldest image to new main image
+     * File in bucket will be deleted after this call
+     *
+     * @param EquipmentPhoto $photo
+     * @param Equipment $equipment
+     * @return void
      */
     public function removeFromEquipment(EquipmentPhoto $photo, Equipment $equipment): void
     {

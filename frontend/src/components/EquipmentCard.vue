@@ -1,84 +1,66 @@
 <script setup lang="ts">
-    defineProps<{
-        name: string
-        model: string
-        type: string
-        status: string
-    }>();
+import { RouterLink } from "vue-router";
+import { useAuthStore } from "@/stores/AuthStore.ts";
+
+defineProps<{
+    id: string
+    name: string
+    model: string
+    type: string
+    selectable?: boolean
+    selectDisabled?: boolean
+}>();
+
+const emit = defineEmits(['select']);
+const authStore = useAuthStore();
 </script>
 
 <template>
-    <div class="card">
-        <div class="thumb"></div>
-
-        <div class="info">
-            <h3 class="title">{{ name }}</h3>
-            <p class="subtitle">{{ model }}</p>
-            <div class="tags">
-                <span class="tag">{{ type }}</span>
-                <span class="tag">{{ status }}</span>
+    <component
+        :is="selectable ? 'div' : RouterLink"
+        :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }"
+        class="card-link"
+    >
+        <div class="card card-row">
+            <div class="thumb"></div>
+            <div>
+                <h3>{{ name }}</h3>
+                <p class="meta">{{ model }}</p>
+                <div class="tags">
+                    <span class="tag">{{ type }}</span>
+                </div>
             </div>
+            <RouterLink v-if="!selectable && authStore.hasRole(['Admin'])" :to="`/inventar/${id}/bearbeiten`" class="btn-secondary edit-button" @click.stop>
+                Bearbeiten
+            </RouterLink>
+            <span class="chevron">›</span>
         </div>
 
-        <span class="chevron">›</span>
-    </div>
+        <button v-if="selectable" class="btn-primary" :disabled="selectDisabled" @click="emit('select', id)">
+            {{ selectDisabled ? 'Bereits zugeordnet' : 'Hinzufügen' }}
+        </button>
+    </component>
 </template>
 
 <style scoped>
-.card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 14px 18px 14px 14px;
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 4px 18px rgba(15, 27, 45, 0.06);
+.card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
 }
 
-.thumb {
-  flex-shrink: 0;
-  width: 104px;
-  height: 104px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #f3f4f6, #e7e9ed);
+.edit-button {
+    flex-shrink: 0;
+    min-height: 36px;
+    margin-left: auto;
+    padding: 0 var(--space-l);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    white-space: nowrap;
+    border-radius: var(--radius-tab);
 }
 
-.info {
-  flex: 1;
-  min-width: 0;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: #0f1b2d;
-}
-
-.subtitle {
-  margin: 4px 0 12px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag {
-  padding: 4px 11px;
-  font-size: 13px;
-  color: #4b5563;
-  background: #f1f2f4;
-  border-radius: 999px;
-}
-
-.chevron {
-  flex-shrink: 0;
-  font-size: 28px;
-  color: #1f2937;
+.edit-button + .chevron {
+    margin-left: 0;
 }
 </style>

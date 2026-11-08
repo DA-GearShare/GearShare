@@ -1,35 +1,35 @@
 import { fileURLToPath, URL } from 'node:url';
 
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
-const apiTarget = process.env.VITE_API_TARGET || 'http://localhost';
-const publicPort = Number(process.env.VITE_PUBLIC_PORT || 80);
-const polling = process.env.CHOKIDAR_USEPOLLING === 'true';
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
 
-export default defineConfig({
-    plugins: [
-        vue(),
-        vueDevTools(),
-    ],
-    resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
+    const apiTarget = env.VITE_API_URL || 'http://localhost';
+    const publicPort = Number(env.VITE_PUBLIC_PORT || 80);
+    const polling = env.CHOKIDAR_USEPOLLING === 'true';
+
+    const allowedHosts = (env.ALLOWED_HOSTS || '').split(',').map((h) => {
+        return h.trim();
+    }).filter(Boolean);
+
+    return {
+        plugins: [vue(), vueDevTools()],
+        resolve: {
+            alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
         },
-    },
-    server: {
-        host: true,
-        port: 5173,
-        strictPort: true,
-        watch: { usePolling: polling },
-        hmr: { clientPort: publicPort },
-        proxy: {
-            '/api': {
-                target: apiTarget,
-                changeOrigin: true,
+        server: {
+            host: true,
+            port: 5173,
+            strictPort: true,
+            allowedHosts,
+            watch: { usePolling: polling },
+            hmr: { clientPort: publicPort },
+            proxy: {
+                '/api': { target: apiTarget, changeOrigin: true },
             },
         },
-    },
-
+    };
 });

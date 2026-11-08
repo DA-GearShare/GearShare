@@ -1,40 +1,312 @@
-@import './base.css';
+/* ── Design Tokens (GearShare Styleguide v1.1) ───────────────────────── */
+:root {
+    /* Farben */
+    --color-navy: #12273c;
+    --color-accent: #2456c8;
+    --color-text-primary: #111827;
+    --color-text-secondary: #374151;
+    --color-muted: #6b7280;
+    --color-border: #e5e7eb;
+    --color-background: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-soft-surface: #f3f4f6;
 
-#app {
-  margin: 0 auto;
-  background-color: var(--color-background);
-  color: #333;
+    /* Status */
+    --color-available-bg: #e1eddc;
+    --color-available-accent: #9fbe95;
+    --color-available-text: #4f6d47;
+    --color-unavailable: #e9edf1;
+    --color-error-bg: #feecec;
+    --color-error-text: #b91c1c;
+    --color-current-time: #ef4444;
+    --color-info: #dbeafe;
+
+    /* Kalender (Pastell) */
+    --color-cal-blue: #dfe9fb;
+    --color-cal-green: #e1eddc;
+    --color-cal-yellow: #fff0be;
+    --color-cal-purple: #e8e1f3;
+
+    /* Schrift: Segoe UI, nur Regular 400 und Bold 700 */
+    --font-family: 'Segoe UI', Arial, sans-serif;
+    --font-regular: 400;
+    --font-bold: 700;
+
+    /* Größe / Zeilenhöhe */
+    --text-h1-size: 24px;       --text-h1-line: 32px;
+    --text-h2-size: 18px;       --text-h2-line: 26px;
+    --text-card-size: 17px;     --text-card-line: 22px;
+    --text-h3-size: 14px;       --text-h3-line: 20px;
+    --text-body-size: 14px;     --text-body-line: 21px;
+    --text-nav-size: 15px;      --text-nav-line: 22px;
+    --text-label-size: 12px;    --text-label-line: 18px;
+    --text-meta-size: 13px;     --text-meta-line: 18px;
+    --text-help-size: 11px;     --text-help-line: 16px;
+
+    /* Abstände (4/8-Basis) */
+    --space-xs: 4px;
+    --space-s: 8px;
+    --space-m: 12px;
+    --space-gap: 14px;
+    --space-l: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+    --space-section: 48px;
+
+    /* Radius */
+    --radius-s: 8px;
+    --radius-tab: 12px;
+    --radius-button: 14px;
+    --radius-card: 18px;
+    --radius-section: 20px;
+    --radius-pill: 999px;
+
+    /* Schatten */
+    --shadow-card: 0 8px 24px rgba(17, 24, 39, 0.08);
+    --border-card: 1px solid #e8eaee;
+}
+
+/* ── Grundelemente & Typografie ──────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    font-family: var(--font-family);
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-line);
+    font-weight: var(--font-regular);
+    color: var(--color-text-secondary);
+    background: var(--color-background);
+    text-align: left;
 }
 
-button {
-  background-color: var(--color-navy);
+/* H1 / Produkt */
+h1 {
+    margin: 0 0 var(--space-l);
+    font-size: var(--text-h1-size);
+    line-height: var(--text-h1-line);
+    font-weight: var(--font-bold);
+    color: var(--color-navy);
 }
 
-.btn-primary {
-  font-family: 'Segoe UI', sans-serif;
-  display: inline-block;
-  padding: 0.75rem 1rem;
-  background-color: var(--color-navy);
-  color: var(--color-surface);
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
+/* H2 / Abschnitt */
+h2 {
+    margin: 0 0 var(--space-m);
+    font-size: var(--text-h2-size);
+    line-height: var(--text-h2-line);
+    font-weight: var(--font-bold);
+    color: var(--color-navy);
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+/* H3 / Empfehlung */
+h3 {
+    margin: 0 0 var(--space-s);
+    font-size: var(--text-h3-size);
+    line-height: var(--text-h3-line);
+    font-weight: var(--font-bold);
+    color: var(--color-navy);
 }
 
-button,
+/* Inventarkarte: Titel */
+.card h3 {
+    font-size: var(--text-card-size);
+    line-height: var(--text-card-line);
+}
+
+/* Fließtext */
+p {
+    margin: 0 0 var(--space-s);
+}
+
+a {
+    color: var(--color-accent);
+}
+
+/* Metadaten */
+.meta {
+    font-size: var(--text-meta-size);
+    line-height: var(--text-meta-line);
+    color: var(--color-muted);
+}
+
+/* Hilfetext */
+.hint {
+    font-size: var(--text-help-size);
+    line-height: var(--text-help-line);
+    font-weight: var(--font-regular);
+    color: var(--color-muted);
+}
+
+/* Sichtbarer Fokus: 2 px Accent Blue, 3 px Abstand */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+}
+
+/* Navigation: Regular, aktiver Eintrag Bold */
+.nav-link {
+    font-size: var(--text-nav-size);
+    line-height: var(--text-nav-line);
+    font-weight: var(--font-regular);
+    color: var(--color-text-primary);
+    text-decoration: none;
+}
+
+.nav-link.router-link-active {
+    font-weight: var(--font-bold);
+}
+
+/* ── Formulare ───────────────────────────────────────────────────────── */
+label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
 input,
 select,
 textarea {
-  font-family: inherit;   /* übernimmt die Schrift vom body */
+    min-height: 44px;
+    padding: var(--space-s) var(--space-m);
+    font: inherit;
+    font-size: var(--text-body-size);
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-muted); /* kräftiger Rand für Kontrast */
+    border-radius: var(--radius-tab);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn-primary,
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 var(--space-xl);
+    font: inherit;
+    font-size: var(--text-nav-size);
+    line-height: var(--text-nav-line);
+    font-weight: var(--font-bold);
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: var(--radius-button);
+}
+
+.btn-primary {
+    color: var(--color-surface);
+    background: var(--color-navy);
+    border: 1px solid var(--color-navy);
+}
+
+.btn-secondary {
+    color: var(--color-navy);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+    color: var(--color-muted);
+    background: var(--color-soft-surface);
+    border-color: var(--color-border);
+    cursor: not-allowed;
+}
+
+/* ── Bausteine ───────────────────────────────────────────────────────── */
+.card {
+    padding: var(--space-m);
+    background: var(--color-surface);
+    border: var(--border-card);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+
+.section-card {
+    padding: var(--space-l);
+    background: var(--color-surface);
+    border: var(--border-card);
+    border-radius: var(--radius-section);
+}
+
+.tag {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-m);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: var(--font-regular);
+    color: var(--color-text-secondary);
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-pill);
+}
+
+.tag-available {
+    color: var(--color-available-text);
+    background: var(--color-available-bg);
+}
+
+.message-error {
+    padding: var(--space-m) var(--space-l);
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-left: 3px solid var(--color-error-text);
+    border-radius: var(--radius-tab);
+}
+
+.message-info {
+    padding: var(--space-m) var(--space-l);
+    color: var(--color-text-primary);
+    background: var(--color-info);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius-tab);
+}
+
+/* ── Layout-Helfer ───────────────────────────────────────────────────── */
+.card-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-l);
+}
+
+.card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-gap);
+    margin: var(--space-l) 0;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-bottom: var(--space-l);
+}
+
+.thumb {
+    flex-shrink: 0;
+    width: 104px;
+    height: 104px;
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-tab);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+}
+
+.chevron {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 28px;
+    color: var(--color-text-primary);
 }

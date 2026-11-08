@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Dto\EquipmentCreateDto;
+use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Entity\EquipmentPool;
 use App\Enum\EquipmentStatus;
@@ -10,8 +11,11 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use App\Entity\ReservationItem;
+use DateTimeImmutable;
 
 /**
  * @extends ServiceEntityRepository<Equipment>
@@ -26,15 +30,27 @@ class EquipmentRepository extends ServiceEntityRepository
     /**
      * @return array{items: Equipment[], totalItems: int}
      */
-    public function findPaginated(string $sort, string $order, ?string $status, ?string $search, int $page, int $pageSize ): array{
+    public function findPaginated(string $sort, string $order, ?DateTimeImmutable $from, ?DateTimeImmutable $to, ?string $search, int $page, int $pageSize ): array{
         $qb = $this->createQueryBuilder('e')
             ->where('e.deletedAt IS NULL')
             ->orderBy('e.' . $sort, $order)
             ->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
-        if ($status){
-            $qb->andWhere('e.status = :status')->setParameter('status', $status);
+
+        if ($from !== null && $to !== null) {
+            $reserved = $this->getEntityManager()->createQueryBuilder()
+                ->select('ri.id')
+                ->from(ReservationItem::class, 'ri')
+                ->innerJoin('ri.reservation', 'r')
+                ->where('ri.requestedEquipment = e OR ri.assignedEquipment = e')
+                ->andWhere('r.startDatetime < :to')
+                ->andWhere('r.endDatetime > :from');
+
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($reserved->getDQL())))
+                ->setParameter('from', $from)
+                ->setParameter('to', $to);
         }
+
         if ($search){
             $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%' . $search . '%');
         }
@@ -49,6 +65,24 @@ class EquipmentRepository extends ServiceEntityRepository
     public function codeExists(string $code): bool
     {
         return $this->count(['code' => $code]) > 0;
+    }
+
+    /**
+     * Wie codeExists(), ignoriert aber das übergebene Gerät selbst (für Updates).
+     * Prüft ebenfalls soft-gelöschte Geräte.
+     */
+    public function codeExistsForOther(string $code, Equipment $self): bool
+    {
+        $count = $this->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->where('e.code = :code')
+            ->andWhere('e.id != :id')
+            ->setParameter('code', $code)
+            ->setParameter('id', $self->getId(), UuidType::NAME)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $count > 0;
     }
 
     /**
@@ -106,6 +140,44 @@ class EquipmentRepository extends ServiceEntityRepository
             ->setPool($pool);
 
         $em->persist($equipment);
+
+        try {
+            $em->flush();
+        } catch (UniqueConstraintViolationException) {
+            return new Response(
+                'Code ist bereits vergeben, bitte erneut versuchen.',
+                Response::HTTP_CONFLICT
+            );
+        }
+
+        return $equipment;
+    }
+
+    /**
+     * Aktualisiert Stammdaten eines Geräts (PUT). Status und Pool bleiben unverändert.
+     * Ist kein `code` angegeben, bleibt der bisherige Code erhalten.
+     */
+    public function updateFromDto(Equipment $equipment, EquipmentUpdateDto $dto): Equipment|Response
+    {
+        $em = $this->getEntityManager();
+
+        $codeChanged = $dto->code !== null && $dto->code !== $equipment->getCode();
+        if ($codeChanged && $this->codeExistsForOther($dto->code, $equipment)) {
+            return new Response(
+                sprintf('Code "%s" ist bereits vergeben.', $dto->code),
+                Response::HTTP_CONFLICT
+            );
+        }
+
+        $equipment
+            ->setName($dto->name)
+            ->setLocation($dto->location)
+            ->setType($dto->type)
+            ->setModel($dto->model);
+
+        if ($codeChanged) {
+            $equipment->setCode($dto->code);
+        }
 
         try {
             $em->flush();

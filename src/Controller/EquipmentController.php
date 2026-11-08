@@ -7,18 +7,10 @@ namespace App\Controller;
 use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
-use App\Entity\EquipmentPhoto;
-use App\Repository\EquipmentPhotoRepository;
 use App\Repository\EquipmentRepository;
-use App\Storage\PhotoStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
-use League\Flysystem\FilesystemException;
-use Psr\Log\LoggerInterface;
-use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,20 +20,10 @@ use DateTimeImmutable;
 use App\Repository\ReservationItemRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
-    private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    private const int MAX_PHOTO_BYTES = 15 * 1024 * 1024;
-
-    public function __construct(
-        #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
-    )
-    {
-    }
-
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
         EquipmentRepository          $repository,
@@ -77,13 +59,7 @@ final class EquipmentController extends AbstractController
 
         $result = $repository->findPaginated($sort, $order, $fromDate, $toDate, $search, $page, $pageSize);
 
-        $items = array_map(fn($e) => [
-            'id' => $e->getId(),
-            'name' => $e->getName(),
-            'location' => $e->getLocation(),
-            'type' => $e->getType(),
-            'model' => $e->getModel(),
-        ], $result['items']);
+        $items = array_map(fn($e) => $this->serializeEquipment($e), $result['items']);
 
         return $this->json([
             'items' => $items,
@@ -300,160 +276,7 @@ final class EquipmentController extends AbstractController
             'type' => $equipment->getType(),
             'model' => $equipment->getModel(),
             'code' => $equipment->getCode(),
-            'status' => $equipment->getStatus()?->value,
-//            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
-            'createdAt' => $equipment->getCreatedAt()?->format(DATE_ATOM),
-            'deletedAt' => $equipment->getDeletedAt()?->format(DATE_ATOM),
+            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
         ];
-    }
-
-    #[Route('/{equipmentId}/photos', name: 'photo_list', requirements: ['equipmentId' => self::UUID], methods: ['GET'])]
-    public function listPhotos(
-        #[MapEntity(id: 'equipmentId')] Equipment $equipment,
-        EquipmentPhotoRepository                  $photos,
-    ): Response
-    {
-        if ($equipment->isDeleted()) {
-            return new Response('Gerät nicht gefunden', Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->json(array_map(
-            $this->serializePhoto(...),
-            $photos->findForEquipment($equipment),
-        ));
-    }
-
-    /**
-     * @throws FilesystemException
-     * @throws Throwable
-     */
-    #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos', name: 'photo_upload', requirements: ['equipmentId' => self::UUID], methods: ['POST'])]
-    public function uploadPhoto(
-        #[MapEntity(id: 'equipmentId')] Equipment $equipment,
-        Request                                   $request,
-        PhotoStorage                              $storage,
-        EquipmentPhotoRepository                  $photos,
-    ): Response
-    {
-        if ($equipment->isDeleted()) {
-            return new Response('Gerät nicht gefunden', Response::HTTP_NOT_FOUND);
-        }
-
-        $file = $request->files->get('file');
-        if (!$file instanceof UploadedFile) {
-            return new Response('Das Feld "file" fehlt', Response::HTTP_BAD_REQUEST);
-        }
-        if (!$file->isValid()) {
-            return new Response($file->getErrorMessage(), Response::HTTP_BAD_REQUEST);
-        }
-        if ($file->getSize() > self::MAX_PHOTO_BYTES) {
-            return new Response('Maximal 15 MB pro Foto', Response::HTTP_BAD_REQUEST);
-        }
-
-        // v4 = 122 Zufallsbits. Die UUID ist der einzige Schutz der öffentlichen URL.
-        $id = Uuid::v4();
-        $storage->putEquipment($file, $id); // wirft 415 bei falschem Dateityp
-
-        try {
-            $photo = $photos->createForEquipment(
-                $equipment,
-                $id,
-                rtrim($this->mediaBaseUrl, '/') . '/equipment/' . $id->toRfc4122(),
-                $request->request->getBoolean('isMain'),
-            );
-        } catch (Throwable $e) {
-            try {
-                $storage->deleteEquipment($id);
-            } catch (Throwable) {
-            }
-            throw $e;
-        }
-
-        return $this->json($this->serializePhoto($photo), Response::HTTP_CREATED);
-    }
-
-    /** @return array<string, mixed> Form wie components.schemas.EquipmentPhoto in api.yaml */
-    private function serializePhoto(EquipmentPhoto $photo): array
-    {
-        return [
-            'id' => $photo->getId()->toRfc4122(),
-            'equipmentId' => $photo->getEquipment()?->getId()?->toRfc4122(),
-            'url' => $photo->getUrl(),
-            'isMain' => $photo->isMain(),
-            'uploadedAt' => $photo->getUploadedAt()?->format(DATE_ATOM),
-        ];
-    }
-
-    #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_update', requirements: ['equipmentId' => self::UUID, 'photoId' => self::UUID], methods: ['PATCH'])]
-    public function updatePhoto(
-        #[MapEntity(id: 'equipmentId')] Equipment  $equipment,
-        #[MapEntity(id: 'photoId')] EquipmentPhoto $photo,
-        Request                                    $request,
-        EquipmentPhotoRepository                   $photos,
-    ): Response
-    {
-        if ($notFound = $this->checkPhotoBelongsTo($photo, $equipment)) {
-            return $notFound;
-        }
-
-        try {
-            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
-        }
-        if (!is_array($parameters) || !array_key_exists('isMain', $parameters) || !is_bool($parameters['isMain'])) {
-            return new Response('Invalider Request Body', Response::HTTP_BAD_REQUEST, ['isMain' => 'Must be a boolean']);
-        }
-
-        $photos->updateIsMain($photo, $equipment, $parameters['isMain']);
-
-        return $this->json($this->serializePhoto($photo));
-    }
-
-    private function checkPhotoBelongsTo(EquipmentPhoto $photo, Equipment $equipment): ?Response
-    {
-        if ($equipment->isDeleted()) {
-            return new Response('Gerät nicht gefunden', Response::HTTP_NOT_FOUND);
-        }
-
-        $owner = $photo->getEquipment()?->getId();
-        if ($owner === null || !$owner->equals($equipment->getId())) {
-            return new Response('Foto gehört nicht zu diesem Gerät', Response::HTTP_NOT_FOUND);
-        }
-
-        return null;
-    }
-
-    #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', requirements: ['equipmentId' => self::UUID, 'photoId' => self::UUID], methods: ['DELETE'])]
-    public function deletePhoto(
-        #[MapEntity(id: 'equipmentId')] Equipment  $equipment,
-        #[MapEntity(id: 'photoId')] EquipmentPhoto $photo,
-        PhotoStorage                               $storage,
-        EquipmentPhotoRepository                   $photos,
-        LoggerInterface                            $logger,
-    ): Response
-    {
-        if ($notFound = $this->checkPhotoBelongsTo($photo, $equipment)) {
-            return $notFound;
-        }
-
-        $id = $photo->getId();
-
-        // Erst DB, dann Bucket: schlägt der Bucket fehl, bleibt nur eine unreferenzierte Datei.
-        $photos->removeFromEquipment($photo, $equipment);
-
-        try {
-            $storage->deleteEquipment($id);
-        } catch (Throwable $e) {
-            $logger->error('Equipment-Foto konnte nicht aus dem Bucket gelöscht werden.', [
-                'photoId' => $id->toRfc4122(),
-                'exception' => $e,
-            ]);
-        }
-
-        return new Response(null, Response::HTTP_NO_CONTENT);
     }
 }

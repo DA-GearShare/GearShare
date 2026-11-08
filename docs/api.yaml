@@ -238,10 +238,6 @@ paths:
                     schema:
                         type: string
                         format: uuid
-                -   name: status
-                    in: query
-                    schema:
-                        $ref: '#/components/schemas/EquipmentStatus'
                 -   name: search
                     in: query
                     schema:
@@ -1941,14 +1937,9 @@ components:
                     $ref: '#/components/schemas/PageMeta'
 
         # ---------------- Equipment ----------------
-        EquipmentStatus:
-            type: string
-            enum: [ available, reserved, issued ]
-            example: available
-
         Equipment:
             type: object
-            required: [ id, name, location, type, model, status, createdAt ]
+            required: [ id, name, location, type, model]
             properties:
                 id:
                     type: string
@@ -1980,20 +1971,11 @@ components:
                     nullable: true
                     maxLength: 255
                     example: "EQ-2026-00042"
-                status:
-                    $ref: '#/components/schemas/EquipmentStatus'
                 mainPhotoUrl:
                     type: string
                     format: uri
                     nullable: true
                     description: Aus den zugeordneten Referenzfotos abgeleitet (`isMain = true`).
-                createdAt:
-                    type: string
-                    format: date-time
-                deletedAt:
-                    type: string
-                    format: date-time
-                    nullable: true
 
         EquipmentCreate:
             type: object
@@ -2111,7 +2093,7 @@ components:
         # ---------------- Equipment Pools ----------------
         EquipmentPool:
             type: object
-            required: [ id, name, createdAt ]
+            required: [ id, name ]
             properties:
                 id:
                     type: string
@@ -2124,9 +2106,6 @@ components:
                     type: string
                     nullable: true
                     maxLength: 255
-                createdAt:
-                    type: string
-                    format: date-time
                 equipmentCount:
                     type: integer
                     description: Aggregiert aus der Anzahl zugeordneter Geräte.

@@ -5,7 +5,9 @@ import  { useAuthStore } from "@/stores/AuthStore.ts";
 
 const photos = ref([]);
 const route = useRoute();
-const error = ref();
+const error = ref<string | null>(null);
+const inputRef = ref<HTMLInputElement | null>(null);
+const maxFileSize = 50 * 1024 * 1024;
 
 const authStore = useAuthStore();
 
@@ -13,7 +15,7 @@ onMounted(loadPhotosById);
 
 async function loadPhotosById() {
     try {
-        const res = await fetch(`/api/v1/equipment/${route.params.id}/photos`);
+        const res = await fetch(`/api/v1/equipment/${route.params.id}/photos`, { credentials: "include" });
         if (!res.ok) {
             error.value = 'Die Fotos konnten nicht geladen werden.';
         } else {
@@ -21,17 +23,44 @@ async function loadPhotosById() {
             photos.value = await res.json();
         }
     } catch (e) {
-        error.value = 'Die Fotos konnten nicht geladen werden. Error: ' + e;
+        console.log(e);
+        error.value = 'Die Fotos konnten nicht geladen werden.';
     }
 }
 
 async function uploadPhoto() {
+    const file = inputRef.value?.files?.[0];
+
+    if (!file) {
+        error.value = 'Bitte wählen Sie zuerst ein Foto aus.';
+        return;
+    }
+
+    if (file.size > maxFileSize) {
+        error.value = 'Das ausgewählte Foto ist zu groß (max. 50 MB).';
+        return;
+    }
+
     try {
         const formData = new FormData();
         formData.append('file', file);
-        await fetch(`/api/v1/equipment/${route.params.id}/photos`, { method: 'POST', credentials: 'include', body: formData });
+
+        const res = await fetch(`/api/v1/equipment/${route.params.id}/photos`, { method: 'POST', credentials: 'include', body: formData });
+
+        if (!res.ok) {
+            error.value = 'Das Foto konnte nicht hochgeladen werden.';
+            return;
+        }
+        error.value = null;
+
+        await loadPhotosById();
+
+        if (inputRef.value) {
+            inputRef.value.value = '';
+        }
     } catch (e) {
-        error.value = 'Das Foto konnte nicht heruntergeladen werden. Error: ' + e;
+        console.log(e);
+        error.value = 'Das Foto konnte nicht hochgeladen werden.';
     }
 }
 
@@ -39,14 +68,17 @@ async function uploadPhoto() {
 
 <template>
     <div class="equipment-photo">
+        <div class="message-error" v-if="error"> {{ error }}</div>
         <div class="equipment-photo__output">
-            <li v-for="photo in photos" :key="photo.id">
-                <img class="equipment-photo__img" :src="photo.url" />
-            </li>
+            <ul>
+                <li v-for="photo in photos" :key="photo.id">
+                    <img class="equipment-photo__img" alt="Equipment-Foto" :src="photo.url" />
+                </li>
+            </ul>
         </div>
         <div v-if="authStore.hasRole(['Admin'])" class="equipment-photo__input">
-            <input type="file" class="uploadPhoto" /><br>
-            <button @click="uploadPhoto()">Foto Hochladen</button>
+            <input ref="inputRef" type="file" class="uploadPhoto" accept="image/*"/><br>
+            <button @click="uploadPhoto">Foto Hochladen</button>
         </div>
     </div>
 </template>

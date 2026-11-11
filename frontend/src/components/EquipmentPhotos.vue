@@ -7,7 +7,8 @@ const photos = ref([]);
 const route = useRoute();
 const error = ref<string | null>(null);
 const inputRef = ref<HTMLInputElement | null>(null);
-const maxFileSize = 50 * 1024 * 1024;
+const maxFileSize = 15 * 1024 * 1024;
+const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
 const authStore = useAuthStore();
 
@@ -21,6 +22,7 @@ async function loadPhotosById() {
         } else {
             error.value = null;
             photos.value = await res.json();
+            console.log('Geladene Fotos:', photos.value);
         }
     } catch (e) {
         console.log(e);
@@ -36,19 +38,30 @@ async function uploadPhoto() {
         return;
     }
 
-    if (file.size > maxFileSize) {
-        error.value = 'Das ausgewählte Foto ist zu groß (max. 50 MB).';
+    if (!allowedTypes.includes(file.type)) {
+        error.value = 'Erlaubt sind nur JPG, PNG und WebP.';
         return;
     }
 
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
+    if (file.size > maxFileSize) {
+        error.value = 'Das ausgewählte Foto ist zu groß (max. 15 MB).';
+        return;
+    }
 
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
         const res = await fetch(`/api/v1/equipment/${route.params.id}/photos`, { method: 'POST', credentials: 'include', body: formData });
 
         if (!res.ok) {
-            error.value = 'Das Foto konnte nicht hochgeladen werden.';
+            const responseText = await res.text();
+
+            console.error('Upload fehlgeschlagen:');
+            console.error('Status:', res.status);
+            console.error('Antwort:', responseText);
+
+            error.value = `Upload fehlgeschlagen (${res.status})`;
             return;
         }
         error.value = null;
@@ -77,7 +90,7 @@ async function uploadPhoto() {
             </ul>
         </div>
         <div v-if="authStore.hasRole(['Admin'])" class="equipment-photo__input">
-            <input ref="inputRef" type="file" class="uploadPhoto" accept="image/*"/><br>
+            <input ref="inputRef" type="file" class="uploadPhoto" accept="image/jpeg,image/png,image/webp" /><br>
             <button @click="uploadPhoto">Foto Hochladen</button>
         </div>
     </div>

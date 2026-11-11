@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS "reservation_item"
     "fk_reservation_id"         UUID         NOT NULL,
     "fk_requested_equipment_id" UUID,
     "fk_requested_pool_id"      UUID,
-    "fk_assigned_equipment_id"  UUID,
     "status"                    VARCHAR(255) NOT NULL,
     "issued_at"                 TIMESTAMP,
     "returned_at"               TIMESTAMP,
@@ -165,9 +164,6 @@ ALTER TABLE "reservation_item"
         ON UPDATE NO ACTION ON DELETE SET NULL;
 ALTER TABLE "reservation_item"
     ADD FOREIGN KEY ("fk_requested_pool_id") REFERENCES "equipment_pool" ("pk_pool_id")
-        ON UPDATE NO ACTION ON DELETE SET NULL;
-ALTER TABLE "reservation_item"
-    ADD FOREIGN KEY ("fk_assigned_equipment_id") REFERENCES "equipment" ("pk_equipment_id")
         ON UPDATE NO ACTION ON DELETE SET NULL;
 ALTER TABLE "condition_photo"
     ADD FOREIGN KEY ("fk_reservation_id") REFERENCES "reservation" ("pk_reservation_id")

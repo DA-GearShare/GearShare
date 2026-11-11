@@ -331,9 +331,6 @@ final class EquipmentController extends AbstractController
             $reservation = $item->getReservation();
 
             $devices = [$item->getRequestedEquipment()];
-            if ($item->getAssignedEquipment() !== $item->getRequestedEquipment()) {
-                $devices[] = $item->getAssignedEquipment();
-            }
 
             foreach ($devices as $device) {
                 if ($device === null) {

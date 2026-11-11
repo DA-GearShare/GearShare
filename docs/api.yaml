@@ -1229,8 +1229,7 @@ paths:
             summary: Position per Scan als ausgegeben markieren (Admin)
             description: >
                 Wird ein anderes verfügbares Gerät gescannt als ursprünglich
-                angefragt, gilt dies als Ersatzgerät und wird der Position als
-                `assignedEquipmentId` hinzugefügt.
+                angefragt, gilt dies als neues Gerät angelegt.
             requestBody:
                 required: true
                 content:
@@ -2299,11 +2298,6 @@ components:
                     type: string
                     format: uuid
                     nullable: true
-                assignedEquipmentId:
-                    type: string
-                    format: uuid
-                    nullable: true
-                    description: Tatsächlich ausgegebenes Gerät (kann vom angefragten abweichen, z. B. Ersatzgerät).
                 status:
                     $ref: '#/components/schemas/ReservationItemStatus'
                 issuedAt:

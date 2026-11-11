@@ -30,7 +30,7 @@ class ReservationItemRepository extends ServiceEntityRepository
 
         $items = $this->createQueryBuilder('ri')
             ->innerJoin('ri.reservation', 'r')
-            ->where('ri.requestedEquipment IN (:equipment) OR ri.assignedEquipment IN (:equipment)')
+            ->where('ri.requestedEquipment IN (:equipment)')
             ->andWhere('r.startDatetime < :to')
             ->andWhere('r.endDatetime > :from')
             ->setParameter('equipment', $equipment)
@@ -44,9 +44,6 @@ class ReservationItemRepository extends ServiceEntityRepository
             if ($item->getRequestedEquipment() !== null) {
                 $ids[] = $item->getRequestedEquipment()->getId()->toRfc4122();
             }
-            if ($item->getAssignedEquipment() !== null) {
-                $ids[] = $item->getAssignedEquipment()->getId()->toRfc4122();
-            }
         }
 
         return $ids;
@@ -59,7 +56,7 @@ class ReservationItemRepository extends ServiceEntityRepository
         $items = $this->createQueryBuilder('ri')
             ->addSelect('r')
             ->innerJoin('ri.reservation', 'r')
-            ->where('ri.requestedEquipment IN (:equipment) OR ri.assignedEquipment IN (:equipment)')
+            ->where('ri.requestedEquipment IN (:equipment)')
             ->andWhere('r.startDatetime < :from')
             ->andWhere('r.endDatetime > :to')
             ->andWhere('r.status NOT IN (:inactive)')

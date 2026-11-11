@@ -35,10 +35,6 @@ class ReservationItem
     #[ORM\JoinColumn(name: 'fk_requested_pool_id', referencedColumnName: 'pk_pool_id', nullable: true, onDelete: 'SET NULL')]
     private ?EquipmentPool $requestedPool = null;
 
-    #[ORM\ManyToOne(targetEntity: Equipment::class, fetch: 'LAZY')]
-    #[ORM\JoinColumn(name: 'fk_assigned_equipment_id', referencedColumnName: 'pk_equipment_id', nullable: true, onDelete: 'SET NULL')]
-    private ?Equipment $assignedEquipment = null;
-
     #[ORM\Column(name: 'status', type: Types::STRING, length: 255, enumType: ReservationItemStatus::class)]
     private ?ReservationItemStatus $status = null;
 
@@ -85,18 +81,6 @@ class ReservationItem
     public function setRequestedPool(?EquipmentPool $requestedPool): static
     {
         $this->requestedPool = $requestedPool;
-
-        return $this;
-    }
-
-    public function getAssignedEquipment(): ?Equipment
-    {
-        return $this->assignedEquipment;
-    }
-
-    public function setAssignedEquipment(?Equipment $assignedEquipment): static
-    {
-        $this->assignedEquipment = $assignedEquipment;
 
         return $this;
     }

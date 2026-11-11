@@ -101,6 +101,25 @@ final class EquipmentController extends AbstractController
         return $this->json($this->serializeEquipment($equipment));
     }
 
+    #[Route('/{equipmentId}', name: 'delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteEquipment(
+        Uuid $equipmentId,
+        EquipmentRepository $repository,
+    ): Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        // TODO: err 409: Equipment part of an existing reservation
+
+        $repository->deleteEquipment($equipment);
+
+        return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
     #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
     public function getAccessories(
         Uuid $equipmentId,

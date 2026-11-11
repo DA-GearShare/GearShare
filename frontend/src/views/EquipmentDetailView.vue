@@ -5,6 +5,7 @@ import AccessoryCard from "@/components/AccessoryCard.vue";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import EquipmentAll from "@/components/EquipmentAll.vue";
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
+import EquipmentPhotos from "@/components/EquipmentPhotos.vue";
 
 interface Accessory {
     accessoryEquipmentId: string
@@ -90,6 +91,8 @@ function formatDate(value: string) {
 </script>
 
 <template>
+
+    <EquipmentPhotos />
     <h2>Empfehlungen</h2>
 
     <p v-if="equipmentStore.filters.from && equipmentStore.filters.to">

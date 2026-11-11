@@ -64,8 +64,6 @@ const handleSelect = (id: string) => {
 
 <template>
     <div class="page-header" v-if="!pickerMode">
-        <h1>Inventar</h1>
-
         <RouterLink
             v-if="authStore.hasRole(['Admin'])"
             to="/inventar/neu"

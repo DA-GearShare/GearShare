@@ -6,16 +6,16 @@ use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Entity\EquipmentPool;
+use App\Entity\ReservationItem;
 use App\Enum\EquipmentStatus;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
-use App\Entity\ReservationItem;
-use DateTimeImmutable;
 
 /**
  * @extends ServiceEntityRepository<Equipment>
@@ -189,5 +189,20 @@ class EquipmentRepository extends ServiceEntityRepository
         }
 
         return $equipment;
+    }
+
+    /**
+     * @param Equipment $equipment
+     * @return void
+     */
+    public function deleteEquipment(Equipment $equipment): void
+    {
+        $em = $this->getEntityManager();
+
+        // TODO: add automatic image deletion
+
+        $equipment->softDelete();
+
+        $em->flush();
     }
 }

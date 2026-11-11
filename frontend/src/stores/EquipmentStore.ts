@@ -67,5 +67,32 @@ export const useEquipmentStore = defineStore('equipment', () => {
         }
     }
 
-    return { equipment, meta, fetchEquipment, filters, createEquipment, updateEquipment, fetchEquipmentById };
+    async function deleteEquipment(id: string) {
+        try {
+            const res = await fetch(`/api/v1/equipment/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+
+            if (res.ok) {
+                await fetchEquipment();
+
+                if (equipment.value.length === 0 && filters.page > 1) {
+                    filters.page -= 1;
+                    await fetchEquipment();
+                }
+
+                return { ok: true, message: '' };
+            }
+            if (res.status === 409) return { ok: false, message: 'Das Equipment hat noch offene Reservierungen und kann nicht gelöscht werden.' };
+            if (res.status === 403) return { ok: false, message: 'Keine Berechtigung zum Löschen.' };
+            if (res.status === 404) return { ok: false, message: 'Das Equipment wurde nicht gefunden.' };
+            return { ok: false, message: `Löschen fehlgeschlagen (Status ${res.status}).` };
+        } catch (e) {
+            console.error(e);
+            return { ok: false, message: 'Server nicht erreichbar.' };
+        }
+    }
+
+    return { equipment, meta, fetchEquipment, filters, createEquipment, updateEquipment, fetchEquipmentById, deleteEquipment };
 });

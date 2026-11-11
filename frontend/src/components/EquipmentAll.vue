@@ -84,6 +84,7 @@ const handleSelect = (id: string) => {
             :selectable="props.pickerMode"
             :select-disabled="props.excludeIds?.includes(item.id)"
             @select="handleSelect"
+            @deleted="equipmentStore.fetchEquipment()"
         />
     </div>
 

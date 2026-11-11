@@ -197,11 +197,9 @@ class Equipment
         return $this->deletedAt;
     }
 
-    public function setDeletedAt(?DateTimeImmutable $deletedAt): static
+    public function softDelete(): void
     {
-        $this->deletedAt = $deletedAt;
-
-        return $this;
+        $this->deletedAt = new DateTimeImmutable();
     }
 
     public function isDeleted(): bool

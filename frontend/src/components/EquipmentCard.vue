@@ -2,8 +2,9 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
+import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 
-defineProps<{
+const props = defineProps<{
     id: string
     name: string
     model: string
@@ -12,16 +13,25 @@ defineProps<{
     selectDisabled?: boolean
 }>();
 
-const emit = defineEmits(['select']);
 const authStore = useAuthStore();
+const equipmentStore = useEquipmentStore();
+const emit = defineEmits(['select', 'deleted']);
+
+async function onDelete() {
+    if (!confirm('Wollen Sie das Equipment wirklich löschen?')) return;
+
+    const result = await equipmentStore.deleteEquipment(props.id);
+
+    if (result.ok) {
+        emit('deleted');
+    } else {
+        alert(result.message);
+    }
+}
 </script>
 
 <template>
-    <component
-        :is="selectable ? 'div' : RouterLink"
-        :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }"
-        class="card-link"
-    >
+    <component :is="selectable ? 'div' : RouterLink" :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }" class="card-link">
         <div class="card card-row">
             <div class="thumb"></div>
 
@@ -33,14 +43,14 @@ const authStore = useAuthStore();
                 </div>
             </div>
 
-            <RouterLink
-                v-if="!selectable && authStore.hasRole(['Admin'])"
-                :to="`/inventar/${id}/bearbeiten`"
-                class="btn-secondary edit-button"
-                @click.stop
-            >
-                Bearbeiten
-            </RouterLink>
+            <div v-if="!selectable && authStore.hasRole(['Admin'])" class="card-actions">
+                <RouterLink :to="`/inventar/${id}/bearbeiten`" class="btn-secondary card-action" @click.stop>
+                    Bearbeiten
+                </RouterLink>
+                <button type="button" class="btn-secondary card-action delete-button" @click.prevent.stop="onDelete">
+                    Löschen
+                </button>
+            </div>
 
             <span class="chevron">›</span>
         </div>
@@ -81,8 +91,16 @@ const authStore = useAuthStore();
 
 .edit-button {
     flex-shrink: 0;
-    min-height: 36px;
+    gap: var(--space-s);
     margin-left: auto;
+}
+
+.card-actions + .chevron {
+    margin-left: 0;
+}
+
+.card-action {
+    min-height: 36px;
     padding: 0 var(--space-l);
     font-size: var(--text-label-size);
     line-height: var(--text-label-line);
@@ -90,8 +108,44 @@ const authStore = useAuthStore();
     border-radius: var(--radius-tab);
 }
 
-.edit-button + .chevron {
-    margin-left: 0;
+.delete-button {
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-color: var(--color-error-text);
+}
+
+@media (max-width: 640px) {
+    .card-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-info h3,
+.card-info .meta {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+.card-info .tag {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+    .thumb {
+        width: 72px;
+        height: 72px;
+    }
+
+    .chevron {
+        display: none;
+    }
 }
 
 /* Tablet und Mobile */

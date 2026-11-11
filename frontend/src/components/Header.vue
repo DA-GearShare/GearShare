@@ -53,7 +53,7 @@ const authStore = useAuthStore();
 .nav {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     gap: var(--space-xl);
 }
 

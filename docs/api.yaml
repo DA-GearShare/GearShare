@@ -544,7 +544,8 @@ paths:
             tags: [ Equipment ]
             summary: Referenzfoto hochladen (Admin)
             description: >
-                Erlaubte Formate: JPEG, PNG, WebP (max. 15 MB). Das erste Foto eines
+                Erlaubte Formate: JPEG, PNG, WebP (max. 15 MB). Pro Gerät sind maximal
+                5 Fotos erlaubt; weitere Uploads werden mit 400 abgelehnt. Das erste Foto eines
                 Geräts wird automatisch Hauptbild; `isMain: true` setzt alle anderen
                 Fotos des Geräts auf `isMain: false`. Das Bild ist danach öffentlich
                 unter `url` (`/media/equipment/<uuid>`) abrufbar.
@@ -570,7 +571,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/EquipmentPhoto'
                 '400':
-                    description: Unzulässiges Dateiformat oder -größe.
+                    description: >
+                        Ungültige Datei, Datei zu groß (max. 15 MB) oder das Gerät hat
+                        bereits die maximale Anzahl von 5 Fotos erreicht.
                     content:
                         application/json:
                             schema:

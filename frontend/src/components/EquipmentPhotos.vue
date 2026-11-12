@@ -42,6 +42,7 @@ async function loadPhotosById() {
         }
 
         photos.value = await res.json();
+        console.log('Geladene Fotos:', photos.value);
         error.value = null;
 
     } catch (e) {

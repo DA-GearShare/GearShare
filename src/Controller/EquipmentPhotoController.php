@@ -18,7 +18,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
-use function Symfony\Component\Dotenv\getenv as getenvAlias;
 
 #[Route('/api/v1/equipment', name: 'equipment_photo')]
 final class EquipmentPhotoController extends AbstractController
@@ -26,8 +25,8 @@ final class EquipmentPhotoController extends AbstractController
 
     public function __construct(
         #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
-        #[Autowire('%env(int:MAX_PHOTO_MB)%')] private readonly string $maxPhotoMB,
-        #[Autowire('%env(int:MAX_PHOTOS_PER_EQUIPMENT)%')] private readonly string $maxPhotosPerEquipment,
+        #[Autowire('%env(int:MAX_PHOTO_MB)%')] private readonly int $maxPhotoMB,
+        #[Autowire('%env(int:MAX_PHOTOS_PER_EQUIPMENT)%')] private readonly int $maxPhotosPerEquipment,
     )
     {
     }

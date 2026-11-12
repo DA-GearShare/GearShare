@@ -78,30 +78,6 @@ class AppFixtures extends Fixture
     ];
 
     /**
-     * Status-Abweichungen: Code => Status
-     * Alle Geräte, die hier nicht stehen, sind "Available".
-     */
-    private const STATUS = [
-        // Reserviert
-        'EQ-0026' => EquipmentStatus::Reserved,
-        'EQ-0027' => EquipmentStatus::Reserved,
-        'EQ-0028' => EquipmentStatus::Reserved,
-        'EQ-0029' => EquipmentStatus::Reserved,
-        'EQ-0030' => EquipmentStatus::Reserved,
-        'EQ-0031' => EquipmentStatus::Reserved,
-        'EQ-0043' => EquipmentStatus::Reserved,
-
-        // Ausgegeben
-        'EQ-0032' => EquipmentStatus::Usage,
-        'EQ-0033' => EquipmentStatus::Usage,
-        'EQ-0034' => EquipmentStatus::Usage,
-        'EQ-0035' => EquipmentStatus::Usage,
-        'EQ-0036' => EquipmentStatus::Usage,
-        'EQ-0037' => EquipmentStatus::Usage,
-        'EQ-0052' => EquipmentStatus::Usage,
-    ];
-
-    /**
      * Zubehör / "passt dazu": Code des Geräts => Codes der Empfehlungen
      * Jedes Gerät hat mindestens 5 Empfehlungen.
      * Ein Gerät kann bei mehreren anderen als Empfehlung auftauchen (z. B. USB-C-Hub).
@@ -174,8 +150,7 @@ class AppFixtures extends Fixture
                 ->setLocation($location)
                 ->setType($type)
                 ->setModel($model)
-                ->setCode($code)
-                ->setStatus(self::STATUS[$code] ?? EquipmentStatus::Available);
+                ->setCode($code);
 
             $manager->persist($equipment);
             $items[$code] = $equipment;

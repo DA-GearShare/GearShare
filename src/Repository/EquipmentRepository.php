@@ -199,8 +199,6 @@ class EquipmentRepository extends ServiceEntityRepository
     {
         $em = $this->getEntityManager();
 
-        // TODO: add automatic image deletion
-
         $equipment->softDelete();
 
         $em->flush();

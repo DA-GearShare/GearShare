@@ -2,6 +2,7 @@
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
+import { ref, onMounted } from "vue";
 
 const props = defineProps<{
     id: string
@@ -16,6 +17,8 @@ const authStore = useAuthStore();
 const equipmentStore = useEquipmentStore();
 const emit = defineEmits(['select', 'deleted']);
 
+const mainPhoto = ref<EquipmentPhoto | null>(null);
+
 async function onDelete() {
     if (!confirm('Wollen Sie das Equipment wirklich löschen?')) return;
 
@@ -27,12 +30,47 @@ async function onDelete() {
         alert(result.message);
     }
 }
+
+interface EquipmentPhoto {
+    id: number;
+    url: string;
+    isMain?: boolean;
+    is_main?: boolean;
+}
+
+async function loadMainPhoto() {
+    try {
+        const res = await fetch(
+            `/api/v1/equipment/${props.id}/photos`,
+            { credentials: "include" }
+        );
+
+        if (!res.ok) return;
+
+        const photos: EquipmentPhoto[] = await res.json();
+
+        mainPhoto.value =
+            photos.find(photo => photo.isMain === true || photo.is_main === true)
+            ?? null;
+
+    } catch (error) {
+        console.error("Hauptbild konnte nicht geladen werden:", error);
+    }
+}
+
+onMounted(loadMainPhoto);
 </script>
 
 <template>
     <component :is="selectable ? 'div' : RouterLink" :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }" class="card-link">
         <div class="card card-row">
-            <div class="thumb"></div>
+            <div class="thumb">
+                <img v-if="mainPhoto" :src="mainPhoto.url" :alt="`Hauptbild von ${name}`" class="thumb-image"/>
+
+                <div v-else class="thumb-placeholder">
+                    <span>Kein Bild</span>
+                </div>
+            </div>
             <div class="card-info">
                 <h3>{{ name }}</h3>
                 <p class="meta">{{ model }}</p>
@@ -124,5 +162,31 @@ async function onDelete() {
     .chevron {
         display: none;
     }
+}
+
+.thumb {
+    flex-shrink: 0;
+    width: 104px;
+    height: 104px;
+    overflow: hidden;
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-tab);
+}
+
+.thumb-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-muted);
+    font-size: var(--text-help-size);
 }
 </style>

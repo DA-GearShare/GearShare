@@ -16,11 +16,6 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\HasLifecycleCallbacks]
 class EquipmentPhoto
 {
-    /**
-     * Wird beim Upload vergeben, NICHT von Doctrine generiert: dieselbe UUID ist der
-     * Objekt-Key im Equipment-Bucket und Teil der öffentlichen URL /media/equipment/<uuid>.
-     * Muss v4 (zufällig) sein, weil die UUID der einzige Schutz des Bildes ist.
-     */
     #[ORM\Id]
     #[ORM\Column(name: 'pk_equipment_photo_id', type: UuidType::NAME)]
     private Uuid $id;
@@ -88,12 +83,5 @@ class EquipmentPhoto
     public function getUploadedAt(): ?DateTimeImmutable
     {
         return $this->uploadedAt;
-    }
-
-    public function setUploadedAt(DateTimeImmutable $uploadedAt): static
-    {
-        $this->uploadedAt = $uploadedAt;
-
-        return $this;
     }
 }

@@ -59,6 +59,8 @@ services:
       MEDIA_BASE_URL: "/media"
       # Path the gateway serves internally for X-Accel-Redirect (see gateway/default.conf).
       CONDITION_ACCEL_PREFIX: "/_internal/condition"
+      MAX_PHOTO_MB: "${MAX_PHOTO_MB:-15}"
+      MAX_PHOTOS_PER_EQUIPMENT: "${MAX_PHOTOS_PER_EQUIPMENT:-5}"
     volumes:
       # Live editing: changes in src/, templates/ and config/ are served
       # immediately, no rebuild. Only public/ is reachable over HTTP.

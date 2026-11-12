@@ -8,6 +8,7 @@ use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
+use App\Service\EquipmentPhotoService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -90,6 +91,7 @@ final class EquipmentController extends AbstractController
     public function deleteEquipment(
         Uuid $equipmentId,
         EquipmentRepository $repository,
+        EquipmentPhotoService $photoService,
     ): Response
     {
         $equipment = $repository->find($equipmentId);
@@ -99,6 +101,7 @@ final class EquipmentController extends AbstractController
 
         // TODO: err 409: Equipment part of an existing reservation
 
+        $photoService->deleteAllFor($equipment);
         $repository->deleteEquipment($equipment);
 
         return new Response('', Response::HTTP_NO_CONTENT);

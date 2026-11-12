@@ -6,10 +6,10 @@ use App\Entity\Equipment;
 use App\Entity\EquipmentPhoto;
 use App\Repository\EquipmentPhotoRepository;
 use App\Repository\EquipmentRepository;
+use App\Service\EquipmentPhotoService;
 use App\Storage\PhotoStorage;
 use JsonException;
 use League\Flysystem\FilesystemException;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -179,9 +179,7 @@ final class EquipmentPhotoController extends AbstractController
      * @param Uuid $photoId
      * @param EquipmentPhotoRepository $photoRepository
      * @param EquipmentRepository $equipmentRepository
-     * @param PhotoStorage $storage
-     * @param EquipmentPhotoRepository $photos
-     * @param LoggerInterface $logger
+     * @param EquipmentPhotoService $photoService
      * @return Response
      */
     #[IsGranted('ROLE_ADMIN')]
@@ -191,9 +189,7 @@ final class EquipmentPhotoController extends AbstractController
         Uuid                     $photoId,
         EquipmentPhotoRepository $photoRepository,
         EquipmentRepository      $equipmentRepository,
-        PhotoStorage             $storage,
-        EquipmentPhotoRepository $photos,
-        LoggerInterface          $logger,
+        EquipmentPhotoService    $photoService,
     ): Response
     {
         $equipment = $equipmentRepository->find($equipmentId);
@@ -203,19 +199,7 @@ final class EquipmentPhotoController extends AbstractController
             return $notFound;
         }
 
-        $id = $photo->getId();
-
-        // First DB, then bucket: if bucket fails, an unreferenced file proceeds to exist
-        $photos->removeFromEquipment($photo, $equipment);
-
-        try {
-            $storage->deleteEquipment($id);
-        } catch (Throwable $e) {
-            $logger->error('Equipment-Foto konnte nicht aus dem Bucket gelöscht werden.', [
-                'photoId' => $id->toRfc4122(),
-                'exception' => $e,
-            ]);
-        }
+        $photoService->delete($photo, $equipment);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

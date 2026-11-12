@@ -8,7 +8,6 @@ use App\Repository\EquipmentPhotoRepository;
 use App\Repository\EquipmentRepository;
 use App\Service\EquipmentPhotoService;
 use App\Storage\PhotoStorage;
-use JsonException;
 use League\Flysystem\FilesystemException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -19,14 +18,16 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use function Symfony\Component\Dotenv\getenv as getenvAlias;
 
 #[Route('/api/v1/equipment', name: 'equipment_photo')]
 final class EquipmentPhotoController extends AbstractController
 {
-    private const int MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 
     public function __construct(
         #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
+        #[Autowire('%env(int:MAX_PHOTO_MB)%')] private readonly string $maxPhotoMB,
+        #[Autowire('%env(int:MAX_PHOTOS_PER_EQUIPMENT)%')] private readonly string $maxPhotosPerEquipment,
     )
     {
     }
@@ -82,8 +83,12 @@ final class EquipmentPhotoController extends AbstractController
         if (!$file->isValid()) {
             return new Response($file->getErrorMessage(), Response::HTTP_BAD_REQUEST);
         }
-        if ($file->getSize() > self::MAX_PHOTO_BYTES) {
-            return new Response(sprintf('Maximal %s MB pro Foto', self::MAX_PHOTO_BYTES / (1024 * 1024)), Response::HTTP_BAD_REQUEST);
+        if ($file->getSize() > ($this->maxPhotoMB * 1024 * 1024)) {
+            return new Response(sprintf('Maximal %s MB pro Foto', $this->maxPhotoMB), Response::HTTP_BAD_REQUEST);
+        }
+
+        if (count($equipment->getPhotos()) >= $this->maxPhotosPerEquipment) {
+            return new Response(sprintf('Maximal %s Fotos pro Equipment', $this->maxPhotosPerEquipment), Response::HTTP_BAD_REQUEST);
         }
 
         $id = Uuid::v4();
@@ -125,7 +130,6 @@ final class EquipmentPhotoController extends AbstractController
     /**
      * @param Uuid $equipmentId
      * @param Uuid $photoId
-     * @param Request $request
      * @param EquipmentPhotoRepository $photoRepository
      * @param EquipmentRepository $equipmentRepository
      * @return Response

@@ -136,7 +136,6 @@ class EquipmentRepository extends ServiceEntityRepository
             ->setType($dto->type)
             ->setModel($dto->model)
             ->setCode($dto->code ?? $this->nextGeneratedCode())
-            ->setStatus(EquipmentStatus::Available)
             ->setPool($pool);
 
         $em->persist($equipment);

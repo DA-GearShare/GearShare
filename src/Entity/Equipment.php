@@ -45,9 +45,6 @@ class Equipment
     #[ORM\Column(name: 'code', type: Types::STRING, length: 255, unique: true, nullable: true)]
     private ?string $code = null;
 
-    #[ORM\Column(name: 'status', type: Types::STRING, length: 255, enumType: EquipmentStatus::class)]
-    private ?EquipmentStatus $status = null;
-
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private ?DateTimeImmutable $createdAt = null;
 
@@ -164,18 +161,6 @@ class Equipment
     public function setCode(?string $code): static
     {
         $this->code = $code;
-
-        return $this;
-    }
-
-    public function getStatus(): ?EquipmentStatus
-    {
-        return $this->status;
-    }
-
-    public function setStatus(EquipmentStatus $status): static
-    {
-        $this->status = $status;
 
         return $this;
     }

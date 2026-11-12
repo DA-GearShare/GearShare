@@ -51,7 +51,9 @@ async function loadMainPhoto() {
         const photos: EquipmentPhoto[] = await res.json();
 
         mainPhoto.value =
-            photos.find(photo => photo.isMain === true || photo.is_main === true)
+            photos.find(photo => {
+                return photo.isMain === true || photo.is_main === true;
+            })
             ?? null;
 
     } catch (error) {

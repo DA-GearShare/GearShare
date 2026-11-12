@@ -11,6 +11,10 @@ const router = useRouter();
 const isProfileOpen = ref(false);
 const profileMenu = ref<HTMLElement | null>(null);
 
+function goToReservations() {
+    router.push('/reservierung');
+}
+
 const toggleProfile = () => {
     isProfileOpen.value = !isProfileOpen.value;
 };
@@ -49,6 +53,7 @@ onBeforeUnmount(() => {
     document.removeEventListener('click', handleOutsideClick);
     document.removeEventListener('keydown', handleEscape);
 });
+
 </script>
 
 <template>
@@ -72,7 +77,7 @@ onBeforeUnmount(() => {
         </nav>
 
         <div class="actions" v-if="authStore.isLoggedIn">
-            <button type="button" class="icon-button" aria-label="Reservierungen">
+            <button type="button" class="icon-button" aria-label="Reservierungen" @click="goToReservations">
                 <ShoppingCart />
             </button>
 

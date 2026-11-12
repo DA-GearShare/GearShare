@@ -31,7 +31,9 @@ async function loadAccessories() {
 }
 
 watch(
-    () => [equipmentStore.filters.from, equipmentStore.filters.to],
+    () => {
+        return [equipmentStore.filters.from, equipmentStore.filters.to];
+    },
     loadAccessories,
     { immediate: true }
 );

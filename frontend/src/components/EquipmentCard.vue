@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
@@ -205,5 +204,31 @@ onMounted(loadMainPhoto);
     .chevron {
         font-size: 22px;
     }
+}
+
+.thumb {
+    flex-shrink: 0;
+    width: 104px;
+    height: 104px;
+    overflow: hidden;
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-tab);
+}
+
+.thumb-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-muted);
+    font-size: var(--text-help-size);
 }
 </style>

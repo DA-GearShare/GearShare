@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
@@ -62,15 +63,25 @@ onMounted(loadMainPhoto);
 </script>
 
 <template>
-    <component :is="selectable ? 'div' : RouterLink" :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }" class="card-link">
+    <component
+        :is="selectable ? 'div' : RouterLink"
+        :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }"
+        class="card-link"
+    >
         <div class="card card-row">
             <div class="thumb">
-                <img v-if="mainPhoto" :src="mainPhoto.url" :alt="`Hauptbild von ${name}`" class="thumb-image"/>
+                <img
+                    v-if="mainPhoto"
+                    :src="mainPhoto.url"
+                    :alt="`Hauptbild von ${name}`"
+                    class="thumb-image"
+                />
 
                 <div v-else class="thumb-placeholder">
                     <span>Kein Bild</span>
                 </div>
             </div>
+
             <div class="card-info">
                 <h3>{{ name }}</h3>
                 <p class="meta">{{ model }}</p>
@@ -79,11 +90,23 @@ onMounted(loadMainPhoto);
                 </div>
             </div>
 
-            <div v-if="!selectable && authStore.hasRole(['Admin'])" class="card-actions">
-                <RouterLink :to="`/inventar/${id}/bearbeiten`" class="btn-secondary card-action" @click.stop>
+            <div
+                v-if="!selectable && authStore.hasRole(['Admin'])"
+                class="card-actions"
+            >
+                <RouterLink
+                    :to="`/inventar/${id}/bearbeiten`"
+                    class="btn-secondary card-action"
+                    @click.stop
+                >
                     Bearbeiten
                 </RouterLink>
-                <button type="button" class="btn-secondary card-action delete-button" @click.prevent.stop="onDelete">
+
+                <button
+                    type="button"
+                    class="btn-secondary card-action delete-button"
+                    @click.prevent.stop="onDelete"
+                >
                     Löschen
                 </button>
             </div>
@@ -116,96 +139,6 @@ onMounted(loadMainPhoto);
     min-width: 0;
 }
 
-.card-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.card-info h3 {
-    overflow-wrap: anywhere;
-}
-
-.edit-button {
-    flex-shrink: 0;
-    gap: var(--space-s);
-    margin-left: auto;
-}
-
-.card-actions + .chevron {
-    margin-left: 0;
-}
-
-.card-action {
-    min-height: 36px;
-    padding: 0 var(--space-l);
-    font-size: var(--text-label-size);
-    line-height: var(--text-label-line);
-    white-space: nowrap;
-    border-radius: var(--radius-tab);
-}
-
-.delete-button {
-    color: var(--color-error-text);
-    background: var(--color-error-bg);
-    border-color: var(--color-error-text);
-}
-
-@media (max-width: 640px) {
-    .card-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-
-.card-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.card-info h3,
-.card-info .meta {
-    overflow-wrap: anywhere;
-    hyphens: auto;
-}
-
-.card-info .tag {
-    max-width: 100%;
-    overflow-wrap: anywhere;
-}
-
-@media (max-width: 640px) {
-    .thumb {
-        width: 72px;
-        height: 72px;
-    }
-
-    .chevron {
-        display: none;
-    }
-}
-
-/* Tablet und Mobile */
-@media (max-width: 600px) {
-    .card-row {
-        gap: var(--space-s);
-    }
-
-    .thumb {
-        width: 64px;
-        height: 64px;
-        flex-shrink: 0;
-    }
-
-    .edit-button {
-        padding: 0 var(--space-s);
-        font-size: 11px;
-    }
-
-    .chevron {
-        font-size: 22px;
-    }
-}
-
 .thumb {
     flex-shrink: 0;
     width: 104px;
@@ -230,5 +163,81 @@ onMounted(loadMainPhoto);
     height: 100%;
     color: var(--color-muted);
     font-size: var(--text-help-size);
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-info h3,
+.card-info .meta {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+.card-info .tag {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.card-action {
+    min-height: 36px;
+    padding: 0 var(--space-l);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    white-space: nowrap;
+    border-radius: var(--radius-tab);
+}
+
+.card-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--space-s);
+}
+
+.card-actions + .chevron {
+    margin-left: 0;
+}
+
+.delete-button {
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-color: var(--color-error-text);
+}
+
+.chevron {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 28px;
+    color: var(--color-text-primary);
+}
+
+/* Tablet und Mobile */
+@media (max-width: 640px) {
+    .card-row {
+        gap: var(--space-s);
+    }
+
+    .thumb {
+        width: 64px;
+        height: 64px;
+    }
+
+    .card-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-s);
+    }
+
+    .card-action {
+        width: 100%;
+        padding: 0 var(--space-s);
+        font-size: 11px;
+    }
+
+    .chevron {
+        display: none;
+    }
 }
 </style>

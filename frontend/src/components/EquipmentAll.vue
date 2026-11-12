@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import {computed, onMounted} from 'vue';
+import { computed, onMounted } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { useAuthStore } from '@/stores/AuthStore.ts';
 import EquipmentCard from "@/components/EquipmentCard.vue";
@@ -15,7 +15,9 @@ const props = defineProps<{
 }>();
 
 const visibleEquipment = computed(() => {
-    return store.equipment.filter((item: any) => item.id !== props.hideId);
+    return store.equipment.filter((item: any) => {
+        return item.id !== props.hideId;
+    });
 });
 
 const emit = defineEmits<{

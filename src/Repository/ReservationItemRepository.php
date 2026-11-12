@@ -4,9 +4,11 @@ namespace App\Repository;
 
 use App\Entity\ReservationItem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\Equipment;
 use DateTimeImmutable;
+use App\Enum\ReservationStatus;
 
 /**
  * @extends ServiceEntityRepository<ReservationItem>
@@ -27,15 +29,7 @@ class ReservationItemRepository extends ServiceEntityRepository
         if ($equipment === []) {
             return [];
         }
-
-        $items = $this->createQueryBuilder('ri')
-            ->innerJoin('ri.reservation', 'r')
-            ->where('ri.requestedEquipment IN (:equipment)')
-            ->andWhere('r.startDatetime < :to')
-            ->andWhere('r.endDatetime > :from')
-            ->setParameter('equipment', $equipment)
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
+        $items = $this->getReservationItemsQB($equipment, $from, $to)
             ->getQuery()
             ->getResult();
 
@@ -53,23 +47,25 @@ class ReservationItemRepository extends ServiceEntityRepository
         if ($equipment === []) {
             return [];
         }
-        $items = $this->createQueryBuilder('ri')
+        return $this->getReservationItemsQB($equipment, $from, $to)
             ->addSelect('r')
-            ->innerJoin('ri.reservation', 'r')
-            ->where('ri.requestedEquipment IN (:equipment)')
-            ->andWhere('r.startDatetime < :from')
-            ->andWhere('r.endDatetime > :to')
             ->andWhere('r.status NOT IN (:inactive)')
-            ->setParameter('equipment', $equipment)
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
-            ->setParameter('inactive', [ReservationStatus::Denied, ReservationStatus::Cancelled])
+            ->setParameter('inactive', [ReservationStatus::Denied, ReservationStatus::Cancelled, ReservationStatus::Returned])
             ->orderBy('r.startDatetime', 'ASC')
             ->getQuery()
             ->getResult();
-
     }
-
+    public function getReservationItemsQB(array $equipment, DateTimeImmutable $from, DateTimeImmutable $to): QueryBuilder
+    {
+        return $this->createQueryBuilder('ri')
+            ->innerJoin('ri.reservation', 'r')
+            ->where('ri.requestedEquipment IN (:equipment)')
+            ->andWhere('r.endDatetime > :from')
+            ->andWhere('r.startDatetime < :to')
+            ->setParameter('equipment', $equipment)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to);
+    }
 
 //    /**
 //     * @return ReservationItem[] Returns an array of ReservationItem objects

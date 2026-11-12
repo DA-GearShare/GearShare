@@ -322,37 +322,28 @@ final class EquipmentController extends AbstractController
         }
         $reservationItems = $reservationItemRepository->findInPeriod($equipmentList, $fromDate, $toDate);
 
-        $busy = [];
+        $notAvailable = [];
         foreach ($equipmentList as $equipment) {
-            $busy[$equipment->getId()->toRfc4122()] = [];
+            $notAvailable[$equipment->getId()->toRfc4122()] = [];
         }
-
         foreach ($reservationItems as $item) {
             $reservation = $item->getReservation();
+            $startDatetime = $reservation->getStartDatetime();
+            $endDatetime = $reservation->getEndDatetime();
 
-            $devices = [$item->getRequestedEquipment()];
+            $requestedEquipment = $item->getRequestedEquipment();
+            if ($requestedEquipment === null) { continue; }
 
-            foreach ($devices as $device) {
-                if ($device === null) {
-                    continue;
-                }
-                $deviceId = $device->getId()->toRfc4122();
-                if (!isset($busy[$deviceId])) {
-                    continue;
-                }
-                $busy[$deviceId][] = [
-                    'start' => $reservation->getStartDatetime()->format(DATE_ATOM),
-                    'end'   => $reservation->getEndDatetime()->format(DATE_ATOM),
-                ];
-            }
+            $notAvailable[$requestedEquipment->getId()->toRfc4122()][] = [
+                'from' => $startDatetime->format(DATE_ATOM),
+                'to'   => $endDatetime->format(DATE_ATOM),
+            ];
         }
-        return $this->json([
-            'equipment' => array_map(fn($e) => [
-                'id'   => $e->getId()->toRfc4122(),
-                'name' => $e->getName(),
-                'busy' => $busy[$e->getId()->toRfc4122()],
-            ], $equipmentList),
-        ]);
+
+        return $this->json(array_map(fn(Equipment $e) => [
+            ...$this->serializeEquipment($e),
+            'notAvailable' => $notAvailable[$e->getId()->toRfc4122()],
+        ], $equipmentList));
     }
 
 

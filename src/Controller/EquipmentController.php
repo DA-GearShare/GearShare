@@ -85,6 +85,25 @@ final class EquipmentController extends AbstractController
         return $this->json($this->serializeEquipment($equipment));
     }
 
+    #[Route('/{equipmentId}', name: 'delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteEquipment(
+        Uuid $equipmentId,
+        EquipmentRepository $repository,
+    ): Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        // TODO: err 409: Equipment part of an existing reservation
+
+        $repository->deleteEquipment($equipment);
+
+        return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
     #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
     public function getAccessories(
         Uuid $equipmentId,
@@ -264,6 +283,84 @@ final class EquipmentController extends AbstractController
 
         return $this->json($this->serializeEquipment($equipment));
     }
+    #[Route('/calender', name: 'get_calender', methods: ['POST'])]
+    public function getCalender(
+        Request $request,
+        EquipmentRepository $repository,
+        ReservationItemRepository $reservationItemRepository,
+    ): Response {
+        $data = $request->toArray();
+        $ids = $data['equipmentIds'] ?? [];
+        $from = $data['from'] ?? null;
+        $to   = $data['to'] ?? null;
+
+        if (!is_array($ids) || count($ids) === 0) {
+            return new Response('equipmentIds muss eine nicht leere Liste sein.', Response::HTTP_BAD_REQUEST);
+        }
+        if (count($ids) > 10) {
+            return new Response('Es können maximal 10 Geräte ausgewählt werden.', Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_string($from) || !is_string($to)) {
+            return new Response('from und to müssen angegeben werden.', Response::HTTP_BAD_REQUEST);
+        }
+        try {
+            $fromDate = new DateTimeImmutable($from);
+            $toDate   = new DateTimeImmutable($to);
+        } catch (\Exception) {
+            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
+        }
+        if ($fromDate >= $toDate) {
+            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
+        }
+        $equipmentList = [];
+        foreach (array_unique($ids) as $id) {
+            if (!is_string($id) || !Uuid::isValid($id)) {
+                return new Response('Ungültige  ID.'.$id, Response::HTTP_BAD_REQUEST);
+            }
+            $equipment = $repository->find(Uuid::fromString($id));
+            if ($equipment === null || $equipment->isDeleted()) {
+                return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+            }
+            $equipmentList[] = $equipment;
+        }
+        $reservationItems = $reservationItemRepository->findInPeriod($equipmentList, $fromDate, $toDate);
+
+        $busy = [];
+        foreach ($equipmentList as $equipment) {
+            $busy[$equipment->getId()->toRfc4122()] = [];
+        }
+
+        foreach ($reservationItems as $item) {
+            $reservation = $item->getReservation();
+
+            $devices = [$item->getRequestedEquipment()];
+            if ($item->getAssignedEquipment() !== $item->getRequestedEquipment()) {
+                $devices[] = $item->getAssignedEquipment();
+            }
+
+            foreach ($devices as $device) {
+                if ($device === null) {
+                    continue;
+                }
+                $deviceId = $device->getId()->toRfc4122();
+                if (!isset($busy[$deviceId])) {
+                    continue;
+                }
+                $busy[$deviceId][] = [
+                    'start' => $reservation->getStartDatetime()->format(DATE_ATOM),
+                    'end'   => $reservation->getEndDatetime()->format(DATE_ATOM),
+                ];
+            }
+        }
+        return $this->json([
+            'equipment' => array_map(fn($e) => [
+                'id'   => $e->getId()->toRfc4122(),
+                'name' => $e->getName(),
+                'busy' => $busy[$e->getId()->toRfc4122()],
+            ], $equipmentList),
+        ]);
+    }
+
 
     /** @return array<string, mixed> */
     private function serializeEquipment(Equipment $equipment): array

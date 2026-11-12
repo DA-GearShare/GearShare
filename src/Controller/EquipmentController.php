@@ -8,32 +8,23 @@ use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
+use App\Service\EquipmentPhotoService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 use DateTimeImmutable;
 use App\Repository\ReservationItemRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
-    private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    private const int MAX_PHOTO_BYTES = 15 * 1024 * 1024;
-
-    public function __construct(
-        #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
-    )
-    {
-    }
-
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
         EquipmentRepository          $repository,
@@ -69,13 +60,7 @@ final class EquipmentController extends AbstractController
 
         $result = $repository->findPaginated($sort, $order, $fromDate, $toDate, $search, $page, $pageSize);
 
-        $items = array_map(fn($e) => [
-            'id' => $e->getId(),
-            'name' => $e->getName(),
-            'location' => $e->getLocation(),
-            'type' => $e->getType(),
-            'model' => $e->getModel(),
-        ], $result['items']);
+        $items = array_map(fn($e) => $this->serializeEquipment($e), $result['items']);
 
         return $this->json([
             'items' => $items,
@@ -106,6 +91,7 @@ final class EquipmentController extends AbstractController
     public function deleteEquipment(
         Uuid $equipmentId,
         EquipmentRepository $repository,
+        EquipmentPhotoService $photoService,
     ): Response
     {
         $equipment = $repository->find($equipmentId);
@@ -115,6 +101,7 @@ final class EquipmentController extends AbstractController
 
         // TODO: err 409: Equipment part of an existing reservation
 
+        $photoService->deleteAllFor($equipment);
         $repository->deleteEquipment($equipment);
 
         return new Response('', Response::HTTP_NO_CONTENT);
@@ -389,10 +376,7 @@ final class EquipmentController extends AbstractController
             'type' => $equipment->getType(),
             'model' => $equipment->getModel(),
             'code' => $equipment->getCode(),
-            'status' => $equipment->getStatus()?->value,
-//            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
-            'createdAt' => $equipment->getCreatedAt()?->format(DATE_ATOM),
-            'deletedAt' => $equipment->getDeletedAt()?->format(DATE_ATOM),
+            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
         ];
     }
 }

@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
@@ -91,7 +92,12 @@ onMounted(loadMainPhoto);
             <span class="chevron">›</span>
         </div>
 
-        <button v-if="selectable" class="btn-primary" :disabled="selectDisabled" @click="emit('select', id)">
+        <button
+            v-if="selectable"
+            class="btn-primary"
+            :disabled="selectDisabled"
+            @click="emit('select', id)"
+        >
             {{ selectDisabled ? 'Bereits zugeordnet' : 'Hinzufügen' }}
         </button>
     </component>
@@ -104,8 +110,23 @@ onMounted(loadMainPhoto);
     text-decoration: none;
 }
 
-.card-actions {
+.card-row {
     display: flex;
+    align-items: center;
+    gap: var(--space-l);
+    min-width: 0;
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-info h3 {
+    overflow-wrap: anywhere;
+}
+
+.edit-button {
     flex-shrink: 0;
     gap: var(--space-s);
     margin-left: auto;
@@ -164,29 +185,25 @@ onMounted(loadMainPhoto);
     }
 }
 
-.thumb {
-    flex-shrink: 0;
-    width: 104px;
-    height: 104px;
-    overflow: hidden;
-    background: var(--color-soft-surface);
-    border-radius: var(--radius-tab);
-}
+/* Tablet und Mobile */
+@media (max-width: 600px) {
+    .card-row {
+        gap: var(--space-s);
+    }
 
-.thumb-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+    .thumb {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+    }
 
-.thumb-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    color: var(--color-muted);
-    font-size: var(--text-help-size);
+    .edit-button {
+        padding: 0 var(--space-s);
+        font-size: 11px;
+    }
+
+    .chevron {
+        font-size: 22px;
+    }
 }
 </style>

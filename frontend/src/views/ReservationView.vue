@@ -42,80 +42,107 @@ function removeEquipment(id: string) {
 }
 
 async function checkAvailability() {
-    if (!canCheckAvailability.value) return;
+    if (!canCheckAvailability.value) return
 
-    loading.value = true;
-    resetAvailability();
+    loading.value = true
+    resetAvailability()
 
     try {
-        const response = await fetch('/api/v1/reservations/availability', {
+        const from = new Date(`${startDate.value}T00:00:00`).toISOString()
+        const to = new Date(`${endDate.value}T23:59:59`).toISOString()
+
+        const response = await fetch('/api/v1/equipment/calendar', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 equipmentIds: selectedEquipment.value,
-                startDate: startDate.value,
-                endDate: endDate.value
+                from,
+                to
             })
-        });
+        })
 
         if (!response.ok) {
-            throw new Error('Verfügbarkeit konnte nicht geprüft werden.');
+            throw new Error('Kalender konnte nicht geladen werden.')
         }
 
-        const result = await response.json();
+        const calendar = await response.json()
 
-        available.value = result.available;
-        availabilityChecked.value = true;
+        const requestedStart = new Date(from).getTime()
+        const requestedEnd = new Date(to).getTime()
+
+        available.value = calendar.some((slot: {
+            start: string
+            end: string
+            status: string
+        }) => {
+            return slot.status === 'available' &&
+                new Date(slot.start).getTime() <= requestedStart &&
+                new Date(slot.end).getTime() >= requestedEnd
+        })
+
+        availabilityChecked.value = true
 
         message.value = available.value
-            ? 'Alle ausgewählten Geräte sind verfügbar.'
-            : 'Nicht alle ausgewählten Geräte sind verfügbar.';
+            ? 'Alle ausgewählten Geräte sind im gewünschten Zeitraum verfügbar.'
+            : 'Die ausgewählten Geräte sind im gewünschten Zeitraum nicht vollständig verfügbar.'
 
     } catch (error) {
-        message.value = 'Fehler bei der Verfügbarkeitsprüfung.';
-        console.error(error);
+        message.value = 'Fehler bei der Verfügbarkeitsprüfung.'
+        console.error(error)
     } finally {
-        loading.value = false;
+        loading.value = false
     }
 }
 
 async function submitReservation() {
-    if (!availabilityChecked.value || !available.value) return;
+    if (!availabilityChecked.value || !available.value) return
 
-    loading.value = true;
-    message.value = '';
+    loading.value = true
+    message.value = ''
 
     try {
+        const startDatetime =
+            new Date(`${startDate.value}T00:00:00`).toISOString()
+
+        const endDatetime =
+            new Date(`${endDate.value}T23:59:59`).toISOString()
+
         const response = await fetch('/api/v1/reservations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                equipmentIds: selectedEquipment.value,
-                startDate: startDate.value,
-                endDate: endDate.value
+                startDatetime,
+                endDatetime,
+                items: selectedEquipment.value.map(id => ({
+                    requestedEquipmentId: id
+                }))
             })
-        });
+        })
 
         if (!response.ok) {
-            throw new Error('Reservierung konnte nicht abgesendet werden.');
+            throw new Error('Reservierungsanfrage konnte nicht erstellt werden.')
         }
 
-        message.value = 'Deine Reservierungsanfrage wurde erfolgreich abgesendet.';
+        const reservation = await response.json()
 
-        selectedEquipment.value = [];
-        startDate.value = '';
-        endDate.value = '';
-        resetAvailability();
+        message.value =
+            `Reservierungsanfrage erfolgreich erstellt! ID: ${reservation.id}`
+
+        selectedEquipment.value = []
+        startDate.value = ''
+        endDate.value = ''
+        availabilityChecked.value = false
+        available.value = false
 
     } catch (error) {
-        message.value = 'Fehler beim Absenden der Reservierungsanfrage.';
-        console.error(error);
+        message.value = 'Fehler beim Absenden der Reservierungsanfrage.'
+        console.error(error)
     } finally {
-        loading.value = false;
+        loading.value = false
     }
 }
 </script>

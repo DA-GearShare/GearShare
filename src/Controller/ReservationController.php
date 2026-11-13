@@ -2,14 +2,19 @@
 
 namespace App\Controller;
 
+use App\Dto\ReservationCreateDto;
 use App\Entity\Reservation;
 use App\Entity\ReservationItem;
 use App\Entity\User;
 use App\Enum\ReservationItemStatus;
 use App\Enum\ReservationStatus;
 use App\Repository\ReservationRepository;
+use DateInvalidTimeZoneException;
 use DateTimeImmutable;
+use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
@@ -121,6 +126,45 @@ final class ReservationController extends AbstractController
         }
 
         return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+    }
+
+    /**
+     * @throws DateInvalidTimeZoneException
+     */
+    #[Route('', name: 'create', methods: ['POST'])]
+    public function createReservation(
+        Request               $request,
+        ReservationRepository $repository,
+    ): Response
+    {
+        try {
+            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+            return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return new Response('Nicht angemeldet.', Response::HTTP_UNAUTHORIZED);
+        }
+
+        $dto = ReservationCreateDto::fromArray($parameters);
+        if ($dto->hasErrors()) {
+            return new JsonResponse([
+                'message' => 'Invalider Request Body',
+                'errors' => $dto->getErrors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $reservation = $repository->createFromDto($dto, $user);
+        if ($reservation instanceof Response) {
+            return $reservation;
+        }
+
+        return $this->json($this->serializeReservation($reservation), Response::HTTP_CREATED);
     }
 
     #[Route('/overdue', name: 'get_overdue', methods: ['GET'])]

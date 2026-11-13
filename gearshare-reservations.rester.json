@@ -1,0 +1,325 @@
+{
+    "info": {
+        "name": "GearShare – Reservierungen",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "GearShare",
+            "item": [
+                {
+                    "name": "Hilfen",
+                    "item": [
+                        {
+                            "name": "Session prüfen (auth/me)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/auth/me",
+                                "description": ""
+                            }
+                        },
+                        {
+                            "name": "Geräte auflisten",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/equipment?pageSize=5",
+                                "description": ""
+                            }
+                        },
+                        {
+                            "name": "Reservierungen auflisten",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": ""
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST reservations",
+                    "item": [
+                        {
+                            "name": "01 Erfolg → 201",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-01-11T08:00:00Z\",\n  \"endDatetime\": \"2027-01-13T16:00:00Z\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\",\n    \"01a1d6fa-edea-7696-99ba-3d95bf6ff1a1\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "02 Überlappung → 409",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-01-12T08:00:00Z\",\n  \"endDatetime\": \"2027-01-14T08:00:00Z\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "03 Direkt anschließend → 201",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-01-13T16:00:00Z\",\n  \"endDatetime\": \"2027-01-15T16:00:00Z\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "04 Zeitzonen-Offset → 201",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-02-01T09:00:00+01:00\",\n  \"endDatetime\": \"2027-02-01T17:00:00.000+01:00\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-7696-99ba-3d95bf6ff1a1\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "05 Unbekanntes Gerät → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-03-01T08:00:00Z\",\n  \"endDatetime\": \"2027-03-02T08:00:00Z\",\n  \"equipmentIds\": [\n    \"0193c0de-0000-7000-8000-00000000dead\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "06 Leerer Body → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "07 Ende vor Start, Start in Vergangenheit → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2020-01-02T08:00:00Z\",\n  \"endDatetime\": \"2020-01-01T08:00:00Z\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "08 Ungültige Formate → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"morgen\",\n  \"endDatetime\": \"2027-02-30T08:00:00Z\",\n  \"equipmentIds\": [\n    \"abc\",\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\",\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\"\n  ]\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "09 pools + unbekanntes Feld → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"startDatetime\": \"2027-03-01T08:00:00Z\",\n  \"endDatetime\": \"2027-03-02T08:00:00Z\",\n  \"equipmentIds\": [\n    \"01a1d6fa-edea-751a-99ba-3d95b870d366\"\n  ],\n  \"pools\": [\n    {\n      \"poolId\": \"01a1d6fa-edea-751a-99ba-3d95b870d366\",\n      \"quantity\": 1\n    }\n  ],\n  \"foo\": 1\n}"
+                                }
+                            }
+                        },
+                        {
+                            "name": "10 Kaputtes JSON → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"startDatetime\":"
+                                }
+                            }
+                        },
+                        {
+                            "name": "11 JSON-Array statt Objekt → 400",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Cookie",
+                                        "value": "PHPSESSID=6136314afa0556d3cd039fb5e89719e1"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "[1, 2]"
+                                }
+                            }
+                        },
+                        {
+                            "name": "12 Ohne Session → 401",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": "http://localhost/api/v1/reservations",
+                                "description": "",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{}"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

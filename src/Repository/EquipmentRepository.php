@@ -10,6 +10,8 @@ use App\Entity\ReservationItem;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\ORM\Exception\ORMException;
+use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -107,6 +109,10 @@ class EquipmentRepository extends ServiceEntityRepository
         return sprintf('EQ-%04d', $max + 1);
     }
 
+    /**
+     * @throws OptimisticLockException
+     * @throws ORMException
+     */
     public function createFromDto(EquipmentCreateDto $dto): Equipment|Response
     {
         $em = $this->getEntityManager();
@@ -117,7 +123,7 @@ class EquipmentRepository extends ServiceEntityRepository
             if ($pool === null) {
                 return new JsonResponse([
                     'message' => 'Invalider Request Body',
-                    'errors' => ['poolId' => 'Pool not found'],
+                    'errors' => ['poolId' => 'Pool nicht gefunden'],
                 ], Response::HTTP_BAD_REQUEST);
             }
         }

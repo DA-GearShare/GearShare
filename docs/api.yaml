@@ -944,7 +944,7 @@ paths:
         post:
             tags: [ Reservations ]
             summary: Reservierungsanfrage stellen
-            description: Prüft serverseitig die Verfügbarkeit aller angefragten Positionen.
+            description: 'Prüft serverseitig die Verfügbarkeit aller angefragten Positionen. ("pools": [] aktuell noch nicht unterstützt)'
             requestBody:
                 required: true
                 content:
@@ -2222,7 +2222,13 @@ components:
 
         ReservationCreate:
             type: object
-            required: [ startDatetime, endDatetime, items ]
+            required: [ startDatetime, endDatetime ]
+            description: >
+                Mindestens eine der Listen `equipmentIds` oder `pools` muss
+                Einträge enthalten. Der Server legt je Gerät bzw. je angefragter
+                Pool-Einheit eine eigene `ReservationItem`-Position an.
+                **Derzeit werden nur `equipmentIds` unterstützt**; `pools` wird
+                mit 400 ("Unbekanntes Feld") abgelehnt, bis die Pool-Logik folgt.
             properties:
                 startDatetime:
                     type: string
@@ -2230,21 +2236,31 @@ components:
                 endDatetime:
                     type: string
                     format: date-time
-                items:
+                equipmentIds:
                     type: array
-                    minItems: 1
+                    uniqueItems: true
+                    default: [ ]
+                    description: Konkret angefragte Einzelgeräte.
+                    items:
+                        type: string
+                        format: uuid
+                pools:
+                    type: array
+                    default: [ ]
+                    description: >
+                        **Noch nicht unterstützt** – wird derzeit mit 400 abgelehnt.
+                        Angefragte Pools mit gewünschter Stückzahl; jede `poolId` darf nur einmal vorkommen.
                     items:
                         type: object
+                        required: [ poolId, quantity ]
                         properties:
-                            requestedEquipmentId:
+                            poolId:
                                 type: string
                                 format: uuid
-                                nullable: true
-                            requestedPoolId:
-                                type: string
-                                format: uuid
-                                nullable: true
-                        description: Genau eines von `requestedEquipmentId` oder `requestedPoolId` muss gesetzt sein.
+                            quantity:
+                                type: integer
+                                minimum: 1
+                                example: 3
 
         ReservationUpdate:
             type: object

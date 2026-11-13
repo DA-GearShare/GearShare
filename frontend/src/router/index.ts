@@ -9,6 +9,7 @@ import AdminUserView from '../views/AdminUserView.vue';
 import EquipmentAddView from "@/views/EquipmentAddView.vue";
 import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import EquipmentEditView from '../views/EquipmentEditView.vue';
+import ReservationView from '../views/ReservationView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -57,6 +58,11 @@ const router = createRouter({
         {
             path: '/laborzeit',
             component: LaboratoryView,
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/reservierung',
+            component: ReservationView,
             meta: { requiresAuth: true }
         },
         {

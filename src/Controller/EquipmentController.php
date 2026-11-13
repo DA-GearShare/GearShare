@@ -10,6 +10,7 @@ use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
 use App\Service\EquipmentPhotoService;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -50,7 +51,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
             $toDate   = $to   ? new DateTimeImmutable($to)   : null;
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
 
@@ -128,7 +129,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
             $toDate   = $to   ? new DateTimeImmutable($to)   : null;
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
 
@@ -309,7 +310,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = new DateTimeImmutable($from);
             $toDate   = new DateTimeImmutable($to);
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
         if ($fromDate >= $toDate) {

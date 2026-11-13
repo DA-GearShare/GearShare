@@ -31,6 +31,8 @@ final class ReservationController extends AbstractController
             return new Response('Ungültige Paginierung.', Response::HTTP_BAD_REQUEST);
         }
 
+        if (!$this->isGranted('ROLE_ADMIN')) $userId = null;
+
         $result = $repository->findPaginated($userId, $status, $overdue, $page, $pageSize);
 
         $items = array_map(fn($e) => $this->serializeReservation($e), $result['items']);

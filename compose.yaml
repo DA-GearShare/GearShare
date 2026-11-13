@@ -45,6 +45,7 @@ services:
       DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
       CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$$}"
       DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
+      LOAD_FIXTURES: "${LOAD_FIXTURES:-1}"
       # Image storage (S3 API). The app is the only writer, all uploads go through it.
       S3_ENDPOINT: "http://seaweedfs:8333"
       S3_REGION: "${S3_REGION:-eu-central-1}"
@@ -58,6 +59,8 @@ services:
       MEDIA_BASE_URL: "/media"
       # Path the gateway serves internally for X-Accel-Redirect (see gateway/default.conf).
       CONDITION_ACCEL_PREFIX: "/_internal/condition"
+      MAX_PHOTO_MB: "${MAX_PHOTO_MB:-15}"
+      MAX_PHOTOS_PER_EQUIPMENT: "${MAX_PHOTOS_PER_EQUIPMENT:-5}"
     volumes:
       # Live editing: changes in src/, templates/ and config/ are served
       # immediately, no rebuild. Only public/ is reachable over HTTP.
@@ -87,6 +90,7 @@ services:
 
   database:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}

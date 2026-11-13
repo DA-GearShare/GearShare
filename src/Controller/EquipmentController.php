@@ -8,32 +8,23 @@ use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
+use App\Service\EquipmentPhotoService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 use DateTimeImmutable;
 use App\Repository\ReservationItemRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
-    private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    private const int MAX_PHOTO_BYTES = 15 * 1024 * 1024;
-
-    public function __construct(
-        #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
-    )
-    {
-    }
-
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
         EquipmentRepository          $repository,
@@ -69,13 +60,7 @@ final class EquipmentController extends AbstractController
 
         $result = $repository->findPaginated($sort, $order, $fromDate, $toDate, $search, $page, $pageSize);
 
-        $items = array_map(fn($e) => [
-            'id' => $e->getId(),
-            'name' => $e->getName(),
-            'location' => $e->getLocation(),
-            'type' => $e->getType(),
-            'model' => $e->getModel(),
-        ], $result['items']);
+        $items = array_map(fn($e) => $this->serializeEquipment($e), $result['items']);
 
         return $this->json([
             'items' => $items,
@@ -99,6 +84,27 @@ final class EquipmentController extends AbstractController
         }
 
         return $this->json($this->serializeEquipment($equipment));
+    }
+
+    #[Route('/{equipmentId}', name: 'delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteEquipment(
+        Uuid $equipmentId,
+        EquipmentRepository $repository,
+        EquipmentPhotoService $photoService,
+    ): Response
+    {
+        $equipment = $repository->find($equipmentId);
+        if ($equipment === null || $equipment->isDeleted()) {
+            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        // TODO: err 409: Equipment part of an existing reservation
+
+        $photoService->deleteAllFor($equipment);
+        $repository->deleteEquipment($equipment);
+
+        return new Response('', Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
@@ -280,6 +286,84 @@ final class EquipmentController extends AbstractController
 
         return $this->json($this->serializeEquipment($equipment));
     }
+    #[Route('/calender', name: 'get_calender', methods: ['POST'])]
+    public function getCalender(
+        Request $request,
+        EquipmentRepository $repository,
+        ReservationItemRepository $reservationItemRepository,
+    ): Response {
+        $data = $request->toArray();
+        $ids = $data['equipmentIds'] ?? [];
+        $from = $data['from'] ?? null;
+        $to   = $data['to'] ?? null;
+
+        if (!is_array($ids) || count($ids) === 0) {
+            return new Response('equipmentIds muss eine nicht leere Liste sein.', Response::HTTP_BAD_REQUEST);
+        }
+        if (count($ids) > 10) {
+            return new Response('Es können maximal 10 Geräte ausgewählt werden.', Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_string($from) || !is_string($to)) {
+            return new Response('from und to müssen angegeben werden.', Response::HTTP_BAD_REQUEST);
+        }
+        try {
+            $fromDate = new DateTimeImmutable($from);
+            $toDate   = new DateTimeImmutable($to);
+        } catch (\Exception) {
+            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
+        }
+        if ($fromDate >= $toDate) {
+            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
+        }
+        $equipmentList = [];
+        foreach (array_unique($ids) as $id) {
+            if (!is_string($id) || !Uuid::isValid($id)) {
+                return new Response('Ungültige  ID.'.$id, Response::HTTP_BAD_REQUEST);
+            }
+            $equipment = $repository->find(Uuid::fromString($id));
+            if ($equipment === null || $equipment->isDeleted()) {
+                return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
+            }
+            $equipmentList[] = $equipment;
+        }
+        $reservationItems = $reservationItemRepository->findInPeriod($equipmentList, $fromDate, $toDate);
+
+        $busy = [];
+        foreach ($equipmentList as $equipment) {
+            $busy[$equipment->getId()->toRfc4122()] = [];
+        }
+
+        foreach ($reservationItems as $item) {
+            $reservation = $item->getReservation();
+
+            $devices = [$item->getRequestedEquipment()];
+            if ($item->getAssignedEquipment() !== $item->getRequestedEquipment()) {
+                $devices[] = $item->getAssignedEquipment();
+            }
+
+            foreach ($devices as $device) {
+                if ($device === null) {
+                    continue;
+                }
+                $deviceId = $device->getId()->toRfc4122();
+                if (!isset($busy[$deviceId])) {
+                    continue;
+                }
+                $busy[$deviceId][] = [
+                    'start' => $reservation->getStartDatetime()->format(DATE_ATOM),
+                    'end'   => $reservation->getEndDatetime()->format(DATE_ATOM),
+                ];
+            }
+        }
+        return $this->json([
+            'equipment' => array_map(fn($e) => [
+                'id'   => $e->getId()->toRfc4122(),
+                'name' => $e->getName(),
+                'busy' => $busy[$e->getId()->toRfc4122()],
+            ], $equipmentList),
+        ]);
+    }
+
 
     /** @return array<string, mixed> */
     private function serializeEquipment(Equipment $equipment): array
@@ -292,10 +376,7 @@ final class EquipmentController extends AbstractController
             'type' => $equipment->getType(),
             'model' => $equipment->getModel(),
             'code' => $equipment->getCode(),
-            'status' => $equipment->getStatus()?->value,
-//            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
-            'createdAt' => $equipment->getCreatedAt()?->format(DATE_ATOM),
-            'deletedAt' => $equipment->getDeletedAt()?->format(DATE_ATOM),
+            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
         ];
     }
 }

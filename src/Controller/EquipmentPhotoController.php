@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -37,7 +38,7 @@ final class EquipmentPhotoController extends AbstractController
      * @param EquipmentRepository $equipmentRepository
      * @return Response
      */
-    #[Route('/{equipmentId}/photos', name: 'photo_list', methods: ['GET'])]
+    #[Route('/{equipmentId}/photos', name: 'photo_list', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
     public function listPhotos(
         Uuid                     $equipmentId,
         EquipmentPhotoRepository $photoRepository,
@@ -61,7 +62,7 @@ final class EquipmentPhotoController extends AbstractController
      * @throws Throwable
      */
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos', name: 'photo_upload', methods: ['POST'])]
+    #[Route('/{equipmentId}/photos', name: 'photo_upload', requirements: ['equipmentId' => Requirement::UUID], methods: ['POST'])]
     public function uploadPhoto(
         Uuid                     $equipmentId,
         Request                  $request,
@@ -134,7 +135,7 @@ final class EquipmentPhotoController extends AbstractController
      * @return Response
      */
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_mark_isMain', methods: ['PATCH'])]
+    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_mark_isMain', requirements: ['equipmentId' => Requirement::UUID, 'photoId' => Requirement::UUID], methods: ['PATCH'])]
     public function markAsMainPhoto(
         Uuid                     $equipmentId,
         Uuid                     $photoId,
@@ -186,7 +187,7 @@ final class EquipmentPhotoController extends AbstractController
      * @return Response
      */
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', methods: ['DELETE'])]
+    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', requirements: ['equipmentId' => Requirement::UUID, 'photoId' => Requirement::UUID], methods: ['DELETE'])]
     public function deletePhoto(
         Uuid                     $equipmentId,
         Uuid                     $photoId,

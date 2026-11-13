@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/v1/users', name: 'user_')]
@@ -52,7 +53,7 @@ final class UserController extends AbstractController
     }
 
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{userId}/roles', name: 'set_role', requirements: ['userId' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['PATCH'])]
+    #[Route('/{userId}/roles', name: 'set_role', requirements: ['userId' => Requirement::UUID], methods: ['PATCH'])]
     public function roles(
         UserRepository $userRepository,
         Request        $request,
@@ -94,7 +95,7 @@ final class UserController extends AbstractController
     }
 
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{userId}', name: 'get_from_id', requirements: ['userId' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]
+    #[Route('/{userId}', name: 'get_from_id', requirements: ['userId' => Requirement::UUID], methods: ['GET'])]
     public function listFromId(UserRepository $userRepository, string $userId): Response
     {
         $user = $userRepository->findOneById($userId);

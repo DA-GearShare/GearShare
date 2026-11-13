@@ -79,4 +79,34 @@ class ReservationRepository extends ServiceEntityRepository
             'totalItems' => count($paginator),
         ];
     }
+
+    /**
+     * @return mixed
+     */
+    public function findOverdue(): mixed
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->leftJoin('r.items', 'i')
+            ->addSelect('i')
+            ->orderBy('r.startDatetime', 'DESC')
+            ->addOrderBy('r.id', 'ASC');
+
+            $unreturned = $this->getEntityManager()->createQueryBuilder()
+                ->select('1')
+                ->from(ReservationItem::class, 'ri')
+                ->where('ri.reservation = r')
+                ->andWhere('ri.status != :returned')
+                ->getDQL();
+
+            $isOverdue = $qb->expr()->andX(
+                'r.endDatetime < :now',
+                $qb->expr()->exists($unreturned),
+            );
+
+            $qb->andWhere($isOverdue)
+                ->setParameter('now', new DateTimeImmutable())
+                ->setParameter('returned', ReservationItemStatus::Returned);
+
+        return $qb->getQuery()->getResult();
+    }
 }

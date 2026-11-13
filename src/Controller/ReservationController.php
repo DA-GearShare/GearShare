@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Reservation;
 use App\Entity\ReservationItem;
+use App\Entity\User;
 use App\Enum\ReservationItemStatus;
 use App\Enum\ReservationStatus;
 use App\Repository\ReservationRepository;
@@ -12,6 +13,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/v1/reservations', name: 'reservation_')]
@@ -31,7 +34,11 @@ final class ReservationController extends AbstractController
             return new Response('Ungültige Paginierung.', Response::HTTP_BAD_REQUEST);
         }
 
-        if (!$this->isGranted('ROLE_ADMIN')) $userId = null;
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $current = $this->getUser();
+            if (!$current instanceof User) return new Response('Nicht angemeldet.', Response::HTTP_UNAUTHORIZED);
+            $userId = $current->getUserId();
+        }
 
         $result = $repository->findPaginated($userId, $status, $overdue, $page, $pageSize);
 
@@ -90,5 +97,42 @@ final class ReservationController extends AbstractController
             'issuedAt' => $item->getIssuedAt()?->format(DATE_ATOM),
             'returnedAt' => $item->getReturnedAt()?->format(DATE_ATOM),
         ];
+    }
+
+    #[Route('/{reservationId}', name: 'get', requirements: ['reservationId' => Requirement::UUID], methods: ['GET'])]
+    public function getReservation(
+        Uuid                  $reservationId,
+        ReservationRepository $repository,
+    ): Response
+    {
+        $reservation = $repository->find($reservationId);
+        if (!$reservation) {
+            return new Response('Reservierung nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $current = $this->getUser();
+            if (!$current instanceof User) return new Response('Nicht angemeldet.', Response::HTTP_UNAUTHORIZED);
+
+            $currentId = $current->getUserId();
+            $isOwn = $reservation->getRequestedBy()?->getUserId()?->equals($currentId)
+                || $reservation->getResponsibleUser()?->getUserId()?->equals($currentId);
+            if (!$isOwn) return new Response('Kein Zugriff auf diese Reservierung.', Response::HTTP_FORBIDDEN);
+        }
+
+        return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+    }
+
+    #[Route('/overdue', name: 'get_overdue', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function getOverdueReservations(
+        ReservationRepository $repository,
+    ): Response
+    {
+        $result = $repository->findOverdue();
+
+        $items = array_map(fn($e) => $this->serializeReservation($e), $result);
+
+        return $this->json(['items' => $items]);
     }
 }

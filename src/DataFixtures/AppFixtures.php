@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Equipment;
-use App\Enum\EquipmentStatus;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
@@ -75,30 +74,6 @@ class AppFixtures extends Fixture
         ['EQ-0050', 'Micro-HDMI-Kabel',      'IT-Labor',   'Kabel',           'Raspberry Pi Micro-HDMI auf HDMI 1 m'],
         ['EQ-0051', 'Drohnen-Akku',          'Medienraum', 'Akku',            'DJI Mini 4 Pro Intelligent Flight Battery'],
         ['EQ-0052', 'GoPro-Akku',            'Medienraum', 'Akku',            'GoPro Enduro Akku'],
-    ];
-
-    /**
-     * Status-Abweichungen: Code => Status
-     * Alle Geräte, die hier nicht stehen, sind "Available".
-     */
-    private const STATUS = [
-        // Reserviert
-        'EQ-0026' => EquipmentStatus::Reserved,
-        'EQ-0027' => EquipmentStatus::Reserved,
-        'EQ-0028' => EquipmentStatus::Reserved,
-        'EQ-0029' => EquipmentStatus::Reserved,
-        'EQ-0030' => EquipmentStatus::Reserved,
-        'EQ-0031' => EquipmentStatus::Reserved,
-        'EQ-0043' => EquipmentStatus::Reserved,
-
-        // Ausgegeben
-        'EQ-0032' => EquipmentStatus::Usage,
-        'EQ-0033' => EquipmentStatus::Usage,
-        'EQ-0034' => EquipmentStatus::Usage,
-        'EQ-0035' => EquipmentStatus::Usage,
-        'EQ-0036' => EquipmentStatus::Usage,
-        'EQ-0037' => EquipmentStatus::Usage,
-        'EQ-0052' => EquipmentStatus::Usage,
     ];
 
     /**
@@ -174,8 +149,7 @@ class AppFixtures extends Fixture
                 ->setLocation($location)
                 ->setType($type)
                 ->setModel($model)
-                ->setCode($code)
-                ->setStatus(self::STATUS[$code] ?? EquipmentStatus::Available);
+                ->setCode($code);
 
             $manager->persist($equipment);
             $items[$code] = $equipment;

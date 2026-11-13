@@ -7,7 +7,6 @@ use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Entity\EquipmentPool;
 use App\Entity\ReservationItem;
-use App\Enum\EquipmentStatus;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -136,7 +135,6 @@ class EquipmentRepository extends ServiceEntityRepository
             ->setType($dto->type)
             ->setModel($dto->model)
             ->setCode($dto->code ?? $this->nextGeneratedCode())
-            ->setStatus(EquipmentStatus::Available)
             ->setPool($pool);
 
         $em->persist($equipment);

@@ -10,6 +10,8 @@
     --color-surface: #ffffff;
     --color-background-areas: #ffffff;
     --color-soft-surface: #f3f4f6;
+    --color-admin-blue: #1c458d;
+    --color-teacher-purple: #544083;
 
     /* Status */
     --color-available-bg: #e1eddc;
@@ -229,7 +231,7 @@ textarea {
     padding: var(--space-xs) var(--space-m);
     font-size: var(--text-label-size);
     line-height: var(--text-label-line);
-    font-weight: var(--font-regular);
+    font-weight: var(--font-bold);
     color: var(--color-text-secondary);
     background: var(--color-soft-surface);
     border-radius: var(--radius-pill);
@@ -240,6 +242,25 @@ textarea {
     background: var(--color-available-bg);
 }
 
+.tag.tag-admin {
+    color: var(--color-admin-blue);
+    background: var(--color-info);
+}
+
+.tag.tag-teacher {
+    color: var(--color-teacher-purple);
+    background: var(--color-cal-purple);
+}
+
+.avatar.avatar-admin {
+    color: var(--color-admin-blue);
+    background: var(--color-info);
+}
+
+.avatar.avatar-teacher {
+    color: var(--color-teacher-purple);
+    background: var(--color-cal-purple);
+}
 .message-error {
     padding: var(--space-m) var(--space-l);
     color: var(--color-error-text);
@@ -295,4 +316,55 @@ textarea {
     flex-shrink: 0;
     font-size: 28px;
     color: var(--color-text-primary);
+}
+
+.eyebrow {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: var(--font-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    font-size: var(--text-nav-size);
+    font-weight: var(--font-bold);
+    color: var(--color-navy);
+    border-radius: var(--radius-tab);
+}
+
+.avatar-student {
+    color: var(--color-text-secondary);
+    background: var(--color-soft-surface);
+}
+
+.avatar-teacher {
+    background: var(--color-cal-purple);
+}
+
+.avatar-admin {
+    background: var(--color-info);
+}
+
+.avatar-self {
+    color: var(--color-surface);
+    background: var(--color-navy);
+}
+
+.tag-admin {
+    color: var(--color-navy);
+    background: var(--color-info);
+}
+
+.tag-teacher {
+    color: var(--color-navy);
+    background: var(--color-cal-purple);
 }

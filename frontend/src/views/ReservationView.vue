@@ -117,10 +117,8 @@ async function submitReservation() {
             body: JSON.stringify({
                 startDatetime,
                 endDatetime,
-                items: selectedEquipment.value.map(id => {
-                    return {
-                        requestedEquipmentId: id
-                    };
+                equipmentIds: selectedEquipment.value.map(id => {
+                    return id;
                 })
             })
         });

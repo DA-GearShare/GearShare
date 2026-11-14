@@ -110,6 +110,21 @@ final class ReservationController extends AbstractController
         ReservationRepository $repository,
     ): Response
     {
+        $authorizedReservation = $this->getAuthorizedReservation($repository, $reservationId);
+
+        return $this->json($this->serializeReservation($authorizedReservation), Response::HTTP_OK);
+    }
+
+
+    /**
+     * Returns the Reservation if the User is allowed to see it
+     *
+     * @param ReservationRepository $repository
+     * @param Uuid $reservationId
+     * @return Reservation|Response
+     */
+    public function getAuthorizedReservation(ReservationRepository $repository, Uuid $reservationId): Reservation|Response
+    {
         $reservation = $repository->find($reservationId);
         if (!$reservation) {
             return new Response('Reservierung nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -124,8 +139,20 @@ final class ReservationController extends AbstractController
                 || $reservation->getResponsibleUser()?->getUserId()?->equals($currentId);
             if (!$isOwn) return new Response('Kein Zugriff auf diese Reservierung.', Response::HTTP_FORBIDDEN);
         }
+        return $reservation;
+    }
 
-        return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+    #[Route('/{reservationId}/items', name: 'get_items', requirements: ['reservationId' => Requirement::UUID], methods: ['GET'])]
+    public function getReservationItems(
+        Uuid                  $reservationId,
+        ReservationRepository $repository,
+    ): Response
+    {
+        $authorizedReservation = $this->getAuthorizedReservation($repository, $reservationId);
+        if ($authorizedReservation instanceof Response) return $authorizedReservation;
+
+        $items = array_values(array_map(fn(ReservationItem $item) => $this->serializeReservationItem($item), $authorizedReservation->getItems()->toArray()));
+        return $this->json($items, Response::HTTP_OK);
     }
 
     /**

@@ -1221,8 +1221,7 @@ paths:
             summary: Position per Scan als ausgegeben markieren (Admin)
             description: >
                 Wird ein anderes verfügbares Gerät gescannt als ursprünglich
-                angefragt, gilt dies als Ersatzgerät und wird der Position als
-                `assignedEquipmentId` hinzugefügt.
+                angefragt, gilt dies als neues Gerät.
             requestBody:
                 required: true
                 content:

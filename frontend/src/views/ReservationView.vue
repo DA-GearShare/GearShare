@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import EquipmentList from '@/views/EquipmentView.vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useCartStore } from '@/stores/CartStore.ts';
+import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
+import EquipmentCard from "@/components/EquipmentCard.vue";
 
-const selectedEquipment = ref<string[]>([]);
+const cart = useCartStore();
+const store = useEquipmentStore();
+
+const items = ref<{ id: string; name: string; model: string; type: string }[]>([]);
+
 const startDate = ref('');
 const endDate = ref('');
 
@@ -11,8 +17,22 @@ const available = ref(false);
 const loading = ref(false);
 const message = ref('');
 
+async function loadItems() {
+    const results = await Promise.all(cart.items.map((id) => {
+        return store.fetchEquipmentById(id);
+    }));
+    items.value = results.filter((item) => {
+        return item !== null;
+    });
+}
+
+onMounted(loadItems);
+watch(() => {
+    return cart.items.length;
+}, loadItems);
+
 const canCheckAvailability = computed(() => {
-    return selectedEquipment.value.length > 0 &&
+    return cart.items.length > 0 &&
         startDate.value !== '' &&
         endDate.value !== '' &&
         startDate.value <= endDate.value;
@@ -24,20 +44,8 @@ function resetAvailability() {
     message.value = '';
 }
 
-function handleSelect(id: string) {
-    if (!selectedEquipment.value.includes(id)) {
-        selectedEquipment.value.push(id);
-    }
-
-    resetAvailability();
-}
-
 function removeEquipment(id: string) {
-    selectedEquipment.value =
-        selectedEquipment.value.filter(item => {
-            return item !== id;
-        });
-
+    cart.remove(id);
     resetAvailability();
 }
 
@@ -57,7 +65,7 @@ async function checkAvailability() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                equipmentIds: selectedEquipment.value,
+                equipmentIds: cart.items,
                 from,
                 to
             })
@@ -103,11 +111,8 @@ async function submitReservation() {
     message.value = '';
 
     try {
-        const startDatetime =
-            new Date(`${startDate.value}T00:00:00`).toISOString();
-
-        const endDatetime =
-            new Date(`${endDate.value}T23:59:59`).toISOString();
+        const startDatetime = new Date(`${startDate.value}T00:00:00`).toISOString();
+        const endDatetime = new Date(`${endDate.value}T23:59:59`).toISOString();
 
         const response = await fetch('/api/v1/reservations', {
             method: 'POST',
@@ -117,9 +122,7 @@ async function submitReservation() {
             body: JSON.stringify({
                 startDatetime,
                 endDatetime,
-                equipmentIds: selectedEquipment.value.map(id => {
-                    return id;
-                })
+                equipmentIds: cart.items
             })
         });
 
@@ -129,10 +132,9 @@ async function submitReservation() {
 
         const reservation = await response.json();
 
-        message.value =
-            `Reservierungsanfrage erfolgreich erstellt! ID: ${reservation.id}`;
+        message.value = `Reservierungsanfrage erfolgreich erstellt! ID: ${reservation.id}`;
 
-        selectedEquipment.value = [];
+        cart.clear();
         startDate.value = '';
         endDate.value = '';
         availabilityChecked.value = false;
@@ -151,27 +153,23 @@ async function submitReservation() {
     <div class="reservation-page">
         <h1>Meine Reservierung</h1>
 
-        <h2>1. Equipment auswählen</h2>
+        <h2>Ausgewähltes Equipment</h2>
 
-        <EquipmentList picker-mode :exclude-ids="selectedEquipment" @select="handleSelect"/>
-
-        <h2>2. Ausgewähltes Equipment</h2>
-
-        <p v-if="selectedEquipment.length === 0">
+        <p v-if="cart.items.length === 0">
             Noch kein Equipment ausgewählt.
         </p>
 
-        <ul v-else>
-            <li v-for="id in selectedEquipment" :key="id">
-                {{ id }}
+        <ul v-else class="card-list cart-list">
+            <li v-for="item in items" :key="item.id" class="cart-item">
+                <EquipmentCard :id="item.id" :name="item.name" :model="item.model" :type="item.type" />
 
-                <button type="button" @click="removeEquipment(id)">
+                <button type="button" class="btn-secondary" @click="removeEquipment(item.id)">
                     Entfernen
                 </button>
             </li>
         </ul>
 
-        <h2>3. Zeitraum auswählen</h2>
+        <h2>Zeitraum auswählen</h2>
 
         <div class="date-inputs">
             <label>
@@ -185,7 +183,7 @@ async function submitReservation() {
             </label>
         </div>
 
-        <button type="button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
+        <button type="button" class="btn-secondary" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
             {{ loading ? 'Wird geprüft...' : 'Verfügbarkeit prüfen' }}
         </button>
 
@@ -193,7 +191,7 @@ async function submitReservation() {
             {{ message }}
         </p>
 
-        <button type="button" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
+        <button type="button" class="btn-primary" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
             {{ loading ? 'Wird gesendet...' : 'Reservierung absenden' }}
         </button>
     </div>
@@ -204,6 +202,18 @@ async function submitReservation() {
     display: flex;
     flex-direction: column;
     gap: var(--space-m);
+}
+
+.cart-list {
+    padding: 0;
+    list-style: none;
+}
+
+.cart-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-s);
 }
 
 .date-inputs {

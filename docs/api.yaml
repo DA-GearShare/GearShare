@@ -1219,20 +1219,6 @@ paths:
         post:
             tags: [ Reservations ]
             summary: Position per Scan als ausgegeben markieren (Admin)
-            description: >
-                Wird ein anderes verfügbares Gerät gescannt als ursprünglich
-                angefragt, gilt dies als neues Gerät.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required: [ scannedCode ]
-                            properties:
-                                scannedCode:
-                                    type: string
-                                    example: "EQ-2026-00042"
             responses:
                 '200':
                     description: Als ausgegeben markiert.

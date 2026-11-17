@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import AccessoryCard from "@/components/AccessoryCard.vue";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import EquipmentAll from "@/components/EquipmentAll.vue";
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
+import EquipmentPhotos from "@/components/EquipmentPhotos.vue";
 
 interface Accessory {
     accessoryEquipmentId: string
@@ -30,7 +31,9 @@ async function loadAccessories() {
 }
 
 watch(
-    () => [equipmentStore.filters.from, equipmentStore.filters.to],
+    () => {
+        return [equipmentStore.filters.from, equipmentStore.filters.to];
+    },
     loadAccessories,
     { immediate: true }
 );
@@ -90,6 +93,8 @@ function formatDate(value: string) {
 </script>
 
 <template>
+
+    <EquipmentPhotos />
     <h2>Empfehlungen</h2>
 
     <p v-if="equipmentStore.filters.from && equipmentStore.filters.to">

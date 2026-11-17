@@ -10,7 +10,7 @@ onMounted(usersStore.fetchUsers);
 </script>
 
 <template>
-    <h1>Admin Seite</h1>
+    <h1>Nutzerverwaltung</h1>
 
     <p v-if="usersStore.error" class="message-error">{{ usersStore.error }}</p>
 

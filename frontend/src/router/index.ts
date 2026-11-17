@@ -5,10 +5,11 @@ import InstructionsView from '../views/InstructionsView.vue';
 import LaboratoryView from '../views/LaboratorytimeView.vue';
 import LoginView from '../views/LoginView.vue';
 import AccountView from '../views/AccountView.vue';
-import AdminView from '../views/AdminView.vue';
+import AdminUserView from '../views/AdminUserView.vue';
 import EquipmentAddView from "@/views/EquipmentAddView.vue";
 import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import EquipmentEditView from '../views/EquipmentEditView.vue';
+import ReservationView from '../views/ReservationView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -60,8 +61,13 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
-            path: '/admin',
-            component: AdminView,
+            path: '/reservierung',
+            component: ReservationView,
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/admin/nutzer',
+            component: AdminUserView,
             meta: { requiresAuth: true, roles: ['Admin'] }
         }
     ]

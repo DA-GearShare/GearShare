@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\EquipmentStatus;
 use App\Repository\EquipmentRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -44,9 +43,6 @@ class Equipment
 
     #[ORM\Column(name: 'code', type: Types::STRING, length: 255, unique: true, nullable: true)]
     private ?string $code = null;
-
-    #[ORM\Column(name: 'status', type: Types::STRING, length: 255, enumType: EquipmentStatus::class)]
-    private ?EquipmentStatus $status = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private ?DateTimeImmutable $createdAt = null;
@@ -168,18 +164,6 @@ class Equipment
         return $this;
     }
 
-    public function getStatus(): ?EquipmentStatus
-    {
-        return $this->status;
-    }
-
-    public function setStatus(EquipmentStatus $status): static
-    {
-        $this->status = $status;
-
-        return $this;
-    }
-
     public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
@@ -197,11 +181,9 @@ class Equipment
         return $this->deletedAt;
     }
 
-    public function setDeletedAt(?DateTimeImmutable $deletedAt): static
+    public function softDelete(): void
     {
-        $this->deletedAt = $deletedAt;
-
-        return $this;
+        $this->deletedAt = new DateTimeImmutable();
     }
 
     public function isDeleted(): bool
@@ -231,6 +213,26 @@ class Equipment
             if ($photo->getEquipment() === $this) {
                 $photo->setEquipment(null); // orphanRemoval löscht das Foto
             }
+        }
+
+        return $this;
+    }
+
+    public function getMainPhoto(): ?EquipmentPhoto
+    {
+        foreach ($this->photos as $photo) {
+            if ($photo->isMain()) {
+                return $photo;
+            }
+        }
+
+        return null;
+    }
+
+    public function setMainPhoto(?EquipmentPhoto $main): static
+    {
+        foreach ($this->photos as $photo) {
+            $photo->setIsMain($photo === $main);
         }
 
         return $this;

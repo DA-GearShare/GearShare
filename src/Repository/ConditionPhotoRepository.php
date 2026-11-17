@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\ConditionPhoto;
+use App\Entity\Reservation;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +20,24 @@ class ConditionPhotoRepository extends ServiceEntityRepository
         parent::__construct($registry, ConditionPhoto::class);
     }
 
-//    /**
-//     * @return ConditionPhoto[] Returns an array of ConditionPhoto objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * Fotos einer Reservierung, die $user sehen darf: Admins alle, sonst nur die eigenen.
+     * Muss dieselbe Regel abbilden wie ConditionPhotoVoter::VIEW.
+     *
+     * @return list<ConditionPhoto>
+     */
+    public function findVisibleFor(Reservation $reservation, User $user): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->andWhere('p.reservation = :reservation')
+            ->setParameter('reservation', $reservation)
+            ->orderBy('p.createdAt', 'ASC');
 
-//    public function findOneBySomeField($value): ?ConditionPhoto
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if (!$user->isAdmin()) {
+            $qb->andWhere('p.takenBy = :user')
+                ->setParameter('user', $user);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

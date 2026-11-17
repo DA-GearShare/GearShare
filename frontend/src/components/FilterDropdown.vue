@@ -80,7 +80,7 @@ const resetPeriod = () => {
     gap: var(--space-s);
     min-height: 52px;
     border-radius: var(--radius-pill);
-    border-color: var(--color-muted);
+    border-color: var(--color-border);
 }
 
 .menu {

@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import {computed, onMounted} from 'vue';
+import { computed, onMounted } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { useAuthStore } from '@/stores/AuthStore.ts';
 import EquipmentCard from "@/components/EquipmentCard.vue";
@@ -15,7 +15,9 @@ const props = defineProps<{
 }>();
 
 const visibleEquipment = computed(() => {
-    return store.equipment.filter((item: any) => item.id !== props.hideId);
+    return store.equipment.filter((item: any) => {
+        return item.id !== props.hideId;
+    });
 });
 
 const emit = defineEmits<{
@@ -64,15 +66,8 @@ const handleSelect = (id: string) => {
 
 <template>
     <div class="page-header" v-if="!pickerMode">
-        <h1>Inventar</h1>
 
-        <RouterLink
-            v-if="authStore.hasRole(['Admin'])"
-            to="/inventar/neu"
-            class="btn-primary"
-        >
-            Equipment hinzufügen
-        </RouterLink>
+        <RouterLink v-if="authStore.hasRole(['Admin'])" to="/inventar/neu" class="btn-primary">Equipment hinzufügen</RouterLink>
     </div>
 
     <div class="toolbar">
@@ -91,6 +86,7 @@ const handleSelect = (id: string) => {
             :selectable="props.pickerMode"
             :select-disabled="props.excludeIds?.includes(item.id)"
             @select="handleSelect"
+            @deleted="equipmentStore.fetchEquipment()"
         />
     </div>
 

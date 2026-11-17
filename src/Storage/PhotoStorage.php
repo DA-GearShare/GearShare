@@ -25,7 +25,6 @@ final class PhotoStorage
     /**
      * @return string der erkannte MIME-Type
      *
-     * @throws FilesystemException
      */
     public function putEquipment(UploadedFile $file, Uuid $id): string
     {
@@ -35,7 +34,6 @@ final class PhotoStorage
     /**
      * @return string der erkannte MIME-Type
      *
-     * @throws FilesystemException
      */
     public function putCondition(UploadedFile $file, Uuid $id): string
     {
@@ -58,11 +56,6 @@ final class PhotoStorage
         $this->conditionStorage->delete($id->toRfc4122());
     }
 
-    /**
-     * @throws FilesystemException wenn S3 nicht erreichbar ist o. Ä. Bewusst NICHT
-     *         abfangen: sonst legt der Controller einen DB-Eintrag für ein Bild an,
-     *         das es im Bucket gar nicht gibt.
-     */
     private function put(FilesystemOperator $fs, UploadedFile $file, Uuid $id): string
     {
         $mime = $file->getMimeType();

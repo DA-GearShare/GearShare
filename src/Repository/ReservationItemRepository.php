@@ -51,6 +51,27 @@ class ReservationItemRepository extends ServiceEntityRepository
 
         return $ids;
     }
+    public function findInPeriod(array $equipment, DateTimeImmutable $from, DateTimeImmutable $to): array
+    {
+        if ($equipment === []) {
+            return [];
+        }
+        $items = $this->createQueryBuilder('ri')
+            ->addSelect('r')
+            ->innerJoin('ri.reservation', 'r')
+            ->where('ri.requestedEquipment IN (:equipment) OR ri.assignedEquipment IN (:equipment)')
+            ->andWhere('r.startDatetime < :from')
+            ->andWhere('r.endDatetime > :to')
+            ->andWhere('r.status NOT IN (:inactive)')
+            ->setParameter('equipment', $equipment)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->setParameter('inactive', [ReservationStatus::Denied, ReservationStatus::Cancelled])
+            ->orderBy('r.startDatetime', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+    }
 
 
 //    /**

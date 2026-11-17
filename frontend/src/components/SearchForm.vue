@@ -43,6 +43,7 @@ const search = (e: Event) => {
     min-height: 52px;
     padding: 0 var(--space-l) 0 44px;
     background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-pill);
 }
 </style>

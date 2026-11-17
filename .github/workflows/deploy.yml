@@ -22,6 +22,6 @@ jobs:
             sudo /usr/bin/rm -rf /opt/GearShare/vendor &&
             git fetch origin main &&
             git reset --hard origin/main &&
-            docker compose build --pull --no-cache &&
-            docker compose up -d --force-recreate
+            docker compose --env-file .env.prod.local -f compose.yaml -f compose.prod.yaml build --pull &&
+            docker compose --env-file .env.prod.local -f compose.yaml -f compose.prod.yaml up -d
           '

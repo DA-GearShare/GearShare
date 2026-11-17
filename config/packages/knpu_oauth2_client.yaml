@@ -13,5 +13,6 @@ knpu_oauth2_client:
             client_id: '%env(OAUTH_MS_CLIENT_ID)%'
             client_secret: '%env(OAUTH_MS_CLIENT_SECRET)%'
             tenant: '%env(OAUTH_MS_TENANT_ID)%'
+            default_end_point_version: '2.0'
             redirect_route: auth_connect_check
             redirect_params: { provider: microsoft }

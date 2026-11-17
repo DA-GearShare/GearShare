@@ -11,7 +11,7 @@ const auth = useAuthStore();
 
             <p v-if="auth.error" class="message-error login-error">{{ auth.error }}</p>
 
-            <a class="btn-primary login-button" href="/api/v1/auth/connect/github">
+            <a class="btn-primary login-button" href="/connect/github">
                 Mit GitHub anmelden
             </a>
         </div>

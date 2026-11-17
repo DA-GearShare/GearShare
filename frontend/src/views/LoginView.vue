@@ -7,12 +7,12 @@ const auth = useAuthStore();
     <div class="login">
         <div class="section-card login-card">
             <h1>Anmelden</h1>
-            <p>Melde dich mit deinem GitHub-Konto an.</p>
+            <p>Melde dich mit deinem Microsoft-Konto an.</p>
 
             <p v-if="auth.error" class="message-error login-error">{{ auth.error }}</p>
 
-            <a class="btn-primary login-button" href="/connect/github">
-                Mit GitHub anmelden
+            <a class="btn-primary login-button" href="/connect/microsoft">
+                Mit Microsoft anmelden
             </a>
         </div>
     </div>

@@ -49,14 +49,30 @@ docs/           API spec, DB schema
 - OAuth credentials for GitHub (see `config/packages/knpu_oauth2_client.yaml` for the required
   environment variables) -> Store them in `.env.local`
 
+The Compose setup follows [Symfony Docker](https://github.com/dunglas/symfony-docker):
+
+| File                    | Used for                                   |
+|-------------------------|--------------------------------------------|
+| `compose.yaml`          | services shared by dev and prod            |
+| `compose.override.yaml` | dev, loaded automatically                  |
+| `compose.prod.yaml`     | prod, loaded explicitly with `-f`          |
+
 ### Development
 
-1. Build fresh images: `docker compose build --pull --no-cache`
-2. Start the containers: `docker compose up --wait`
-3. Open `http://localhost`
-4. Run the database migrations: `docker compose exec app bin/console doctrine:migrations:migrate`
-5. Optional, load sample data: `docker compose exec app bin/console doctrine:fixtures:load`
-6. Stop the containers: `docker compose down --remove-orphans`
+1. Start everything: `docker compose up` (add `--build` after changing the `Dockerfile`)
+2. Open `http://localhost`. Code changes are picked up live (Symfony via bind mount, Vue via Vite hot reload).
+3. Migrations and sample data are applied automatically on every start.
+4. Stop the containers: `docker compose down --remove-orphans`
+
+### Production
+
+1. Copy `.env.prod.local.dist` to `.env.prod.local` and fill in real values (secrets, public URL, OAuth apps).
+2. Build: `docker compose --env-file .env.prod.local -f compose.yaml -f compose.prod.yaml build --pull`
+3. Start: `docker compose --env-file .env.prod.local -f compose.yaml -f compose.prod.yaml up -d`
+
+Prod runs Symfony with `APP_ENV=prod`, no dev dependencies, and opcache enabled. The gateway image
+serves the built frontend. Migrations run on start, fixtures never do. The gateway speaks plain HTTP on
+`HTTP_PORT`, so put a TLS-terminating reverse proxy in front of it.
 
 ## Documentation
 

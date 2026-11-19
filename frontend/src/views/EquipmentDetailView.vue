@@ -6,6 +6,9 @@ import { useAuthStore } from "@/stores/AuthStore.ts";
 import EquipmentAll from "@/components/EquipmentAll.vue";
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import EquipmentPhotos from "@/components/EquipmentPhotos.vue";
+import { useCartStore } from "@/stores/CartStore.ts";
+
+const cart = useCartStore();
 
 interface Accessory {
     accessoryEquipmentId: string
@@ -16,6 +19,7 @@ const route = useRoute();
 const autStore = useAuthStore();
 const equipmentStore = useEquipmentStore();
 const accessories = ref<Accessory[]>([]);
+const message = ref();
 
 async function loadAccessories() {
     let url = `/api/v1/equipment/${route.params.id}/accessories`;
@@ -90,6 +94,16 @@ function formatDate(value: string) {
         minute: '2-digit',
     });
 }
+
+function addToCart() {
+    const id = route.params.id as string;
+    if (cart.has(id)) {
+        message.value = 'Das Equipment ist bereits im Warenkorb.';
+        return;
+    }
+    cart.add(id);
+    message.value = 'Equipment erfolgreich zum Warenkorb hinzugefügt.';
+}
 </script>
 
 <template>
@@ -125,6 +139,8 @@ function formatDate(value: string) {
             />
         </div>
     </div>
+    <button class="btn-secondary" @click="addToCart">Zum Warenkorb hinzufügen</button>
+    <p v-if="message" class="message-info">{{ message }}</p>
 </template>
 
 <style scoped>

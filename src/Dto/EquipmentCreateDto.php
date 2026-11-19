@@ -40,18 +40,18 @@ final class EquipmentCreateDto
         $values = [];
 
         foreach (array_diff(array_keys($data), self::ALLOWED_FIELDS) as $key) {
-            $errors[(string) $key] = 'Unknown field';
+            $errors[(string) $key] = 'Unbekanntes Feld';
         }
 
         foreach (self::REQUIRED_STRINGS as $field) {
             if (!array_key_exists($field, $data)) {
-                $errors[$field] = 'Required';
+                $errors[$field] = 'Pflichtfeld';
             } elseif (!is_string($data[$field])) {
-                $errors[$field] = 'Must be a string';
+                $errors[$field] = 'Muss ein String sein';
             } elseif (($value = trim($data[$field])) === '') {
-                $errors[$field] = 'Must not be empty';
+                $errors[$field] = 'Darf nicht leer sein';
             } elseif (mb_strlen($value) > self::MAX_LENGTH) {
-                $errors[$field] = sprintf('At most %d characters', self::MAX_LENGTH);
+                $errors[$field] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
             } else {
                 $values[$field] = $value;
             }
@@ -60,9 +60,9 @@ final class EquipmentCreateDto
         $code = null;
         if (isset($data['code'])) {
             if (!is_string($data['code'])) {
-                $errors['code'] = 'Must be a string or null';
+                $errors['code'] = 'Muss ein String oder null sein';
             } elseif (mb_strlen($code = trim($data['code'])) > self::MAX_LENGTH) {
-                $errors['code'] = sprintf('At most %d characters', self::MAX_LENGTH);
+                $errors['code'] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
             }
             $code = $code === '' ? null : $code;
         }
@@ -70,7 +70,7 @@ final class EquipmentCreateDto
         $poolId = null;
         if (isset($data['poolId'])) {
             if (!is_string($data['poolId']) || !Uuid::isValid($data['poolId'])) {
-                $errors['poolId'] = 'Must be a UUID or null';
+                $errors['poolId'] = 'Muss eine UUID oder null sein';
             } else {
                 $poolId = strtolower($data['poolId']);
             }

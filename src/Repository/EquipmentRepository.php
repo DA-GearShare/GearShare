@@ -41,7 +41,7 @@ class EquipmentRepository extends ServiceEntityRepository
                 ->select('ri.id')
                 ->from(ReservationItem::class, 'ri')
                 ->innerJoin('ri.reservation', 'r')
-                ->where('ri.requestedEquipment = e OR ri.assignedEquipment = e')
+                ->where('ri.requestedEquipment = e')
                 ->andWhere('r.startDatetime < :to')
                 ->andWhere('r.endDatetime > :from');
 

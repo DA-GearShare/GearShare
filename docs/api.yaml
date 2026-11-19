@@ -2275,11 +2275,6 @@ components:
                     type: string
                     format: uuid
                     nullable: true
-                assignedEquipmentId:
-                    type: string
-                    format: uuid
-                    nullable: true
-                    description: Tatsächlich ausgegebenes Gerät (kann vom angefragten abweichen, z. B. Ersatzgerät).
                 status:
                     $ref: '#/components/schemas/ReservationItemStatus'
                 issuedAt:

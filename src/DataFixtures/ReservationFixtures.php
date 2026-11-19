@@ -114,11 +114,6 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
                 default                     => ReservationItemStatus::Requested,
             });
 
-        // Ab Annahme ist das konkrete Gerät zugewiesen
-        if (in_array($status, [ReservationStatus::Accepted, ReservationStatus::Active, ReservationStatus::Returned], true)) {
-            $item->setAssignedEquipment($equipment);
-        }
-
         if (in_array($status, [ReservationStatus::Active, ReservationStatus::Returned], true)) {
             $item->setIssuedAt($startAt);
         }

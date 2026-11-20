@@ -16,6 +16,18 @@ const items = ref<{
 const startDate = ref('');
 const endDate = ref('');
 
+function formatDateTime(value: string): string {
+    if (!value) return '';
+
+    return new Date(value).toLocaleString('de-AT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 const availabilityChecked = ref(false);
 const available = ref(false);
 const loading = ref(false);
@@ -26,7 +38,7 @@ const canCheckAvailability = computed(() => {
     return cart.items.length > 0 &&
         startDate.value !== '' &&
         endDate.value !== '' &&
-        startDate.value <= endDate.value;
+        new Date(startDate.value).getTime() < new Date(endDate.value).getTime();
 });
 
 const equipmentCount = computed(() => {
@@ -73,15 +85,12 @@ async function checkAvailability() {
     resetAvailability();
 
     try {
-        const from = new Date(`${startDate.value}T00:00:00`).toISOString();
+        const from = new Date(startDate.value).toISOString();
+        const to = new Date(endDate.value).toISOString();
 
-        const to = new Date(`${endDate.value}T23:59:59`).toISOString();
-
-        const response = await fetch('/api/v1/equipment/calendar', {
+        const res = await fetch('/api/v1/equipment/calendar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 equipmentIds: cart.items,
                 from,
@@ -89,24 +98,21 @@ async function checkAvailability() {
             })
         });
 
-        if (!response.ok) {
+        if (!res.ok) {
             throw new Error('Kalender konnte nicht geladen werden.');
         }
 
-        const calendar = await response.json();
+        const calendar = await res.json();
+        console.log('Kalender-Antwort:', calendar);
 
-        const requestedStart = new Date(from).getTime();
-        const requestedEnd = new Date(to).getTime();
-
-        available.value = calendar.some((slot: {
-            start: string;
-            end: string;
-            status: string;
-        }) => {
-            return slot.status === 'available' &&
-                new Date(slot.start).getTime() <= requestedStart &&
-                new Date(slot.end).getTime() >= requestedEnd;
-        });
+        available.value = Array.isArray(calendar) &&
+            calendar.length === cart.items.length &&
+            calendar.every((equipment: {
+                id: string;
+                notAvailable: unknown[];
+            }) => {
+                return equipment.notAvailable.length === 0;
+            });
 
         availabilityChecked.value = true;
 
@@ -126,52 +132,45 @@ async function checkAvailability() {
 }
 
 async function submitReservation() {
-    if (!availabilityChecked.value || !available.value || loading.value) {
-        return;
-    }
-
     loading.value = true;
     message.value = '';
 
     try {
-        const startDatetime = new Date(`${startDate.value}T00:00:00`).toISOString();
+        const startDatetime = new Date(startDate.value).toISOString();
+        const endDatetime = new Date(endDate.value).toISOString();
 
-        const endDatetime = new Date(`${endDate.value}T23:59:59`).toISOString();
+        const requestBody = {
+            startDatetime,
+            endDatetime,
+            equipmentIds: cart.items
+        };
+        console.log('Reservierungsdaten:', requestBody);
 
-        const response = await fetch('/api/v1/reservations', {
+        const res = await fetch('/api/v1/reservations', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                startDatetime,
-                endDatetime,
-                equipmentIds: cart.items
-            })
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
         });
 
-        if (!response.ok) {
-            throw new Error('Reservierungsanfrage konnte nicht erstellt werden.');
+        const responseText = await res.text();
+
+        console.log('Reservierungs-Status:', res.status);
+        console.log('Reservierungs-Antwort:', responseText);
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${responseText}`);
         }
 
-        const reservation = await response.json();
-
-        message.value = `Reservierungsanfrage erfolgreich erstellt! ID: ${reservation.id}`;
-
+        message.value = 'Reservierung erfolgreich erstellt!';
         messageKind.value = 'success';
 
-        cart.clear();
-
-        startDate.value = '';
-        endDate.value = '';
-
-        availabilityChecked.value = false;
-        available.value = false;
-
     } catch (error) {
+        console.error('Fehler beim Absenden der Reservierung:', error);
+
         message.value = 'Fehler beim Absenden der Reservierungsanfrage.';
         messageKind.value = 'error';
-        console.error(error);
+
     } finally {
         loading.value = false;
     }
@@ -191,12 +190,12 @@ async function submitReservation() {
             <div class="date-inputs">
                 <label>
                     Von
-                    <input type="date" v-model="startDate" @change="resetAvailability">
+                    <input type="datetime-local" v-model="startDate" @change="resetAvailability">
                 </label>
 
                 <label>
                     Bis
-                    <input type="date" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
+                    <input type="datetime-local" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
                 </label>
             </div>
 
@@ -214,7 +213,7 @@ async function submitReservation() {
                     <h2>Verfügbarkeit</h2>
 
                     <p class="meta" v-if="startDate && endDate">
-                        {{ startDate }} – {{ endDate }}
+                        {{ formatDateTime(startDate) }} – {{ formatDateTime(endDate) }}
                     </p>
 
                     <p class="meta" v-else>

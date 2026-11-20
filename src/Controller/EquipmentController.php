@@ -288,8 +288,8 @@ final class EquipmentController extends AbstractController
 
         return $this->json($this->serializeEquipment($equipment));
     }
-    #[Route('/calender', name: 'get_calender', methods: ['POST'])]
-    public function getCalender(
+    #[Route('/calendar', name: 'get_calendar', methods: ['POST'])]
+    public function getCalendar(
         Request $request,
         EquipmentRepository $repository,
         ReservationItemRepository $reservationItemRepository,

@@ -334,10 +334,14 @@ paths:
     /equipment/calendar:
         post:
             tags: [ Equipment ]
-            summary: Gemeinsamen Kalender für mehrere Geräte berechnen
+            summary: Belegungskalender für mehrere Geräte abrufen
             description: >
-                Liefert Zeiträume, in denen ALLE ausgewählten Geräte gleichzeitig
-                verfügbar sind (max. 30 Geräte gleichzeitig auswählbar).
+                Liefert für jedes angefragte Gerät die Gerätedaten sowie die Zeiträume
+                innerhalb von `from`–`to`, in denen es durch eine Reservierung belegt ist
+                (`notAvailable`). Berücksichtigt werden alle Reservierungen, die nicht den
+                Status `denied`, `cancelled` oder `returned` haben und den angefragten
+                Zeitraum überschneiden. Doppelte IDs werden ignoriert; es können maximal
+                10 Geräte gleichzeitig abgefragt werden.
             requestBody:
                 required: true
                 content:
@@ -346,25 +350,34 @@ paths:
                             $ref: '#/components/schemas/CombinedCalendarRequest'
             responses:
                 '200':
-                    description: OK
+                    description: >
+                        OK. Ein Eintrag pro (eindeutiger) angefragter Geräte-ID,
+                        in der Reihenfolge der Anfrage.
                     content:
                         application/json:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/CalendarSlot'
+                                    $ref: '#/components/schemas/EquipmentCalendar'
                 '400':
-                    description: Ungültige Anfrage, z. B. mehr als 30 Geräte-IDs.
+                    description: >
+                        Ungültige Anfrage, z. B. `equipmentIds` leer oder mehr als 10 IDs,
+                        `from`/`to` fehlt oder ist kein gültiges Datum, `from` liegt nicht
+                        vor `to` oder eine ID ist keine gültige UUID.
                     content:
-                        application/json:
+                        text/plain:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                type: string
+                                example: "Es können maximal 10 Geräte ausgewählt werden."
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
-                    description: Eines der Geräte nicht gefunden.
+                    description: Eines der Geräte existiert nicht oder wurde gelöscht.
                     content:
-                        application/json:
+                        text/plain:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                type: string
+                                example: "Equipment nicht gefunden."
 
     /equipment/{equipmentId}:
         parameters:
@@ -2141,16 +2154,48 @@ components:
                 equipmentIds:
                     type: array
                     minItems: 1
-                    maxItems: 30
+                    maxItems: 10
                     items:
                         type: string
                         format: uuid
                 from:
                     type: string
                     format: date-time
+                    description: Beginn des Abfragezeitraums; muss vor `to` liegen.
+                    example: "2026-11-01T00:00:00+01:00"
                 to:
                     type: string
                     format: date-time
+                    description: Ende des Abfragezeitraums.
+                    example: "2026-12-01T00:00:00+01:00"
+
+        TimeRange:
+            type: object
+            required: [ from, to ]
+            properties:
+                from:
+                    type: string
+                    format: date-time
+                    example: "2026-11-10T08:00:00+01:00"
+                to:
+                    type: string
+                    format: date-time
+                    example: "2026-11-12T16:00:00+01:00"
+
+        EquipmentCalendar:
+            allOf:
+                -   $ref: '#/components/schemas/Equipment'
+                -   type: object
+                    required: [ notAvailable ]
+                    properties:
+                        notAvailable:
+                            type: array
+                            description: >
+                                Belegte Zeiträume (Start/Ende der jeweiligen Reservierung,
+                                aufsteigend nach Start sortiert). Die Zeiträume können über
+                                `from`/`to` der Anfrage hinausragen.
+                            items:
+                                $ref: '#/components/schemas/TimeRange'
 
         # ---------------- Reservations ----------------
         ReservationStatus:

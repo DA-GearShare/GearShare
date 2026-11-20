@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useCartStore } from '@/stores/CartStore.ts';

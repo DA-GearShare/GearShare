@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
                 <button
                     type="button"
                     class="icon-button"
-                    :class="{ 'icon-button-active': isProfileOpen || $route.path === '/account' || $route.path === '/admin/reservierungen' || $route.path === '/admin/nutzer' }"
+                    :class="{ 'icon-button-active': isProfileOpen || $route.path === '/reservierungen' || $route.path === '/admin/reservierungen' || $route.path === '/admin/nutzer' }"
                     aria-label="Mein Profil"
                     :aria-expanded="isProfileOpen"
                     aria-controls="profile-dropdown"
@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
                 <div v-if="isProfileOpen" id="profile-dropdown" class="profile-dropdown">
                     <div class="dropdown-items">
 
-                        <RouterLink to="/account" class="dropdown-item" @click="closeProfile">
+                        <RouterLink to="/reservierungen" class="dropdown-item" @click="closeProfile">
                             <ClipboardList />
                             <span>Meine Reservierungen</span>
                         </RouterLink>

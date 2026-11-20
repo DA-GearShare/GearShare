@@ -104,11 +104,13 @@ function addToCart() {
     cart.add(id);
     message.value = 'Equipment erfolgreich zum Warenkorb hinzugefügt.';
 }
+
 </script>
 
 <template>
 
-    <EquipmentPhotos />
+    <EquipmentPhotos/>
+
     <h2>Empfehlungen</h2>
 
     <p v-if="equipmentStore.filters.from && equipmentStore.filters.to">

@@ -13,7 +13,7 @@ info:
 servers:
     -   url: http://localhost/api/v1
         description: Local
-    -   url: https://staging.gearshare.at/api/v1
+    -   url: https://app.gearshare.at/api/v1
         description: Staging
 
 tags:
@@ -448,38 +448,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Error'
-
-    /equipment/{equipmentId}/code:
-        parameters:
-            -   $ref: '#/components/parameters/EquipmentIdPath'
-        get:
-            tags: [ Equipment ]
-            summary: Automatisch generierten Code exportieren (Admin)
-            parameters:
-                -   name: format
-                    in: query
-                    schema:
-                        type: string
-                        enum: [ png, pdf ]
-                        default: png
-            responses:
-                '200':
-                    description: Bild/PDF des Barcodes bzw. QR-Codes.
-                    content:
-                        image/png:
-                            schema:
-                                type: string
-                                format: binary
-                        application/pdf:
-                            schema:
-                                type: string
-                                format: binary
-                '401':
-                    $ref: '#/components/responses/Unauthorized'
-                '403':
-                    $ref: '#/components/responses/Forbidden'
-                '404':
-                    $ref: '#/components/responses/NotFound'
 
     /equipment/{equipmentId}/calendar:
         parameters:
@@ -1225,42 +1193,156 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
 
+    /reservations/{reservationId}/issue:
+        parameters:
+            -   $ref: '#/components/parameters/ReservationIdPath'
+        post:
+            tags: [ Reservations ]
+            summary: Reservierungs-globaler Scan – gescanntes Gerät als ausgegeben markieren (Admin)
+            description: >
+                Der Admin wählt eine Reservierung aus und scannt beliebige Geräte.
+                Ein gescanntes Gerät gilt automatisch als ausgegeben.
+
+
+                **Ablauf:**
+
+                1. Ist das gescannte Gerät bereits als Position in der Reservierung
+                   enthalten, wird diese Position als `issued` markiert.
+
+                2. Ist das Gerät **nicht** in der Reservierung enthalten und
+                   `confirmAdd` ist `false` (Standard), wird nichts geändert und
+                   mit `409` geantwortet. Die Antwort enthält das gescannte Gerät
+                   (`equipment`), damit das Frontend rückfragen kann, ob es
+                   hinzugefügt werden soll.
+
+                3. Bestätigt der Admin, wird die Anfrage mit demselben `code` und
+                   `confirmAdd: true` erneut gesendet. Das Gerät wird als neue
+                   Position hinzugefügt und als `issued` markiert. Wird zusätzlich
+                   `replaceItemId` angegeben (Auswahl per Dropdown aus den
+                   Positionen der Reservierung), wird diese Position aus der
+                   Reservierung entfernt (das neue Gerät ersetzt sie).
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReservationIssueScan'
+            responses:
+                '200':
+                    description: >
+                        Gerät als ausgegeben markiert (ggf. hinzugefügt bzw. ersetzt).
+                        Liefert die aktualisierte Reservierung inkl. `items`.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Reservation'
+                '400':
+                    description: >
+                        Code nicht lesbar/ungültig formatiert oder `replaceItemId`
+                        ohne `confirmAdd: true` angegeben.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MessageError'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '404':
+                    description: >
+                        Reservierung nicht gefunden, kein Gerät mit diesem Code
+                        gefunden oder `replaceItemId` gehört nicht zur Reservierung.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MessageError'
+                '409':
+                    description: |
+                        Gerät ist nicht in der Reservierung enthalten → Rückfrage nötig (siehe Ablauf).
+                        Antwort ist dann `EquipmentNotInReservation` (erkennbar am Feld `equipment`).
+
+                        Sonst eine `MessageError`, z. B. wenn:
+                        - das Gerät bzw. die zu ersetzende Position bereits ausgegeben wurde,
+                        - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
+                          oder nicht ausleihbar ist,
+                        - die Reservierung sich in einem Status befindet, der keine Ausgabe
+                          erlaubt (z. B. `denied`, `cancelled`, `returned`).
+                    content:
+                        application/json:
+                            schema:
+                                oneOf:
+                                    -   $ref: '#/components/schemas/EquipmentNotInReservation'
+                                    -   $ref: '#/components/schemas/MessageError'
+
     /reservations/{reservationId}/items/{itemId}/issue:
         parameters:
             -   $ref: '#/components/parameters/ReservationIdPath'
             -   $ref: '#/components/parameters/ItemIdPath'
         post:
             tags: [ Reservations ]
-            summary: Position per Scan als ausgegeben markieren (Admin)
+            summary: Geräte-spezifischer Scan – Position als ausgegeben markieren (Admin)
+            description: >
+                Scan über den Scan-Knopf neben einer Position. Es kann ein beliebiges
+                Gerät gescannt werden; das gescannte Gerät gilt automatisch als ausgegeben.
+
+
+                - Entspricht das gescannte Gerät dem Gerät der Position, wird die
+                  Position als `issued` markiert.
+
+                - Handelt es sich um ein anderes Gerät, wird die Position aus der
+                  Reservierung entfernt und das gescannte Gerät als neue Position
+                  hinzugefügt und als `issued` markiert.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [ code ]
+                            properties:
+                                code:
+                                    type: string
+                                    description: Gescannter Bar-/QR-Code.
+                                    example: "EQ-2026-00042"
             responses:
                 '200':
-                    description: Als ausgegeben markiert.
+                    description: >
+                        Als ausgegeben markiert (ggf. Position ersetzt). Liefert die
+                        aktualisierte Reservierung inkl. `items`.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ReservationItem'
+                                $ref: '#/components/schemas/Reservation'
                 '400':
-                    description: Gescanntes Gerät passt nicht zur angefragten Kategorie/zum Pool.
+                    description: Code nicht lesbar/ungültig formatiert.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                $ref: '#/components/schemas/MessageError'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
                 '403':
                     $ref: '#/components/responses/Forbidden'
                 '404':
-                    description: Reservierung, Position oder gescanntes Gerät nicht gefunden.
+                    description: Reservierung, Position oder Gerät mit diesem Code nicht gefunden.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                $ref: '#/components/schemas/MessageError'
                 '409':
-                    description: Position wurde bereits ausgegeben oder gescanntes Gerät ist nicht verfügbar.
+                    description: |
+                        Z. B. wenn:
+                        - die Position bereits ausgegeben wurde,
+                        - das gescannte Gerät bereits eine andere Position dieser Reservierung
+                          ist (stattdessen deren Scan verwenden),
+                        - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
+                          oder nicht ausleihbar ist,
+                        - die Reservierung sich in einem Status befindet, der keine Ausgabe
+                          erlaubt (z. B. `denied`, `cancelled`, `returned`).
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                $ref: '#/components/schemas/MessageError'
 
     /reservations/{reservationId}/items/{itemId}/return:
         parameters:
@@ -2302,6 +2384,50 @@ components:
                 endDatetime:
                     type: string
                     format: date-time
+
+        ReservationIssueScan:
+            type: object
+            required: [ code ]
+            properties:
+                code:
+                    type: string
+                    description: Gescannter Bar-/QR-Code.
+                    example: "EQ-2026-00042"
+                confirmAdd:
+                    type: boolean
+                    default: false
+                    description: >
+                        Bestätigt, dass ein nicht in der Reservierung enthaltenes Gerät
+                        hinzugefügt werden soll. Ohne Bestätigung antwortet der Server
+                        in diesem Fall mit `409` (`EquipmentNotInReservation`).
+                        Für Geräte, die bereits in der Reservierung sind, ohne Wirkung.
+                replaceItemId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    description: >
+                        Nur zusammen mit `confirmAdd: true`. Position der Reservierung,
+                        die durch das gescannte Gerät ersetzt (entfernt) werden soll.
+                        Die Position darf noch nicht ausgegeben sein. Weglassen bzw.
+                        `null`, um das Gerät zusätzlich hinzuzufügen.
+
+        MessageError:
+            type: object
+            required: [ message ]
+            properties:
+                message:
+                    type: string
+                    example: "Diese Position wurde bereits ausgegeben."
+
+        EquipmentNotInReservation:
+            type: object
+            required: [ message, equipment ]
+            properties:
+                message:
+                    type: string
+                    example: "Das gescannte Gerät ist nicht Teil dieser Reservierung."
+                equipment:
+                    $ref: '#/components/schemas/Equipment'
 
         ReservationItem:
             type: object

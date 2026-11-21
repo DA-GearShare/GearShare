@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 <template>
     <header class="header">
         <RouterLink to="/inventar" class="logo-link" aria-label="Zum Inventar">
-            <img src="@/assets/logo.svg" alt="GearShare" class="logo" />
+            <img src="../assets/logo.svg" alt="GearShare" class="logo" />
         </RouterLink>
 
         <nav class="nav">
@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
                 <button
                     type="button"
                     class="icon-button"
-                    :class="{ 'icon-button-active': isProfileOpen || $route.path === '/account' || $route.path === '/admin/reservierungen' || $route.path === '/admin/nutzer' }"
+                    :class="{ 'icon-button-active': isProfileOpen || $route.path === '/reservierungen' || $route.path === '/admin/reservierungen' || $route.path === '/admin/nutzer' }"
                     aria-label="Mein Profil"
                     :aria-expanded="isProfileOpen"
                     aria-controls="profile-dropdown"
@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
                 <div v-if="isProfileOpen" id="profile-dropdown" class="profile-dropdown">
                     <div class="dropdown-items">
 
-                        <RouterLink to="/account" class="dropdown-item" @click="closeProfile">
+                        <RouterLink to="/reservierungen" class="dropdown-item" @click="closeProfile">
                             <ClipboardList />
                             <span>Meine Reservierungen</span>
                         </RouterLink>
@@ -148,8 +148,8 @@ onBeforeUnmount(() => {
 
 .logo {
     display: block;
-    height: 40px;
-    max-width: 180px;
+    height: 48px;
+    max-width: 200px;
 }
 
 .nav {
@@ -306,7 +306,7 @@ onBeforeUnmount(() => {
     }
 
     .logo {
-        height: 32px;
+        height: 45px;
     }
 
     .nav {

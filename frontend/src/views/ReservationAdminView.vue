@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useReservationStore } from '@/stores/ReservationStore';
+import ReservationCard from '@/components/ReservationCard.vue';
 
 const reservationStore = useReservationStore();
 
 onMounted(() => {
     reservationStore.fetchReservations();
 });
+
+function openReservation(id: string) {
+    router.push(`/reservations/${id}`);
+}
 </script>
 
 <template>
     <main class="admin-reservations">
         <h1>Admin-Reservierungen</h1>
 
-        <p v-if="reservationStore.isLoading">
-            Reservierungen werden geladen...
-        </p>
+        <p v-if="reservationStore.isLoading">Reservierungen werden geladen...</p>
 
         <p v-else-if="reservationStore.error" class="error">
             {{ reservationStore.error }}
@@ -26,27 +29,12 @@ onMounted(() => {
         </p>
 
         <div v-else class="reservation-list">
-            <article
+            <ReservationCard
                 v-for="reservation in reservationStore.reservations"
                 :key="reservation.id"
-                class="reservation-card"
-            >
-                <div class="reservation-info">
-                    <h2>Reservierung #{{ reservation.id }}</h2>
-
-                    <p>
-                        Benutzer: {{ reservation.userName }}
-                    </p>
-
-                    <p>
-                        Status: {{ reservation.status }}
-                    </p>
-                </div>
-
-                <button type="button">
-                    Reservierung öffnen
-                </button>
-            </article>
+                :reservation="reservation"
+                @open="openReservation"
+            />
         </div>
     </main>
 </template>
@@ -68,34 +56,7 @@ h1 {
     gap: 16px;
 }
 
-.reservation-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    padding: 20px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-}
-
-.reservation-info h2 {
-    margin: 0 0 12px;
-    font-size: 18px;
-}
-
-.reservation-info p {
-    margin: 6px 0;
-}
-
 .error {
     color: #dc2626;
-}
-
-@media (max-width: 600px) {
-    .reservation-card {
-        flex-direction: column;
-        align-items: stretch;
-    }
 }
 </style>

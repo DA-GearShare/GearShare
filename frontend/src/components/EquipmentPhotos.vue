@@ -242,9 +242,9 @@ async function deletePhoto(photoId: number) {
             </div>
         </div>
 
-            <p>
-                {{ photos.length }} / {{ maxPhotos }} Fotos
-            </p>
+        <p>
+            {{ photos.length }} / {{ maxPhotos }} Fotos
+        </p>
         <div v-if="isAdmin" class="equipment-photo__input">
             <template v-if="photos.length < maxPhotos">
 

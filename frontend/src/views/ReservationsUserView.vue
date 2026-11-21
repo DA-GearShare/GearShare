@@ -2,28 +2,62 @@
 import { computed, onMounted, ref } from 'vue';
 import { useReservationStore } from '@/stores/ReservationStore';
 import ReservationUserCard from '@/components/ReservationUserCard.vue';
-import type { Reservation } from '@/types/reservation';
+
+export type ReservationStatus =
+    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
+
+export interface ReservationItem {
+    id: string;
+    reservationId: string;
+    requestedEquipmentId: string | null;
+    requestedPoolId: string | null;
+    status: string;
+    issuedAt: string | null;
+    returnedAt: string | null;
+}
+
+export interface Reservation {
+    id: string;
+    requestedByUserId: string;
+    responsibleUserId: string | null;
+    status: ReservationStatus;
+    startDatetime: string;
+    endDatetime: string;
+    isOverdue: boolean;
+    createdAt: string;
+    items: ReservationItem[];
+}
 
 const reservationStore = useReservationStore();
 
-const activeTab = ref<'current' | 'history'>('current');
-const CURRENT_STATUSES = ['requested', 'accepted', 'active'];
+const activeTab = ref('current');
+const currentStatus = ['requested', 'accepted', 'active'];
 
 onMounted(() => {
     reservationStore.fetchReservations();
 });
 
-const visibleReservations = computed<Reservation[]>(() => {
-    const all: Reservation[] = reservationStore.reservations ?? [];
-    const isCurrent = (r: Reservation) => CURRENT_STATUSES.includes(r.status);
-    return activeTab.value === 'current'
-        ? all.filter(isCurrent)
-        : all.filter((r) => !isCurrent(r));
+function isCurrent(reservation: Reservation) {
+    return currentStatus.includes(reservation.status);
+}
+
+const visibleReservations = computed(() => {
+    const all: Reservation[] = reservationStore.reservations || [];
+
+    if (activeTab.value === 'current') {
+        return all.filter(isCurrent);
+    }
+    return all.filter((reservation) => {
+        return !isCurrent(reservation);
+    });
 });
 
-const title = computed(() =>
-    activeTab.value === 'current' ? 'Aktuelle Reservierungen' : 'Historie'
-);
+const title = computed(() => {
+    if (activeTab.value === 'current') {
+        return 'Aktuelle Reservierungen';
+    }
+    return 'Historie';
+});
 </script>
 
 <template>
@@ -31,20 +65,10 @@ const title = computed(() =>
         <h1>Meine Reservierungen</h1>
 
         <div class="tabs">
-            <button
-                type="button"
-                class="tab"
-                :class="{ active: activeTab === 'current' }"
-                @click="activeTab = 'current'"
-            >
+            <button type="button" class="tab" :class="{ active: activeTab === 'current' }" @click="activeTab = 'current'">
                 Aktuell
             </button>
-            <button
-                type="button"
-                class="tab"
-                :class="{ active: activeTab === 'history' }"
-                @click="activeTab = 'history'"
-            >
+            <button type="button" class="tab" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
                 Historie
             </button>
         </div>

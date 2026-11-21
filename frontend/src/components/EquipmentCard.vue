@@ -4,6 +4,8 @@ import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 import { ref, onMounted } from "vue";
+import { useCompareStore } from '@/stores/CompareStore.ts';
+
 
 const props = defineProps<{
     id: string
@@ -17,6 +19,15 @@ const props = defineProps<{
 const authStore = useAuthStore();
 const equipmentStore = useEquipmentStore();
 const emit = defineEmits(['select', 'deleted']);
+
+const compare = useCompareStore();
+function toggleCompare(){
+    if (compare.has(props.id)){
+        compare.remove(props.id);
+    }else{
+        compare.add(props.id)
+    }
+}
 
 const mainPhoto = ref<EquipmentPhoto | null>(null);
 
@@ -112,6 +123,12 @@ onMounted(loadMainPhoto);
                     Löschen
                 </button>
             </div>
+
+
+            <button v-if="!selectable" type="button" class="compare-btn" @click.prevent.stop="toggleCompare">
+                {{ compare.has(id) ? '✓' : '⇄' }}
+            </button>
+
 
             <span class="chevron">›</span>
         </div>
@@ -241,5 +258,14 @@ onMounted(loadMainPhoto);
     .chevron {
         display: none;
     }
+}
+.compare-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-tab);
+    cursor: pointer;
 }
 </style>

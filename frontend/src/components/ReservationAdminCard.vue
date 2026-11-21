@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useUsersStore } from "@/stores/UsersStore.ts";
+import { ref, onMounted } from "vue";
+
 export interface Reservation {
     id: string;
     requestedByUserId: string;
@@ -10,13 +13,23 @@ export interface Reservation {
     createdAt: string;
 }
 
-defineProps<{
+const props = defineProps<{
     reservation: Reservation;
 }>();
 
 const emit = defineEmits<{
     open: [id: string];
 }>();
+
+const userStore = useUsersStore();
+const username = ref('…');
+
+onMounted(async () => {
+    const user = await userStore.fetchUserById(props.reservation.requestedByUserId);
+    console.log('user:', user);
+    username.value = user?.name ?? props.reservation.requestedByUserId;
+});
+
 </script>
 
 <template>
@@ -24,7 +37,7 @@ const emit = defineEmits<{
         <div class="reservation-info">
             <h2>Reservierung #{{ reservation.id }}</h2>
 
-            <p>Benutzer: {{ reservation.requestedByUserId }}</p>
+            <p>Benutzer: {{ username }}</p>
             <p>Status: {{ reservation.status }}</p>
         </div>
 

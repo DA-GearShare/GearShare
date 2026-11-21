@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useReservationStore } from '@/stores/ReservationStore';
-import ReservationCard from '@/components/ReservationCard.vue';
+import ReservationAdminCard from '@/components/ReservationAdminCard.vue';
 
 const reservationStore = useReservationStore();
+const router = useRouter();
 
 onMounted(() => {
     reservationStore.fetchReservations();
 });
 
 function openReservation(id: string) {
-    router.push(`/reservations/${id}`);
+    router.push(`/reservierungen/${id}`);
 }
 </script>
 
@@ -29,7 +31,7 @@ function openReservation(id: string) {
         </p>
 
         <div v-else class="reservation-list">
-            <ReservationCard
+            <ReservationAdminCard
                 v-for="reservation in reservationStore.reservations"
                 :key="reservation.id"
                 :reservation="reservation"

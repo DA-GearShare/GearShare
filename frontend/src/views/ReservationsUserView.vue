@@ -1,39 +1,76 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useReservationStore } from '@/stores/ReservationStore';
-import ReservationCard from '@/components/ReservationCard.vue';
+import ReservationUserCard from '@/components/ReservationUserCard.vue';
+import type { Reservation } from '@/types/reservation';
 
 const reservationStore = useReservationStore();
+
+const activeTab = ref<'current' | 'history'>('current');
+const CURRENT_STATUSES = ['requested', 'accepted', 'active'];
 
 onMounted(() => {
     reservationStore.fetchReservations();
 });
 
-function openReservation(id: string) {
-    router.push(`/reservations/${id}`);
-}
+const visibleReservations = computed<Reservation[]>(() => {
+    const all: Reservation[] = reservationStore.reservations ?? [];
+    const isCurrent = (r: Reservation) => CURRENT_STATUSES.includes(r.status);
+    return activeTab.value === 'current'
+        ? all.filter(isCurrent)
+        : all.filter((r) => !isCurrent(r));
+});
+
+const title = computed(() =>
+    activeTab.value === 'current' ? 'Aktuelle Reservierungen' : 'Historie'
+);
 </script>
 
 <template>
     <main class="user-reservations">
         <h1>Meine Reservierungen</h1>
 
-        <p v-if="reservationStore.isLoading">Reservierungen werden geladen...</p>
+        <div class="tabs">
+            <button
+                type="button"
+                class="tab"
+                :class="{ active: activeTab === 'current' }"
+                @click="activeTab = 'current'"
+            >
+                Aktuell
+            </button>
+            <button
+                type="button"
+                class="tab"
+                :class="{ active: activeTab === 'history' }"
+                @click="activeTab = 'history'"
+            >
+                Historie
+            </button>
+        </div>
 
-        <p v-else-if="reservationStore.error" class="error">
+        <div class="list-header">
+            <h2>{{ title }}</h2>
+            <span v-if="activeTab === 'history'" class="meta">
+                {{ visibleReservations.length }} Reservierungen
+            </span>
+        </div>
+
+        <p v-if="reservationStore.isLoading" class="meta">Reservierungen werden geladen...</p>
+
+        <p v-else-if="reservationStore.error" class="message-error">
             {{ reservationStore.error }}
         </p>
 
-        <p v-else-if="!reservationStore.reservations || reservationStore.reservations.length === 0">
-            Es gibt aktuell keine Reservierungen.
+        <p v-else-if="visibleReservations.length === 0" class="message-info">
+            Keine Reservierungen vorhanden.
         </p>
 
-        <div v-else class="reservation-list">
-            <ReservationCard
-                v-for="reservation in reservationStore.reservations"
+        <div v-else class="card-list">
+            <ReservationUserCard
+                v-for="reservation in visibleReservations"
                 :key="reservation.id"
                 :reservation="reservation"
-                @open="openReservation"
             />
         </div>
     </main>
@@ -41,22 +78,41 @@ function openReservation(id: string) {
 
 <style scoped>
 .user-reservations {
-    max-width: 1100px;
-    margin: 40px auto;
-    padding: 0 24px;
+    max-width: 720px;
+    margin: var(--space-xl) auto;
+    padding: 0 var(--space-l);
 }
 
-h1 {
-    margin-bottom: 28px;
-}
-
-.reservation-list {
+.tabs {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+    margin-bottom: var(--space-xl);
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-tab);
 }
 
-.error {
-    color: #dc2626;
+.tab {
+    flex: 1;
+    min-height: 40px;
+    font: inherit;
+    font-size: var(--text-body-size);
+    color: var(--color-text-primary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-tab);
+    cursor: pointer;
+}
+
+.tab.active {
+    font-weight: var(--font-bold);
+    color: var(--color-surface);
+    background: var(--color-navy);
+}
+
+.list-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
 }
 </style>

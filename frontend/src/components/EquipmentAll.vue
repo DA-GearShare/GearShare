@@ -7,12 +7,20 @@ import EquipmentCard from "@/components/EquipmentCard.vue";
 import SearchForm from "@/components/SearchForm.vue";
 import FilterDropdown from "@/components/FilterDropdown.vue";
 import ButtonsPagination from "@/components/ButtonsPagination.vue";
+import { useCompareStore } from '@/stores/CompareStore.ts';
+import CompareCalendar from '@/components/CompareCalendar.vue';
 
 const props = defineProps<{
     pickerMode?: boolean;
     excludeIds?: string[];
     hideId?: string;
 }>();
+
+const authStore = useAuthStore();
+const store = useEquipmentStore();
+const compare = useCompareStore();
+
+const showCalendar = computed(() => !props.pickerMode && compare.items.length > 0);
 
 const visibleEquipment = computed(() => {
     return store.equipment.filter((item: any) => {
@@ -23,9 +31,6 @@ const visibleEquipment = computed(() => {
 const emit = defineEmits<{
     (e: 'select', id: string): void;
 }>();
-
-const authStore = useAuthStore();
-const store = useEquipmentStore();
 
 onMounted(() => {
     store.fetchEquipment();
@@ -66,7 +71,6 @@ const handleSelect = (id: string) => {
 
 <template>
     <div class="page-header" v-if="!pickerMode">
-
         <RouterLink v-if="authStore.hasRole(['Admin'])" to="/inventar/neu" class="btn-primary">Equipment hinzufügen</RouterLink>
     </div>
 
@@ -75,19 +79,22 @@ const handleSelect = (id: string) => {
         <FilterDropdown @filter="handleFilter" />
     </div>
 
-    <div class="card-list">
-        <EquipmentCard
-            v-for="item in visibleEquipment"
-            :key="item.id"
-            :id="item.id"
-            :name="item.name"
-            :model="item.model"
-            :type="item.type"
-            :selectable="props.pickerMode"
-            :select-disabled="props.excludeIds?.includes(item.id)"
-            @select="handleSelect"
-            @deleted="equipmentStore.fetchEquipment()"
-        />
+    <div class="list-layout" :class="{ 'with-calendar': showCalendar }">
+        <div class="card-list">
+            <EquipmentCard
+                v-for="item in visibleEquipment"
+                :key="item.id"
+                :id="item.id"
+                :name="item.name"
+                :model="item.model"
+                :type="item.type"
+                :selectable="props.pickerMode"
+                :select-disabled="props.excludeIds?.includes(item.id)"
+                @select="handleSelect"
+                @deleted="equipmentStore.fetchEquipment()"
+            />
+        </div>
+        <CompareCalendar v-if="showCalendar" class="compare-panel" />
     </div>
 
     <div class="pagination-area">
@@ -126,9 +133,32 @@ const handleSelect = (id: string) => {
     min-width: 200px;
 }
 
+.list-layout.with-calendar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-xl);
+    align-items: start;
+}
+
+.compare-panel {
+    position: sticky;
+    top: var(--space-l);
+}
+
 .pagination-area {
     display: flex;
     justify-content: center;
     margin-top: var(--space-xl);
+}
+
+@media (max-width: 1023px) {
+    .list-layout.with-calendar {
+        grid-template-columns: 1fr;
+    }
+
+    .compare-panel {
+        position: static;
+        order: -1;
+    }
 }
 </style>

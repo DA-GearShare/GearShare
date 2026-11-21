@@ -179,112 +179,92 @@ async function submitReservation() {
 
 
 <template>
-    <div class="reservation-page">
+    <h1>Meine Reservierung</h1>
 
-        <h1>Meine Reservierung</h1>
+    <section class="reservation-panel">
 
-        <section class="reservation-panel">
+        <h3>Reservierungszeit</h3>
 
-            <h3>Reservierungszeit</h3>
+        <div class="date-inputs">
+            <label>
+                Von
+                <input type="datetime-local" v-model="startDate" @change="resetAvailability">
+            </label>
+            <label>
+                Bis
+                <input type="datetime-local" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
+            </label>
+        </div>
 
-            <div class="date-inputs">
-                <label>
-                    Von
-                    <input type="datetime-local" v-model="startDate" @change="resetAvailability">
-                </label>
+        <button type="button" class="btn-primary check-button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
+            {{ loading ? 'Wird geprüft...' : 'Für alle Geräte übernehmen' }}
+        </button>
 
-                <label>
-                    Bis
-                    <input type="datetime-local" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
-                </label>
+    </section>
+
+    <section class="reservation-equipment-panel">
+
+        <div class="availability-heading">
+            <div>
+                <h2>Verfügbarkeit</h2>
+                <p class="meta" v-if="startDate && endDate">
+                    {{ formatDateTime(startDate) }} – {{ formatDateTime(endDate) }}
+                </p>
+                <p class="meta" v-else>
+                    Bitte zuerst einen Zeitraum auswählen.
+                </p>
             </div>
+            <span class="equipment-count">
+                {{ equipmentCount }} Geräte
+            </span>
+        </div>
 
-            <button type="button" class="btn-primary check-button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
-                {{ loading ? 'Wird geprüft...' : 'Für alle Geräte übernehmen' }}
-            </button>
+        <div v-if="items.length > 0" class="equipment-list">
 
-        </section>
-
-        <section class="reservation-equipment-panel">
-
-            <div class="availability-heading">
-
-                <div>
-                    <h2>Verfügbarkeit</h2>
-
-                    <p class="meta" v-if="startDate && endDate">
-                        {{ formatDateTime(startDate) }} – {{ formatDateTime(endDate) }}
-                    </p>
-
-                    <p class="meta" v-else>
-                        Bitte zuerst einen Zeitraum auswählen.
-                    </p>
-                </div>
-
-                <span class="equipment-count">
-                    {{ equipmentCount }} Geräte
-                </span>
-
-            </div>
-
-            <div v-if="items.length > 0" class="equipment-list">
-
-                <article v-for="(item, index) in items" :key="item.id" class="equipment-item">
-
-                    <div class="equipment-header">
-
-                        <div class="equipment-name">
-                            <div class="equipment-image">
-                                <span class="image-placeholder"></span>
-                            </div>
-
-                            <span>{{ item.name }}</span>
+            <article v-for="(item, index) in items" :key="item.id" class="equipment-item">
+                <div class="equipment-header">
+                    <div class="equipment-name">
+                        <div class="equipment-image">
+                            <span class="image-placeholder"></span>
                         </div>
-
-                        <button type="button" class="remove-button" aria-label="Equipment entfernen" @click="removeEquipment(item.id)">
-                            <span aria-hidden="true">▤</span>
-                        </button>
-
+                        <span>{{ item.name }}</span>
                     </div>
+                    <button type="button" class="remove-button" aria-label="Equipment entfernen" @click="removeEquipment(item.id)">
+                        <span aria-hidden="true">▤</span>
+                    </button>
+                </div>
+                <div class="equipment-indicator" :class="'indicator-' + (index % 4)"></div>
+            </article>
 
-                    <div class="equipment-indicator" :class="'indicator-' + (index % 4)"></div>
+        </div>
 
-                </article>
+        <div v-else class="empty-state">
+            <span class="empty-icon">▣</span>
+            <p>Noch kein Equipment ausgewählt.</p>
+            <span class="hint">
+                Wähle zuerst Geräte aus dem Inventar aus.
+            </span>
+        </div>
 
-            </div>
+        <div v-if="message" class="status-message" :class="'message-' + messageKind" role="status">
+            {{ message }}
+        </div>
 
-            <div v-else class="empty-state">
-                <span class="empty-icon">▣</span>
-                <p>Noch kein Equipment ausgewählt.</p>
-                <span class="hint">
-                    Wähle zuerst Geräte aus dem Inventar aus.
-                </span>
-            </div>
+        <div v-if="availabilityChecked && available" class="availability-success">
+            <span class="success-icon">✓</span>
+            <span>Alle {{ equipmentCount }} Geräte verfügbar</span>
+        </div>
 
-            <div v-if="message" class="status-message" :class="'message-' + messageKind" role="status">
-                {{ message }}
-            </div>
+        <div class="reservation-actions">
+            <button type="button" class="btn-secondary back-button" @click="$router.back()">
+                Zurück
+            </button>
+            <button type="button" class="btn-primary submit-button" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
+                {{ loading ? 'Wird gesendet...' : 'Reservieren' }}
+            </button>
+        </div>
 
-            <div v-if="availabilityChecked && available" class="availability-success">
-                <span class="success-icon">✓</span>
-                <span>Alle {{ equipmentCount }} Geräte verfügbar</span>
-            </div>
-
-            <div class="reservation-actions">
-
-                <button type="button" class="btn-secondary back-button" @click="$router.back()">
-                    Zurück
-                </button>
-
-                <button type="button" class="btn-primary submit-button" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
-                    {{ loading ? 'Wird gesendet...' : 'Reservieren' }}
-                </button>
-
-            </div>
-
-        </section>
-
-    </div>
+    </section>
 </template>
 
 

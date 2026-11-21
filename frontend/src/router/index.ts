@@ -11,7 +11,7 @@ import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import EquipmentEditView from '../views/EquipmentEditView.vue';
 import ReservationView from '../views/ReservationView.vue';
 import ReservationsUserView from '../views/ReservationsUserView.vue';
-import ReservationsAdminView from '../views/ReservationAdminView.vue';
+import ReservationsAdminView from '../views/ReservationsAdminView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({

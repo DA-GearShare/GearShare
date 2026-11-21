@@ -61,52 +61,44 @@ const title = computed(() => {
 </script>
 
 <template>
-    <main class="user-reservations">
-        <h1>Meine Reservierungen</h1>
+    <h1>Meine Reservierungen</h1>
 
-        <div class="tabs">
-            <button type="button" class="tab" :class="{ active: activeTab === 'current' }" @click="activeTab = 'current'">
-                Aktuell
-            </button>
-            <button type="button" class="tab" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
-                Historie
-            </button>
-        </div>
+    <div class="tabs">
+        <button type="button" class="tab" :class="{ active: activeTab === 'current' }" @click="activeTab = 'current'">
+            Aktuell
+        </button>
+        <button type="button" class="tab" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
+            Historie
+        </button>
+    </div>
 
-        <div class="list-header">
-            <h2>{{ title }}</h2>
-            <span v-if="activeTab === 'history'" class="meta">
-                {{ visibleReservations.length }} Reservierungen
-            </span>
-        </div>
+    <div class="list-header">
+        <h2>{{ title }}</h2>
+        <span v-if="activeTab === 'history'" class="meta">
+            {{ visibleReservations.length }} Reservierungen
+        </span>
+    </div>
 
-        <p v-if="reservationStore.isLoading" class="meta">Reservierungen werden geladen...</p>
+    <p v-if="reservationStore.isLoading" class="meta">Reservierungen werden geladen...</p>
 
-        <p v-else-if="reservationStore.error" class="message-error">
-            {{ reservationStore.error }}
-        </p>
+    <p v-else-if="reservationStore.error" class="message-error">
+        {{ reservationStore.error }}
+    </p>
 
-        <p v-else-if="visibleReservations.length === 0" class="message-info">
-            Keine Reservierungen vorhanden.
-        </p>
+    <p v-else-if="visibleReservations.length === 0" class="message-info">
+        Keine Reservierungen vorhanden.
+    </p>
 
-        <div v-else class="card-list">
-            <ReservationUserCard
-                v-for="reservation in visibleReservations"
-                :key="reservation.id"
-                :reservation="reservation"
-            />
-        </div>
-    </main>
+    <div v-else class="card-list">
+        <ReservationUserCard
+            v-for="reservation in visibleReservations"
+            :key="reservation.id"
+            :reservation="reservation"
+        />
+    </div>
 </template>
 
 <style scoped>
-.user-reservations {
-    max-width: 720px;
-    margin: var(--space-xl) auto;
-    padding: 0 var(--space-l);
-}
-
 .tabs {
     display: flex;
     gap: var(--space-xs);

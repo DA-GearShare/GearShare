@@ -86,6 +86,12 @@ export const useReservationStore = defineStore('reservation', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
+
+            if (res.status === 409) {
+                const data = await res.json();
+                return { conflict: true, equipment: data.equipment };
+            }
+
             if (!res.ok) throw new Error('Status ' + res.status);
             return await res.json();
         } catch (e) {

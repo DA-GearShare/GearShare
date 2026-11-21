@@ -3,7 +3,31 @@ import { computed, onMounted, ref } from 'vue';
 import { useReservationStore } from '@/stores/ReservationStore';
 import ReservationAdminCard from '@/components/ReservationAdminCard.vue';
 import ReservationDetailCard from '@/components/ReservationDetailCard.vue';
-import type { Reservation, ReservationItem } from '@/types/reservation';
+
+export type ReservationStatus =
+    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
+
+export interface ReservationItem {
+    id: string;
+    reservationId: string;
+    requestedEquipmentId: string | null;
+    requestedPoolId: string | null;
+    status: string;
+    issuedAt: string | null;
+    returnedAt: string | null;
+}
+
+export interface Reservation {
+    id: string;
+    requestedByUserId: string;
+    responsibleUserId: string | null;
+    status: ReservationStatus;
+    startDatetime: string;
+    endDatetime: string;
+    isOverdue: boolean;
+    createdAt: string;
+    items: ReservationItem[];
+}
 
 const reservationStore = useReservationStore();
 const selectedId = ref('');
@@ -12,7 +36,7 @@ onMounted(() => {
     reservationStore.fetchReservations();
 });
 
-const selected = computed(() => {
+const selectedReservation = computed(() => {
     const all: Reservation[] = reservationStore.reservations || [];
     return all.find((r) => {
         return r.id === selectedId.value;
@@ -27,10 +51,49 @@ function selectReservation(id: string) {
     }
 }
 
-function scanGlobal() {
+async function scanGlobal() {
+    if (!selectedReservation.value) {
+        return;
+    }
+
+    const code = prompt('Code scannen:');
+    if (!code) {
+        return;
+    }
+
+    const updated = await reservationStore.fetchIssueGlobal(selectedReservation.value.id, { code });
+
+    if (updated) {
+        replaceReservation(updated);
+    }
 }
 
-function scanItem(item: ReservationItem) {
+function replaceReservation(updated: Reservation) {
+    const all: Reservation[] = reservationStore.reservations || [];
+    const index = all.findIndex((r) => {
+        return r.id === updated.id;
+    });
+
+    if (index !== -1) {
+        all[index] = updated;
+    }
+}
+
+async function scanItem(item: ReservationItem) {
+    if (!selectedReservation.value) {
+        return;
+    }
+
+    const code = prompt('Code scannen:');
+    if (!code) {
+        return;
+    }
+
+    const updated = await reservationStore.fetchIssueItem(selectedReservation.value.id, item.id, { code });
+
+    if (updated) {
+        replaceReservation(updated);
+    }
 }
 </script>
 

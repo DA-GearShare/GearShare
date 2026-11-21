@@ -113,5 +113,5 @@ export const useReservationStore = defineStore('reservation', () => {
         }
     }
 
-    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchOverdueReservations };
+    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchIssueGlobal, fetchOverdueReservations };
 });

@@ -1,34 +1,11 @@
 <script setup lang="ts">
-import { useUsersStore } from "@/stores/UsersStore.ts";
-import { ref, onMounted } from "vue";
-import {useEquipmentStore} from "@/stores/EquipmentStore.ts";
+import { onMounted, ref } from 'vue';
+import { useUsersStore } from '@/stores/UsersStore.ts';
+import type { Reservation } from '@/types/reservation';
 
-export type ReservationStatus =
-    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
-
-export interface ReservationItem {
-    id: string;
-    reservationId: string;
-    requestedEquipmentId: string | null;
-    requestedPoolId: string | null;
-    status: string;
-    issuedAt: string | null;
-    returnedAt: string | null;
-}
-
-export interface Reservation {
-    id: string;
-    requestedByUserId: string;
-    responsibleUserId: string | null;
-    status: ReservationStatus;
-    startDatetime: string;
-    endDatetime: string;
-    isOverdue: boolean;
-    createdAt: string;
-    items: ReservationItem[];
-}
 const props = defineProps<{
     reservation: Reservation;
+    selected: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -40,13 +17,8 @@ const username = ref('…');
 
 onMounted(async () => {
     const user = await userStore.fetchUserById(props.reservation.requestedByUserId);
-    console.log('user:', user);
     username.value = user?.name ?? props.reservation.requestedByUserId;
 });
-
-const equipmentStore = useEquipmentStore();
-const expanded = ref(false);
-const equipmentById = ref<Record<string, { name: string; category: string }>>({});
 
 function formatDate(text: string) {
     return new Date(text).toLocaleDateString('de-AT');
@@ -55,37 +27,15 @@ function formatDate(text: string) {
 function formatTime(text: string) {
     return new Date(text).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
 }
-
-async function toggle() {
-    expanded.value = !expanded.value;
-
-    if (!expanded.value) {
-        return;
-    }
-
-    for (const item of props.reservation.items) {
-        const id = item.requestedEquipmentId;
-
-        if (!id || equipmentById.value[id]) {
-            continue;
-        }
-
-        const equipment = await equipmentStore.fetchEquipmentById(id);
-        if (equipment) {
-            equipmentById.value[id] = { name: equipment.name, category: equipment.category };
-        }
-    }
-}
-
 </script>
 
 <template>
-    <article class="card reservation">
+    <article class="card reservation" :class="{ selected: selected }">
         <div class="card-row">
             <div class="date-box">
                 <strong>{{ formatDate(reservation.startDatetime) }} – {{ formatDate(reservation.endDatetime) }}</strong>
                 <span class="meta">{{ formatTime(reservation.startDatetime) }}–{{ formatTime(reservation.endDatetime) }}</span>
-                <p>{{ username }}</p>
+                <span>{{ username }}</span>
             </div>
 
             <div class="thumbs">
@@ -93,7 +43,7 @@ async function toggle() {
             </div>
         </div>
 
-        <button type="button" class="toggle" :aria-expanded="expanded" @click="toggle">
+        <button type="button" class="open-button" @click="emit('open', reservation.id)">
             <span>{{ reservation.items.length }} Geräte</span>
             <svg
                 class="chevron-icon"
@@ -108,59 +58,24 @@ async function toggle() {
                 <path d="M9 5l7 7-7 7" />
             </svg>
         </button>
-
-        <ul v-if="expanded" class="item-list">
-            <li v-for="item in reservation.items" :key="item.id" class="card-row item-row">
-                <div class="thumb thumb-small">IMG</div>
-                <div>
-                    <strong>
-                        {{ (item.requestedEquipmentId && equipmentById[item.requestedEquipmentId]?.name) || 'Wird geladen…' }}
-                    </strong>
-                    <div class="meta">
-                        {{ item.requestedEquipmentId && equipmentById[item.requestedEquipmentId]?.category }}
-                    </div>
-                </div>
-            </li>
-        </ul>
     </article>
 </template>
 
 <style scoped>
-.reservation-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    padding: 20px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-}
-
-.reservation-info h2 {
-    margin: 0 0 12px;
-    font-size: 18px;
-}
-
-.reservation-info p {
-    margin: 6px 0;
-}
-
-@media (max-width: 600px) {
-    .reservation-card {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-
 .reservation {
     padding: var(--space-m) var(--space-l);
+}
+
+.reservation.selected {
+    background: var(--color-info);
+    border-color: var(--color-accent);
 }
 
 .date-box {
     display: flex;
     flex-direction: column;
-    padding: var(--space-s) var(--space-m);
+    gap: var(--space-xs);
+    padding: var(--space-m);
     color: var(--color-text-primary);
     background: var(--color-soft-surface);
     border-radius: var(--radius-tab);
@@ -181,7 +96,7 @@ async function toggle() {
     color: var(--color-muted);
 }
 
-.toggle {
+.open-button {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
@@ -190,7 +105,7 @@ async function toggle() {
     font: inherit;
     font-size: var(--text-label-size);
     font-weight: var(--font-bold);
-    color: var(--color-text-primary);
+    color: var(--color-accent);
     background: none;
     border: none;
     cursor: pointer;
@@ -199,19 +114,5 @@ async function toggle() {
 .chevron-icon {
     color: var(--color-accent);
     transition: transform 0.15s;
-}
-
-.chevron-icon.open {
-    transform: rotate(90deg);
-}
-
-.item-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-m);
-    margin: var(--space-m) 0 0;
-    padding: var(--space-m) 0 0;
-    list-style: none;
-    border-top: 1px solid var(--color-border);
 }
 </style>

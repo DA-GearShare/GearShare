@@ -31,6 +31,22 @@ export const useUsersStore = defineStore('users', () => {
         }
     }
 
+    async function fetchUserById(id: string) {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const res = await fetch(`/api/v1/users/${id}`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Status ' + res.status);
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            users.value = [];
+            error.value = 'Der Benutzer konnte nicht geladen werden.';
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     async function setRole(id: string, isAdmin: boolean, isTeacher: boolean) {
         try {
             const res = await fetch(`/api/v1/users/${id}/roles`, {
@@ -54,5 +70,5 @@ export const useUsersStore = defineStore('users', () => {
         }
     }
 
-    return { users, isLoading, error, fetchUsers, setRole };
+    return { users, isLoading, error, fetchUsers, fetchUserById, setRole };
 });

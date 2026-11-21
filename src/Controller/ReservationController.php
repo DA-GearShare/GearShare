@@ -97,7 +97,6 @@ final class ReservationController extends AbstractController
             'reservationId' => $item->getReservation()?->getId()?->toRfc4122(),
             'requestedEquipmentId' => $item->getRequestedEquipment()?->getId()?->toRfc4122(),
             'requestedPoolId' => $item->getRequestedPool()?->getId()?->toRfc4122(),
-            'assignedEquipmentId' => $item->getAssignedEquipment()?->getId()?->toRfc4122(),
             'status' => $item->getStatus()?->value,
             'issuedAt' => $item->getIssuedAt()?->format(DATE_ATOM),
             'returnedAt' => $item->getReturnedAt()?->format(DATE_ATOM),

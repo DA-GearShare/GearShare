@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useCartStore } from '@/stores/CartStore.ts';
@@ -17,6 +16,18 @@ const items = ref<{
 const startDate = ref('');
 const endDate = ref('');
 
+function formatDateTime(value: string): string {
+    if (!value) return '';
+
+    return new Date(value).toLocaleString('de-AT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 const availabilityChecked = ref(false);
 const available = ref(false);
 const loading = ref(false);
@@ -27,7 +38,7 @@ const canCheckAvailability = computed(() => {
     return cart.items.length > 0 &&
         startDate.value !== '' &&
         endDate.value !== '' &&
-        startDate.value <= endDate.value;
+        new Date(startDate.value).getTime() < new Date(endDate.value).getTime();
 });
 
 const equipmentCount = computed(() => {
@@ -74,15 +85,12 @@ async function checkAvailability() {
     resetAvailability();
 
     try {
-        const from = new Date(`${startDate.value}T00:00:00`).toISOString();
+        const from = new Date(startDate.value).toISOString();
+        const to = new Date(endDate.value).toISOString();
 
-        const to = new Date(`${endDate.value}T23:59:59`).toISOString();
-
-        const response = await fetch('/api/v1/equipment/calendar', {
+        const res = await fetch('/api/v1/equipment/calendar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 equipmentIds: cart.items,
                 from,
@@ -90,24 +98,21 @@ async function checkAvailability() {
             })
         });
 
-        if (!response.ok) {
+        if (!res.ok) {
             throw new Error('Kalender konnte nicht geladen werden.');
         }
 
-        const calendar = await response.json();
+        const calendar = await res.json();
+        console.log('Kalender-Antwort:', calendar);
 
-        const requestedStart = new Date(from).getTime();
-        const requestedEnd = new Date(to).getTime();
-
-        available.value = calendar.some((slot: {
-            start: string;
-            end: string;
-            status: string;
-        }) => {
-            return slot.status === 'available' &&
-                new Date(slot.start).getTime() <= requestedStart &&
-                new Date(slot.end).getTime() >= requestedEnd;
-        });
+        available.value = Array.isArray(calendar) &&
+            calendar.length === cart.items.length &&
+            calendar.every((equipment: {
+                id: string;
+                notAvailable: unknown[];
+            }) => {
+                return equipment.notAvailable.length === 0;
+            });
 
         availabilityChecked.value = true;
 
@@ -127,52 +132,45 @@ async function checkAvailability() {
 }
 
 async function submitReservation() {
-    if (!availabilityChecked.value || !available.value || loading.value) {
-        return;
-    }
-
     loading.value = true;
     message.value = '';
 
     try {
-        const startDatetime = new Date(`${startDate.value}T00:00:00`).toISOString();
+        const startDatetime = new Date(startDate.value).toISOString();
+        const endDatetime = new Date(endDate.value).toISOString();
 
-        const endDatetime = new Date(`${endDate.value}T23:59:59`).toISOString();
+        const requestBody = {
+            startDatetime,
+            endDatetime,
+            equipmentIds: cart.items
+        };
+        console.log('Reservierungsdaten:', requestBody);
 
-        const response = await fetch('/api/v1/reservations', {
+        const res = await fetch('/api/v1/reservations', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                startDatetime,
-                endDatetime,
-                equipmentIds: cart.items
-            })
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
         });
 
-        if (!response.ok) {
-            throw new Error('Reservierungsanfrage konnte nicht erstellt werden.');
+        const responseText = await res.text();
+
+        console.log('Reservierungs-Status:', res.status);
+        console.log('Reservierungs-Antwort:', responseText);
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${responseText}`);
         }
 
-        const reservation = await response.json();
-
-        message.value = `Reservierungsanfrage erfolgreich erstellt! ID: ${reservation.id}`;
-
+        message.value = 'Reservierung erfolgreich erstellt!';
         messageKind.value = 'success';
 
-        cart.clear();
-
-        startDate.value = '';
-        endDate.value = '';
-
-        availabilityChecked.value = false;
-        available.value = false;
-
     } catch (error) {
+        console.error('Fehler beim Absenden der Reservierung:', error);
+
         message.value = 'Fehler beim Absenden der Reservierungsanfrage.';
         messageKind.value = 'error';
-        console.error(error);
+
     } finally {
         loading.value = false;
     }
@@ -181,112 +179,92 @@ async function submitReservation() {
 
 
 <template>
-    <div class="reservation-page">
+    <h1>Meine Reservierung</h1>
 
-        <h1>Meine Reservierung</h1>
+    <section class="reservation-panel">
 
-        <section class="reservation-panel">
+        <h3>Reservierungszeit</h3>
 
-            <h3>Reservierungszeit</h3>
+        <div class="date-inputs">
+            <label>
+                Von
+                <input type="datetime-local" v-model="startDate" @change="resetAvailability">
+            </label>
+            <label>
+                Bis
+                <input type="datetime-local" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
+            </label>
+        </div>
 
-            <div class="date-inputs">
-                <label>
-                    Von
-                    <input type="date" v-model="startDate" @change="resetAvailability">
-                </label>
+        <button type="button" class="btn-primary check-button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
+            {{ loading ? 'Wird geprüft...' : 'Für alle Geräte übernehmen' }}
+        </button>
 
-                <label>
-                    Bis
-                    <input type="date" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
-                </label>
+    </section>
+
+    <section class="reservation-equipment-panel">
+
+        <div class="availability-heading">
+            <div>
+                <h2>Verfügbarkeit</h2>
+                <p class="meta" v-if="startDate && endDate">
+                    {{ formatDateTime(startDate) }} – {{ formatDateTime(endDate) }}
+                </p>
+                <p class="meta" v-else>
+                    Bitte zuerst einen Zeitraum auswählen.
+                </p>
             </div>
+            <span class="equipment-count">
+                {{ equipmentCount }} Geräte
+            </span>
+        </div>
 
-            <button type="button" class="btn-primary check-button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
-                {{ loading ? 'Wird geprüft...' : 'Für alle Geräte übernehmen' }}
-            </button>
+        <div v-if="items.length > 0" class="equipment-list">
 
-        </section>
-
-        <section class="reservation-equipment-panel">
-
-            <div class="availability-heading">
-
-                <div>
-                    <h2>Verfügbarkeit</h2>
-
-                    <p class="meta" v-if="startDate && endDate">
-                        {{ startDate }} – {{ endDate }}
-                    </p>
-
-                    <p class="meta" v-else>
-                        Bitte zuerst einen Zeitraum auswählen.
-                    </p>
-                </div>
-
-                <span class="equipment-count">
-                    {{ equipmentCount }} Geräte
-                </span>
-
-            </div>
-
-            <div v-if="items.length > 0" class="equipment-list">
-
-                <article v-for="(item, index) in items" :key="item.id" class="equipment-item">
-
-                    <div class="equipment-header">
-
-                        <div class="equipment-name">
-                            <div class="equipment-image">
-                                <span class="image-placeholder"></span>
-                            </div>
-
-                            <span>{{ item.name }}</span>
+            <article v-for="(item, index) in items" :key="item.id" class="equipment-item">
+                <div class="equipment-header">
+                    <div class="equipment-name">
+                        <div class="equipment-image">
+                            <span class="image-placeholder"></span>
                         </div>
-
-                        <button type="button" class="remove-button" aria-label="Equipment entfernen" @click="removeEquipment(item.id)">
-                            <span aria-hidden="true">▤</span>
-                        </button>
-
+                        <span>{{ item.name }}</span>
                     </div>
+                    <button type="button" class="remove-button" aria-label="Equipment entfernen" @click="removeEquipment(item.id)">
+                        <span aria-hidden="true">▤</span>
+                    </button>
+                </div>
+                <div class="equipment-indicator" :class="'indicator-' + (index % 4)"></div>
+            </article>
 
-                    <div class="equipment-indicator" :class="'indicator-' + (index % 4)"></div>
+        </div>
 
-                </article>
+        <div v-else class="empty-state">
+            <span class="empty-icon">▣</span>
+            <p>Noch kein Equipment ausgewählt.</p>
+            <span class="hint">
+                Wähle zuerst Geräte aus dem Inventar aus.
+            </span>
+        </div>
 
-            </div>
+        <div v-if="message" class="status-message" :class="'message-' + messageKind" role="status">
+            {{ message }}
+        </div>
 
-            <div v-else class="empty-state">
-                <span class="empty-icon">▣</span>
-                <p>Noch kein Equipment ausgewählt.</p>
-                <span class="hint">
-                    Wähle zuerst Geräte aus dem Inventar aus.
-                </span>
-            </div>
+        <div v-if="availabilityChecked && available" class="availability-success">
+            <span class="success-icon">✓</span>
+            <span>Alle {{ equipmentCount }} Geräte verfügbar</span>
+        </div>
 
-            <div v-if="message" class="status-message" :class="'message-' + messageKind" role="status">
-                {{ message }}
-            </div>
+        <div class="reservation-actions">
+            <button type="button" class="btn-secondary back-button" @click="$router.back()">
+                Zurück
+            </button>
+            <button type="button" class="btn-primary submit-button" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
+                {{ loading ? 'Wird gesendet...' : 'Reservieren' }}
+            </button>
+        </div>
 
-            <div v-if="availabilityChecked && available" class="availability-success">
-                <span class="success-icon">✓</span>
-                <span>Alle {{ equipmentCount }} Geräte verfügbar</span>
-            </div>
-
-            <div class="reservation-actions">
-
-                <button type="button" class="btn-secondary back-button" @click="$router.back()">
-                    Zurück
-                </button>
-
-                <button type="button" class="btn-primary submit-button" :disabled="!availabilityChecked || !available || loading" @click="submitReservation">
-                    {{ loading ? 'Wird gesendet...' : 'Reservieren' }}
-                </button>
-
-            </div>
-
-        </section>
-
-    </div>
+    </section>
 </template>
 
 

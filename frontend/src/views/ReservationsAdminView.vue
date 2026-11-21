@@ -7,7 +7,7 @@ import ReservationDetailCard from '@/components/ReservationDetailCard.vue';
 import ScanModal from "@/components/ScanModal.vue";
 
 export type ReservationStatus =
-    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
+    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
 
 export interface ReservationItem {
     id: string;

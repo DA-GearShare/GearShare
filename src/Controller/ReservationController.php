@@ -28,6 +28,8 @@ use Symfony\Component\Uid\Uuid;
 #[Route('/api/v1/reservations', name: 'reservation_')]
 final class ReservationController extends AbstractController
 {
+    use SerializesEquipment;
+
     #[Route('', name: 'list', methods: ['GET'])]
     public function getReservations(
         ReservationRepository                   $repository,
@@ -216,12 +218,14 @@ final class ReservationController extends AbstractController
         Request                $request,
         ReservationRepository  $reservationRepository,
         EquipmentRepository    $equipmentRepository,
-        EntityManagerInterface $entityManager,
+        EntityManagerInterface $em,
     ): Response
     {
         $reservation = $reservationRepository->find($reservationId);
         if ($reservation === null) {
             return new Response('Reservierung nicht gefunden.', Response::HTTP_NOT_FOUND);
+        } else if (!in_array($reservation->getStatus(), [ReservationStatus::Requested, ReservationStatus::Active], true)) {
+            return new JsonResponse(['message' => 'Reservierung erlaubt keine Ausgabe.'], Response::HTTP_CONFLICT);
         }
 
         try {
@@ -252,6 +256,7 @@ final class ReservationController extends AbstractController
             fn($key, ReservationItem $item) => $item->getRequestedEquipment()?->getId()?->equals($equipment->getId()) === true,
         );
 
+        // Equipment part of reservation
         if ($item !== null) {
             switch ($item->getStatus()) {
                 case ReservationItemStatus::Issued:
@@ -264,12 +269,66 @@ final class ReservationController extends AbstractController
                     $item->setStatus(ReservationItemStatus::Issued);
                     $item->setIssuedAt(new DateTimeImmutable());
                     $item->setReturnedAt(null);
-                    $entityManager->flush();
+                    $em->persist($item);
+                    $em->flush();
 
                     return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
             }
+        } else { // Equipment not part of reservation
+            $available = !$equipment->isDeleted() && $reservationRepository->isEquipmentAvailable(
+                    $equipment,
+                    $reservation->getStartDatetime(),
+                    $reservation->getEndDatetime(),
+                    $reservation,
+                );
+            if (!$available) {
+                return new JsonResponse(
+                    ['message' => 'Das Gerät ist im Zeitraum der Reservierung nicht verfügbar.'],
+                    Response::HTTP_CONFLICT,
+                );
+            } else { // Equipment not part of reservation and available
+                if (!$dto->confirmAdd) {
+                    return new JsonResponse([
+                        'message' => 'Das gescannte Gerät ist nicht Teil dieser Reservierung.',
+                        'equipment' => $this->serializeEquipment($equipment),
+                    ], Response::HTTP_CONFLICT);
+                } else { // Equipment not part of reservation and available and confirmAdd is true
+                    if ($dto->replaceItemId !== null) {
+                        $replacedItem = $reservation->getItems()->findFirst(
+                            fn($key, ReservationItem $item) => $item->getId()?->equals($dto->replaceItemId) === true,
+                        );
+
+                        if ($replacedItem === null) {
+                            return new JsonResponse(
+                                ['message' => 'Die zu ersetzende Position gehört nicht zu dieser Reservierung.'],
+                                Response::HTTP_NOT_FOUND,
+                            );
+                        }
+
+                        if ($replacedItem->getStatus() === ReservationItemStatus::Issued) {
+                            return new JsonResponse(
+                                ['message' => 'Die zu ersetzende Position wurde bereits ausgegeben.'],
+                                Response::HTTP_CONFLICT,
+                            );
+                        }
+
+                        $reservation->removeItem($replacedItem); // orphanRemoval löscht das Item beim flush
+                    }
+
+                    $reservation->addItem(
+                        new ReservationItem()
+                            ->setRequestedEquipment($equipment)
+                            ->setStatus(ReservationItemStatus::Issued)
+                            ->setIssuedAt(new DateTimeImmutable()));
+
+                    $em->persist($reservation);
+                    $em->flush();
+
+                    return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+                }
+            }
         }
 
-        return new Response('temp', Response::HTTP_OK);
+        return new JsonResponse(['message' => 'Unbekannter Positionsstatus.'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }

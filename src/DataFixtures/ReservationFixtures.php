@@ -33,10 +33,10 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
      */
     private const RESERVATIONS = [
         // ── Angenommen, in der Zukunft (Geräte "Reserved" in AppFixtures) ──────────
-        [self::STUDENT_1, self::TEACHER_1, ReservationStatus::Accepted, [1, '08:00'],  [1, '16:00'],  ['EQ-0026', 'EQ-0027']],            // Laptop 3 + Netzteil 3
-        [self::STUDENT_2, self::TEACHER_2, ReservationStatus::Accepted, [3, '09:00'],  [4, '15:00'],  ['EQ-0028', 'EQ-0029']],            // Kamera 2 + Akku 2
-        [self::TEACHER_1, self::TEACHER_1, ReservationStatus::Accepted, [2, '10:00'],  [2, '12:00'],  ['EQ-0030']],                       // Beamer mobil
-        [self::STUDENT_3, self::TEACHER_1, ReservationStatus::Accepted, [5, '08:00'],  [7, '16:00'],  ['EQ-0031', 'EQ-0043']],            // Tablet 2 + Ladegerät
+        [self::STUDENT_1, self::TEACHER_1, ReservationStatus::Requested, [1, '08:00'],  [1, '16:00'],  ['EQ-0026', 'EQ-0027']],            // Laptop 3 + Netzteil 3
+        [self::STUDENT_2, self::TEACHER_2, ReservationStatus::Requested, [3, '09:00'],  [4, '15:00'],  ['EQ-0028', 'EQ-0029']],            // Kamera 2 + Akku 2
+        [self::TEACHER_1, self::TEACHER_1, ReservationStatus::Requested, [2, '10:00'],  [2, '12:00'],  ['EQ-0030']],                       // Beamer mobil
+        [self::STUDENT_3, self::TEACHER_1, ReservationStatus::Requested, [5, '08:00'],  [7, '16:00'],  ['EQ-0031', 'EQ-0043']],            // Tablet 2 + Ladegerät
 
         // ── Aktiv / ausgegeben (Geräte "Usage" in AppFixtures) ────────────────────
         [self::STUDENT_1, self::TEACHER_2, ReservationStatus::Active,   [0, '08:00'],  [2, '16:00'],  ['EQ-0032', 'EQ-0033']],            // Laptop 4 + Netzteil 4

@@ -1250,7 +1250,7 @@ paths:
                 '404':
                     description: >
                         Reservierung nicht gefunden, kein Gerät mit diesem Code
-                        gefunden oder `replaceItemId` gehört nicht zur Reservierung.
+                        gefunden oder kein Gerät mit der `replaceItemId` gefunden.
                     content:
                         application/json:
                             schema:
@@ -2281,12 +2281,12 @@ components:
         # ---------------- Reservations ----------------
         ReservationStatus:
             type: string
-            enum: [ requested, accepted, denied, active, returned, cancelled ]
+            enum: [ requested, denied, active, returned, cancelled ]
             example: requested
 
         ReservationItemStatus:
             type: string
-            enum: [ requested, approved, rejected, issued, returned ]
+            enum: [ requested, issued, returned ]
             example: requested
 
         Reservation:

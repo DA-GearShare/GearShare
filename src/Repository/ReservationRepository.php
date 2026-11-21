@@ -221,6 +221,31 @@ class ReservationRepository extends ServiceEntityRepository
         return array_values(array_unique($busy));
     }
 
+
+    /**
+     * Checks, whether equipment is available in given time periode. Positon of the Reservation `$exclude` are ignored.
+     *
+     * @param Equipment $equipment
+     * @param DateTimeImmutable $start
+     * @param DateTimeImmutable $end
+     * @param Reservation|null $exclude
+     * @return bool
+     */
+    public function isEquipmentAvailable(Equipment $equipment, DateTimeImmutable $start, DateTimeImmutable $end, ?Reservation $exclude = null): bool
+    {
+        $qb = $this->blockingItemsQuery($start, $end)
+            ->select('COUNT(ri.id)')
+            ->andWhere('ri.requestedEquipment = :equipment')
+            ->setParameter('equipment', $equipment);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() === 0;
+    }
+
     /**
      * @return mixed
      */

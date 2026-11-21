@@ -312,8 +312,9 @@ onBeforeUnmount(() => {
     .nav {
         grid-column: 1 / -1;
         grid-row: 2;
-        flex-wrap: wrap;
-        gap: 65px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
         margin-top: var(--space-m);
     }
 

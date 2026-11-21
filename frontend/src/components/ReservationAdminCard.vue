@@ -47,7 +47,7 @@ function formatTime(text: string) {
             <span>{{ reservation.items.length }} Geräte</span>
             <svg
                 class="chevron-icon"
-                :class="{ open: expanded }"
+                :class="{ open: selected }"
                 width="14"
                 height="14"
                 viewBox="0 0 24 24"

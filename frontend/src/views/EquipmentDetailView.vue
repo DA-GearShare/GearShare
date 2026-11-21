@@ -109,7 +109,7 @@ function addToCart() {
 
 <template>
 
-    <EquipmentPhotos/>
+    <EquipmentPhotos available/>
 
     <h2>Empfehlungen</h2>
 

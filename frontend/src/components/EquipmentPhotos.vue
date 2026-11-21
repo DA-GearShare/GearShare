@@ -1,6 +1,5 @@
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/AuthStore.ts';
 
@@ -8,6 +7,14 @@ interface EquipmentPhoto {
     id: number;
     url: string;
     isMain: boolean;
+}
+
+interface Equipment {
+    type: string;
+    model: string;
+    name: string;
+    description?: string;
+    code: string;
 }
 
 defineProps<{
@@ -27,14 +34,28 @@ const maxPhotos = 5;
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
 const equipmentId = route.params.id;
-const equipment = ref<any>(null);
+const equipment = ref<Equipment | null>(null);
 
 const isAdmin = authStore.hasRole(['Admin']);
 
+const selectedId = ref<number | null>(null);
 
+const selectedPhoto = computed(() => {
+    return photos.value.find(p => {
+        return p.id === selectedId.value;
+    })
+        ?? photos.value.find(p => {
+            return p.isMain;
+        })
+        ?? photos.value[0]
+        ?? null;
+});
 
+const remainingSlots = computed(() => {
+    return maxPhotos - photos.value.length;
+});
 
-onMounted(()=>{
+onMounted(() => {
     loadPhotosById();
     loadEquipment();
 });
@@ -49,17 +70,13 @@ async function loadPhotosById() {
     try {
         loading.value = true;
 
-        const res = await fetch(
-            `/api/v1/equipment/${equipmentId}/photos`,
-            { credentials: 'include' }
-        );
+        const res = await fetch(`/api/v1/equipment/${equipmentId}/photos`, { credentials: 'include' });
 
         if (!res.ok) {
             throw new Error('Die Fotos konnten nicht geladen werden.');
         }
 
         photos.value = await res.json();
-        console.log('Geladene Fotos:', photos.value);
         error.value = null;
 
     } catch (e) {
@@ -70,76 +87,68 @@ async function loadPhotosById() {
     }
 }
 
-async function uploadPhoto() {
-    const file = inputRef.value?.files?.[0];
+async function uploadPhotos() {
+    const files = Array.from(inputRef.value?.files ?? []);
 
-    if (!file) {
-        error.value = 'Bitte wählen Sie zuerst ein Foto aus.';
+    if (files.length === 0) {
+        error.value = 'Bitte wählen Sie zuerst mindestens ein Foto aus.';
         return;
     }
 
-    if (photos.value.length >= maxPhotos) {
-        error.value = 'Es können maximal 5 Fotos hochgeladen werden.';
+    if (files.length > remainingSlots.value) {
+        error.value = `Sie können noch ${remainingSlots.value} Foto(s) hochladen.`;
         return;
     }
 
-    if (!allowedTypes.includes(file.type)) {
-        error.value = 'Erlaubt sind nur JPG, PNG und WebP.';
-        return;
+    for (const file of files) {
+        if (!allowedTypes.includes(file.type)) {
+            error.value = `${file.name}: Erlaubt sind nur JPG, PNG und WebP.`;
+            return;
+        }
+        if (file.size > maxFileSize) {
+            error.value = `${file.name} ist zu groß (max. 15 MB).`;
+            return;
+        }
     }
 
-    if (file.size > maxFileSize) {
-        error.value = 'Das ausgewählte Foto ist zu groß (max. 15 MB).';
-        return;
-    }
+    loading.value = true;
+    let failed = 0;
 
-    const formData = new FormData();
-    formData.append('file', file);
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    try {
-        const res = await fetch(
-            `/api/v1/equipment/${equipmentId}/photos`,
-            {
+        try {
+            const res = await fetch(`/api/v1/equipment/${equipmentId}/photos`, {
                 method: 'POST',
                 credentials: 'include',
                 body: formData
+            });
+
+            if (!res.ok) {
+                console.error('Upload fehlgeschlagen:', res.status, await res.text());
+                failed++;
             }
-        );
-
-        if (!res.ok) {
-            const responseText = await res.text();
-            console.error('Upload fehlgeschlagen:', res.status, responseText);
-
-            error.value = res.status === 413
-                ? 'Das Foto ist zu groß.'
-                : 'Das Foto konnte nicht hochgeladen werden.';
-
-            return;
+        } catch (e) {
+            console.error(e);
+            failed++;
         }
+    }
 
-        error.value = null;
+    if (inputRef.value) {
+        inputRef.value.value = '';
+    }
 
-        await loadPhotosById();
+    await loadPhotosById();
 
-        if (inputRef.value) {
-            inputRef.value.value = '';
-        }
-
-    } catch (e) {
-        console.error(e);
-        error.value = 'Das Foto konnte nicht hochgeladen werden.';
+    if (failed > 0) {
+        error.value = `${failed} von ${files.length} Fotos konnten nicht hochgeladen werden.`;
     }
 }
 
 async function setMainPhoto(photoId: number) {
     try {
-        const res = await fetch(
-            `/api/v1/equipment/${equipmentId}/photos/${photoId}`,
-            {
-                method: 'PATCH',
-                credentials: 'include'
-            }
-        );
+        const res = await fetch(`/api/v1/equipment/${equipmentId}/photos/${photoId}`, { method: 'PATCH', credentials: 'include' });
 
         if (!res.ok) {
             throw new Error('Das Hauptbild konnte nicht geändert werden.');
@@ -160,12 +169,7 @@ async function deletePhoto(photoId: number) {
 
     try {
         const res = await fetch(
-            `/api/v1/equipment/${equipmentId}/photos/${photoId}`,
-            {
-                method: 'DELETE',
-                credentials: 'include'
-            }
-        );
+            `/api/v1/equipment/${equipmentId}/photos/${photoId}`, { method: 'DELETE', credentials: 'include' });
 
         if (!res.ok) {
             throw new Error('Das Foto konnte nicht gelöscht werden.');
@@ -182,7 +186,7 @@ async function deletePhoto(photoId: number) {
 </script>
 
 <template>
-    <div class="equipment-photo">
+    <div class="equipment-photo section-card">
 
         <div v-if="error" class="message-error">
             {{ error }}
@@ -190,78 +194,107 @@ async function deletePhoto(photoId: number) {
 
         <div class="equipment-photo__output">
 
-            <p v-if="loading">
+            <p v-if="loading && photos.length === 0" class="meta">
                 Fotos werden geladen...
             </p>
 
-            <div v-else-if="photos.length === 0" class="gallery">
-                <div v-for="n in 4" :key="n" class="placeholder thumb">Bild {{ n }}</div>
-                <div class="placeholder main">Bildplatzhalter</div>
+            <div v-else-if="photos.length === 0" class="placeholder meta">
+                Noch keine Fotos vorhanden
             </div>
 
-            <ul v-else class="gallery">
-                <li v-for="photo in photos" :key="photo.id" class="equipment-photo__item" :class="{ 'equipment-photo__item--main': photo.isMain }">
-                    <img class="equipment-photo__img" alt="Equipment-Foto" :src="photo.url"/>
+            <div v-else class="gallery">
+                <div class="gallery__thumbs">
+                    <button
+                        v-for="photo in photos"
+                        :key="photo.id"
+                        type="button"
+                        class="gallery__thumb"
+                        :class="{ 'gallery__thumb--active': photo.id === selectedPhoto?.id }"
+                        @click="selectedId = photo.id"
+                    >
+                        <img :src="photo.url" alt="Equipment-Foto Vorschau"/>
+                    </button>
+                </div>
 
-                    <span v-if="photo.isMain" class="main-label">
-                        Hauptbild
-                    </span>
+                <div class="gallery__main">
+                    <div class="main-frame">
+                        <img :src="selectedPhoto?.url" alt="Equipment-Foto"/>
+                        <span v-if="selectedPhoto?.isMain" class="tag tag-available main-label">
+                            Hauptbild
+                        </span>
+                    </div>
 
-                    <div v-if="isAdmin" class="equipment-photo__actions">
-                        <button v-if="!photo.isMain" @click="setMainPhoto(photo.id)">
-                            Als Hauptbild festlegen
+                    <div v-if="isAdmin && selectedPhoto" class="equipment-photo__actions">
+                        <button
+                            v-if="!selectedPhoto.isMain"
+                            type="button"
+                            class="btn-secondary"
+                            @click="setMainPhoto(selectedPhoto.id)"
+                        >
+                            Als Hauptbild
                         </button>
 
-                        <button @click="deletePhoto(photo.id)" class="delete-button">
-                            Foto löschen
+                        <button
+                            type="button"
+                            class="btn-secondary delete-button"
+                            @click="deletePhoto(selectedPhoto.id)"
+                        >
+                            Löschen
                         </button>
                     </div>
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
 
         <div v-if="equipment" class="info">
-            <p class="type">{{ equipment.type }}</p>
+            <p class="eyebrow">{{ equipment.type }}</p>
             <h1 class="name">{{ equipment.model }}</h1>
             <span class="tag">{{ equipment.name }}</span>
 
             <template v-if="equipment.description">
                 <h3 class="section-title">Beschreibung</h3>
-                <p class="description">{{ equipment.description }}</p>
+                <p>{{ equipment.description }}</p>
             </template>
 
             <div class="facts">
                 <div class="fact">
-                    <p class="fact-label">Inventarnr.</p>
+                    <p class="meta">Inventarnr.</p>
                     <p class="fact-value">{{ equipment.code }}</p>
                 </div>
                 <div class="fact">
-                    <p class="fact-label">Status</p>
+                    <p class="meta">Status</p>
                     <p class="fact-value">{{ available === false ? 'Nicht verfügbar' : 'Verfügbar' }}</p>
                 </div>
             </div>
         </div>
 
-        <p>
+        <p class="meta photo-count">
             {{ photos.length }} / {{ maxPhotos }} Fotos
         </p>
+
         <div v-if="isAdmin" class="equipment-photo__input">
             <template v-if="photos.length < maxPhotos">
 
-                <input ref="inputRef" type="file" class="uploadPhoto" accept="image/jpeg,image/png,image/webp"/>
+                <input
+                    ref="inputRef"
+                    type="file"
+                    class="uploadPhoto"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                />
 
-                <button @click="uploadPhoto" :disabled="loading">
-                    Foto hochladen
+                <button class="btn-primary" @click="uploadPhotos" :disabled="loading">
+                    Foto(s) hochladen
                 </button>
 
-                <p>
+                <p class="hint">
                     Erlaubt: JPG, PNG, WebP (max. 15 MB).
-                    Maximal 5 Fotos pro Equipment.
+                    Noch {{ remainingSlots }} Foto(s) möglich.
                 </p>
 
             </template>
 
-            <p v-else>
+            <p v-else class="hint">
                 Maximale Anzahl von 5 Fotos erreicht.
             </p>
         </div>
@@ -271,280 +304,177 @@ async function deletePhoto(photoId: number) {
 
 <style scoped>
 .equipment-photo {
+    --thumb-col: 72px;
     max-width: 600px;
-    padding: 16px;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #FFFFFF;
-    border: 1px solid #E8EAEE;
-    border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+    box-shadow: var(--shadow-card);
 }
 
 .message-error {
-    margin-bottom: 16px;
-    padding: 12px 16px;
-    font-size: 14px;
-    line-height: 21px;
-    color: #B91C1C;
-    background: #FEECEC;
-    border-left: 3px solid #B91C1C;
-    border-radius: 12px;
-}
-
-.hint {
-    margin: 0;
-    font-size: 13px;
-    line-height: 18px;
-    color: #6B7280;
+    margin-bottom: var(--space-l);
 }
 
 .gallery {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
-    grid-auto-flow: row dense;
-    gap: 12px;
-    margin: 0;
+    grid-template-columns: var(--thumb-col) minmax(0, 1fr);
+    gap: var(--space-m);
+}
+
+.gallery__thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    align-self: start;
+}
+
+.gallery__thumb {
     padding: 0;
-    list-style: none;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    background: var(--color-soft-surface);
+    border: 2px solid transparent;
+    border-radius: var(--radius-s);
+    opacity: 0.7;
+    cursor: pointer;
 }
 
-.equipment-photo__item,
-.gallery .thumb {
-    grid-column: 1;
-    position: relative;
-    min-width: 0;
-}
-
-.equipment-photo__item--main,
-.gallery .main {
-    grid-column: 2;
-    grid-row: 1 / span 4;
-    align-self: stretch;
-    contain: size;
-    min-height: 180px;
-}
-
-.equipment-photo__img {
+.gallery__thumb img {
     display: block;
     width: 100%;
-    aspect-ratio: 5 / 4;
-    object-fit: cover;
-    background: #F3F4F6;
-    border-radius: 12px;
-}
-
-.equipment-photo__item--main .equipment-photo__img {
     height: 100%;
-    aspect-ratio: auto;
-    border-radius: 18px;
+    object-fit: cover;
 }
 
-.gallery .placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    line-height: 18px;
-    color: #6B7280;
-    background: linear-gradient(145deg, #F3F4F6, #E9EDF1);
+.gallery__thumb--active {
+    border-color: var(--color-accent);
+    opacity: 1;
 }
 
-.gallery .thumb {
-    width: auto;
-    height: auto;
-    aspect-ratio: 5 / 4;
-    border-radius: 12px;
+.main-frame {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-card);
 }
 
-.gallery .main {
-    width: auto;
-    height: auto;
-    border-radius: 18px;
+.main-frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .main-label {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    padding: 2px 10px;
-    font-size: 12px;
-    line-height: 18px;
-    font-weight: 700;
-    color: #4F6D47;
-    background: #E1EDDC;
-    border-radius: 999px;
+    top: var(--space-s);
+    left: var(--space-s);
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4 / 3;
+    margin: 0;
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-card);
 }
 
 .equipment-photo__actions {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 4px;
+    gap: var(--space-s);
+    margin-top: var(--space-s);
+}
+
+.equipment-photo__actions button {
+    min-height: 40px;
+    padding: 0 var(--space-m);
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    border-radius: var(--radius-s);
+}
+
+.delete-button {
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-color: var(--color-error-bg);
+}
+
+.delete-button:hover:not(:disabled) {
+    background: var(--color-error-bg);
+    border-color: var(--color-error-text);
 }
 
 .info {
-    margin-top: 16px;
-    margin-left: 100px;
-}
-
-.type {
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 700;
-    color: #2456C8;
+    margin-top: var(--space-l);
+    margin-left: calc(var(--thumb-col) + var(--space-m));
 }
 
 .name {
-    margin: 4px 0 8px;
-    font-size: 24px;
-    line-height: 32px;
-    font-weight: 700;
-    color: #12273C;
-}
-
-.info .tag {
-    display: inline-block;
-    padding: 4px 12px;
-    font-size: 13px;
-    line-height: 18px;
-    color: #374151;
-    background: #F3F4F6;
-    border-radius: 999px;
+    margin: var(--space-xs) 0 var(--space-s);
 }
 
 .section-title {
-    margin: 16px 0 4px;
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 700;
-    color: #111827;
-}
-
-.description {
-    margin: 0;
-    font-size: 14px;
-    line-height: 21px;
-    color: #374151;
+    margin: var(--space-l) 0 var(--space-xs);
+    color: var(--color-text-primary);
 }
 
 .facts {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
+    gap: var(--space-m);
+    margin-top: var(--space-l);
 }
 
 .fact {
-    padding: 12px 16px;
-    background: #F7F8FA;
-    border-radius: 12px;
+    padding: var(--space-m) var(--space-l);
+    background: var(--color-background);
+    border-radius: var(--radius-tab);
 }
 
-.fact-label {
+.fact .meta {
     margin: 0 0 2px;
-    font-size: 12px;
-    line-height: 18px;
-    color: #6B7280;
 }
 
 .fact-value {
     margin: 0;
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 700;
-    color: #111827;
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+.photo-count {
+    margin-top: var(--space-l);
 }
 
 .equipment-photo__input {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    margin-top: 24px;
-    padding: 16px;
-    background: #F7F8FA;
-    border: 1px solid #E5E7EB;
-    border-radius: 18px;
+    gap: var(--space-m);
+    margin-top: var(--space-xl);
+    padding: var(--space-l);
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
 }
 
 .equipment-photo__input input[type="file"] {
     width: 100%;
-    min-height: 44px;
-    padding: 8px;
-    font-size: 14px;
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
 }
 
-.equipment-photo button {
-    min-height: 40px;
-    padding: 4px 8px;
-    font-family: inherit;
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 700;
-    color: #12273C;
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    cursor: pointer;
+.equipment-photo__input .hint {
+    margin: 0;
 }
 
-.equipment-photo button:hover:not(:disabled) {
-    background: #F3F4F6;
-}
-
-.equipment-photo button:disabled {
-    color: #6B7280;
-    background: #E9EDF1;
-    cursor: not-allowed;
-}
-
-.equipment-photo__input button {
-    min-height: 48px;
-    padding: 0 16px;
-    font-size: 15px;
-    line-height: 22px;
-    color: #FFFFFF;
-    background: #12273C;
-    border-color: #12273C;
-    border-radius: 14px;
-}
-
-.equipment-photo__input button:hover:not(:disabled) {
-    background: #2456C8;
-    border-color: #2456C8;
-}
-
-.equipment-photo .delete-button {
-    color: #B91C1C;
-    background: #FEECEC;
-    border-color: #FEECEC;
-}
-
-.equipment-photo .delete-button:hover:not(:disabled) {
-    border-color: #B91C1C;
-}
-
-.equipment-photo button:focus-visible,
-.equipment-photo input:focus-visible {
-    outline: 2px solid #2456C8;
-    outline-offset: 3px;
+.btn-primary:hover:not(:disabled) {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 @media (max-width: 639px) {
     .equipment-photo {
+        --thumb-col: 60px;
         max-width: none;
-    }
-
-    .gallery {
-        grid-template-columns: 72px minmax(0, 1fr);
-    }
-
-    .info {
-        margin-left: 84px;
     }
 }
 

@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 <template>
     <header class="header">
         <RouterLink to="/inventar" class="logo-link" aria-label="Zum Inventar">
-            <img src="@/assets/logo.svg" alt="GearShare" class="logo" />
+            <img src="../assets/logo.svg" alt="GearShare" class="logo" />
         </RouterLink>
 
         <nav class="nav">
@@ -148,8 +148,8 @@ onBeforeUnmount(() => {
 
 .logo {
     display: block;
-    height: 40px;
-    max-width: 180px;
+    height: 48px;
+    max-width: 200px;
 }
 
 .nav {
@@ -306,7 +306,7 @@ onBeforeUnmount(() => {
     }
 
     .logo {
-        height: 32px;
+        height: 45px;
     }
 
     .nav {

@@ -18,7 +18,8 @@ function openReservation(id: string) {
 
 <template>
     <main class="admin-reservations">
-        <h1>Admin-Reservierungen</h1>
+        <h1>Admin</h1><br>
+        <h2>Reservierungen</h2>
 
         <p v-if="reservationStore.isLoading">Reservierungen werden geladen...</p>
 

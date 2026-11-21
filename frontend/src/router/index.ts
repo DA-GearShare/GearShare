@@ -12,7 +12,6 @@ import EquipmentEditView from '../views/EquipmentEditView.vue';
 import ReservationView from '../views/ReservationView.vue';
 import ReservationsUserView from '../views/ReservationsUserView.vue';
 import ReservationsAdminView from '../views/ReservationAdminView.vue';
-import ReservationDetailView from '../views/ReservationDetailView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -72,11 +71,6 @@ const router = createRouter({
             path: '/admin/reservierungen',
             component: ReservationsAdminView,
             meta: { requiresAuth: true, roles: ['Admin'] }
-        },
-        {
-            path: '/reservierungen/:id',
-            component: ReservationDetailView,
-            meta: { requiresAuth: true }
         },
         {
             path: '/admin/nutzer',

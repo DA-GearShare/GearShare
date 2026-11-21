@@ -76,6 +76,26 @@ export const useReservationStore = defineStore('reservation', () => {
         }
     }
 
+    async function fetchIssueGlobal(id: string, payload: Record<string, unknown>) {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const res = await fetch(`/api/v1/reservations/${id}/issue`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error('Status ' + res.status);
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            error.value = "Der Scan konnte nicht verarbeitet werden.";
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     async function fetchOverdueReservations() {
         isLoading.value = true;
         error.value = null;

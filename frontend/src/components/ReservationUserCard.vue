@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore';
 
 export type ReservationStatus =
@@ -86,7 +86,7 @@ async function toggle() {
         </div>
 
         <button type="button" class="toggle" :aria-expanded="expanded" @click="toggle">
-            <span>{{ reservation.items.length }}</span>
+            <span>{{ reservation.items.length }} Geräte</span>
             <svg
                 class="chevron-icon"
                 :class="{ open: expanded }"

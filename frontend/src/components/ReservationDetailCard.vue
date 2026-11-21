@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    Detail Reservation
+
 </template>
 
 <style scoped>

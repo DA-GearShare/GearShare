@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useCartStore } from '@/stores/CartStore.ts';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
+import { Trash2 } from 'lucide-vue-next';
 
 const cart = useCartStore();
 const store = useEquipmentStore();
@@ -16,6 +17,10 @@ const items = ref<{
 const startDate = ref('');
 const endDate = ref('');
 
+type Period = Record<string, string>;
+
+const unavailable = ref<Record<string, Period[]>>({});
+
 function formatDateTime(value: string): string {
     if (!value) return '';
 
@@ -28,16 +33,37 @@ function formatDateTime(value: string): string {
     });
 }
 
+function toLocalInput(date: Date): string {
+    const pad = (n: number) => {
+        return String(n).padStart(2, '0');
+    };
+
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
+        + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+}
+
+const minStart = toLocalInput(new Date());
+
+function formatPeriod(period: Period): string {
+    const from = period.from ?? period.start ?? period.startDatetime;
+    const to = period.to ?? period.end ?? period.endDatetime;
+
+    return formatDateTime(from) + ' – ' + formatDateTime(to);
+}
+
 const availabilityChecked = ref(false);
 const available = ref(false);
 const loading = ref(false);
 const message = ref('');
 const messageKind = ref<'success' | 'error' | 'info'>('info');
 
+let requestId = 0;
+
 const canCheckAvailability = computed(() => {
     return cart.items.length > 0 &&
         startDate.value !== '' &&
         endDate.value !== '' &&
+        new Date(startDate.value).getTime() >= Date.now() - 60000 &&
         new Date(startDate.value).getTime() < new Date(endDate.value).getTime();
 });
 
@@ -67,22 +93,45 @@ watch(
 );
 
 function resetAvailability() {
+    requestId++;
+    loading.value = false;
     availabilityChecked.value = false;
     available.value = false;
+    unavailable.value = {};
     message.value = '';
     messageKind.value = 'info';
 }
 
+watch([startDate, endDate], () => {
+    resetAvailability();
+
+    if (startDate.value && new Date(startDate.value).getTime() < Date.now() - 60000) {
+        message.value = 'Der Start darf nicht in der Vergangenheit liegen.';
+        messageKind.value = 'error';
+        return;
+    }
+
+    if (startDate.value && endDate.value && new Date(endDate.value).getTime() <= new Date(startDate.value).getTime()) {
+        message.value = 'Das Ende muss nach dem Start liegen.';
+        messageKind.value = 'error';
+        return;
+    }
+
+    checkAvailability();
+});
+
 function removeEquipment(id: string) {
     cart.remove(id);
     resetAvailability();
+    checkAvailability();
 }
 
 async function checkAvailability() {
-    if (!canCheckAvailability.value || loading.value) return;
+    if (!canCheckAvailability.value) return;
 
-    loading.value = true;
     resetAvailability();
+    const myRequest = requestId;
+    loading.value = true;
 
     try {
         const from = new Date(startDate.value).toISOString();
@@ -105,6 +154,14 @@ async function checkAvailability() {
         const calendar = await res.json();
         console.log('Kalender-Antwort:', calendar);
 
+        if (myRequest !== requestId) return;
+
+        if (Array.isArray(calendar)) {
+            for (const equipment of calendar) {
+                unavailable.value[equipment.id] = equipment.notAvailable;
+            }
+        }
+
         available.value = Array.isArray(calendar) &&
             calendar.length === cart.items.length &&
             calendar.every((equipment: {
@@ -123,11 +180,15 @@ async function checkAvailability() {
         messageKind.value = available.value ? 'success' : 'error';
 
     } catch (error) {
+        if (myRequest !== requestId) return;
+
         message.value = 'Fehler bei der Verfügbarkeitsprüfung.';
         messageKind.value = 'error';
         console.error(error);
     } finally {
-        loading.value = false;
+        if (myRequest === requestId) {
+            loading.value = false;
+        }
     }
 }
 
@@ -188,17 +249,15 @@ async function submitReservation() {
         <div class="date-inputs">
             <label>
                 Von
-                <input type="datetime-local" v-model="startDate" @change="resetAvailability">
+                <input type="datetime-local" v-model="startDate" :min="minStart">
             </label>
             <label>
                 Bis
-                <input type="datetime-local" v-model="endDate" :min="startDate || undefined" @change="resetAvailability">
+                <input type="datetime-local" v-model="endDate" :min="startDate || minStart">
             </label>
         </div>
 
-        <button type="button" class="btn-primary check-button" :disabled="!canCheckAvailability || loading" @click="checkAvailability">
-            {{ loading ? 'Wird geprüft...' : 'Für alle Geräte übernehmen' }}
-        </button>
+        <p v-if="loading" class="meta">Verfügbarkeit wird geprüft...</p>
 
     </section>
 
@@ -221,7 +280,7 @@ async function submitReservation() {
 
         <div v-if="items.length > 0" class="equipment-list">
 
-            <article v-for="(item, index) in items" :key="item.id" class="equipment-item">
+            <article v-for="item in items" :key="item.id" class="equipment-item">
                 <div class="equipment-header">
                     <div class="equipment-name">
                         <div class="equipment-image">
@@ -230,10 +289,15 @@ async function submitReservation() {
                         <span>{{ item.name }}</span>
                     </div>
                     <button type="button" class="remove-button" aria-label="Equipment entfernen" @click="removeEquipment(item.id)">
-                        <span aria-hidden="true">▤</span>
+                        <Trash2 />
                     </button>
                 </div>
-                <div class="equipment-indicator" :class="'indicator-' + (index % 4)"></div>
+
+                <ul v-if="unavailable[item.id]?.length" class="unavailable">
+                    <li v-for="(period, i) in unavailable[item.id]" :key="i">
+                        Nicht verfügbar: {{ formatPeriod(period) }}
+                    </li>
+                </ul>
             </article>
 
         </div>
@@ -324,14 +388,6 @@ async function submitReservation() {
     border-radius: var(--radius-s);
 }
 
-.check-button {
-    width: 100%;
-    min-height: 42px;
-    height: 42px;
-    font-size: 13px;
-    border-radius: var(--radius-tab);
-}
-
 .availability-section {
     display: flex;
     flex-direction: column;
@@ -370,7 +426,16 @@ async function submitReservation() {
 .equipment-item {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: var(--space-xs);
+    padding: var(--space-s) var(--space-m);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-tab);
+}
+
+.remove-button svg {
+    width: 16px;
+    height: 16px;
 }
 
 .equipment-header {
@@ -424,33 +489,14 @@ async function submitReservation() {
     background: #fbdada;
 }
 
-/* Farbige Leisten */
-
-.equipment-indicator {
-    width: 100%;
-    height: 19px;
-    border: 1px solid;
-    border-radius: 6px;
-}
-
-.indicator-0 {
-    background: var(--color-cal-blue);
-    border-color: #9bb7f5;
-}
-
-.indicator-1 {
-    background: var(--color-cal-green);
-    border-color: var(--color-available-accent);
-}
-
-.indicator-2 {
-    background: var(--color-cal-purple);
-    border-color: #b69bdc;
-}
-
-.indicator-3 {
-    background: var(--color-cal-yellow);
-    border-color: #e5ce83;
+.unavailable {
+    margin: 0;
+    padding: var(--space-xs) var(--space-s);
+    list-style: none;
+    font-size: 11px;
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-radius: var(--radius-s);
 }
 
 .empty-state {

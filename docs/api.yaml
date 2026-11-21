@@ -1238,8 +1238,7 @@ paths:
                                 $ref: '#/components/schemas/Reservation'
                 '400':
                     description: >
-                        Code nicht lesbar/ungültig formatiert oder `replaceItemId`
-                        ohne `confirmAdd: true` angegeben.
+                        `replaceItemId` ohne `confirmAdd: true` angegeben.
                     content:
                         application/json:
                             schema:

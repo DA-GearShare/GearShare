@@ -3,14 +3,17 @@
 namespace App\Controller;
 
 use App\Dto\ReservationCreateDto;
+use App\Dto\ReservationIssueScanDto;
 use App\Entity\Reservation;
 use App\Entity\ReservationItem;
 use App\Entity\User;
 use App\Enum\ReservationItemStatus;
 use App\Enum\ReservationStatus;
+use App\Repository\EquipmentRepository;
 use App\Repository\ReservationRepository;
 use DateInvalidTimeZoneException;
 use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -204,5 +207,69 @@ final class ReservationController extends AbstractController
         $items = array_map(fn($e) => $this->serializeReservation($e), $result);
 
         return $this->json(['items' => $items]);
+    }
+
+    #[Route('/{reservationId}/issue', name: 'global_issue', requirements: ['reservationId' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function globalIssue(
+        Uuid                   $reservationId,
+        Request                $request,
+        ReservationRepository  $reservationRepository,
+        EquipmentRepository    $equipmentRepository,
+        EntityManagerInterface $entityManager,
+    ): Response
+    {
+        $reservation = $reservationRepository->find($reservationId);
+        if ($reservation === null) {
+            return new Response('Reservierung nicht gefunden.', Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+            return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
+        }
+
+        $dto = ReservationIssueScanDto::fromArray($parameters);
+        if ($dto->hasErrors()) {
+            return new JsonResponse([
+                'message' => 'Invalider Request Body',
+                'errors' => $dto->getErrors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $equipment = $equipmentRepository->findByCode($dto->code);
+
+        if ($equipment === null) {
+            return new Response(sprintf('Kein Gerät mit code "%s" gefunden', $dto->code), Response::HTTP_NOT_FOUND);
+        }
+
+
+        $item = $reservation->getItems()->findFirst(
+            fn($key, ReservationItem $item) => $item->getRequestedEquipment()?->getId()?->equals($equipment->getId()) === true,
+        );
+
+        if ($item !== null) {
+            switch ($item->getStatus()) {
+                case ReservationItemStatus::Issued:
+                    return new JsonResponse(
+                        ['message' => 'Dieses Gerät wurde bereits ausgegeben.'],
+                        Response::HTTP_CONFLICT,
+                    );
+                case ReservationItemStatus::Requested:
+                case ReservationItemStatus::Returned:
+                    $item->setStatus(ReservationItemStatus::Issued);
+                    $item->setIssuedAt(new DateTimeImmutable());
+                    $item->setReturnedAt(null);
+                    $entityManager->flush();
+
+                    return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+            }
+        }
+
+        return new Response('temp', Response::HTTP_OK);
     }
 }

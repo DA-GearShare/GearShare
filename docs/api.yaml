@@ -1309,11 +1309,17 @@ paths:
 
 
                 - Entspricht das gescannte Gerät dem Gerät der Position, wird die
-                  Position als `issued` markiert.
+                  Position als `issued` markiert. Eine bereits zurückgegebene Position
+                  (`returned`) wird nur dann erneut ausgegeben, wenn das Gerät im
+                  Reservierungszeitraum nicht anderweitig reserviert ist.
 
                 - Handelt es sich um ein anderes Gerät, wird die Position aus der
                   Reservierung entfernt und das gescannte Gerät als neue Position
-                  hinzugefügt und als `issued` markiert.
+                  hinzugefügt und als `issued` markiert. Ersetzt werden können nur
+                  Positionen im Status `requested`.
+
+
+                Nur Reservierungen im Status `requested` oder `active` erlauben eine Ausgabe.
             requestBody:
                 required: true
                 content:
@@ -1321,6 +1327,7 @@ paths:
                         schema:
                             type: object
                             required: [ code ]
+                            additionalProperties: false
                             properties:
                                 code:
                                     type: string
@@ -1336,7 +1343,13 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Reservation'
                 '400':
-                    description: Code nicht lesbar/ungültig formatiert.
+                    description: |
+                        Ungültiger Request Body, z. B.:
+                        - kein gültiges JSON bzw. kein JSON-Objekt,
+                        - `code` fehlt oder ist leer,
+                        - unbekannte Felder (nur `code` ist erlaubt).
+
+                        Bei Validierungsfehlern enthält `errors` die Meldung pro Feld.
                     content:
                         application/json:
                             schema:
@@ -1346,7 +1359,9 @@ paths:
                 '403':
                     $ref: '#/components/responses/Forbidden'
                 '404':
-                    description: Reservierung, Position oder Gerät mit diesem Code nicht gefunden.
+                    description: >
+                        Reservierung nicht gefunden, die Position gehört nicht zu dieser
+                        Reservierung oder kein Gerät mit diesem Code gefunden.
                     content:
                         application/json:
                             schema:
@@ -1354,13 +1369,22 @@ paths:
                 '409':
                     description: |
                         Z. B. wenn:
-                        - die Position bereits ausgegeben wurde,
+                        - die Position (gleiches Gerät) bereits ausgegeben wurde,
+                        - beim Ersetzen die Position nicht mehr im Status `requested` ist
+                          (bereits ausgegeben oder zurückgegeben),
                         - das gescannte Gerät bereits eine andere Position dieser Reservierung
                           ist (stattdessen deren Scan verwenden),
                         - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
-                          oder nicht ausleihbar ist,
+                          oder gelöscht ist (gilt auch für die erneute Ausgabe einer
+                          zurückgegebenen Position),
                         - die Reservierung sich in einem Status befindet, der keine Ausgabe
-                          erlaubt (z. B. `denied`, `cancelled`, `returned`).
+                          erlaubt (`denied`, `cancelled`, `returned`).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MessageError'
+                '500':
+                    description: Die Position hat einen unbekannten Status.
                     content:
                         application/json:
                             schema:

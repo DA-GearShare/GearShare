@@ -47,7 +47,7 @@ docs/           API spec, DB schema
 
 - [Docker Compose](https://docs.docker.com/compose/install/) v2.10+
 - OAuth credentials for GitHub (see `config/packages/knpu_oauth2_client.yaml` for the required
-  environment variables) -> Store them in `.env.local`
+    environment variables) -> Store them in `.env.local`
 
 The Compose setup follows [Symfony Docker](https://github.com/dunglas/symfony-docker):
 

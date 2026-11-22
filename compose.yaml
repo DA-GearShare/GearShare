@@ -124,20 +124,20 @@ services:
             - |
                 EP=http://seaweedfs:8333
                 for B in $$BUCKETS; do
-                  ok=0
-                  for i in $$(seq 1 30); do
-                    if aws --endpoint-url $$EP s3api head-bucket --bucket $$B 2>/dev/null \
-                       || aws --endpoint-url $$EP s3 mb s3://$$B; then
-                      ok=1
-                      break
+                    ok=0
+                    for i in $$(seq 1 30); do
+                        if aws --endpoint-url $$EP s3api head-bucket --bucket $$B 2>/dev/null \
+                            || aws --endpoint-url $$EP s3 mb s3://$$B; then
+                            ok=1
+                            break
+                        fi
+                        sleep 2
+                    done
+                    if [ $$ok -ne 1 ]; then
+                        echo "could not create bucket $$B" >&2
+                        exit 1
                     fi
-                    sleep 2
-                  done
-                  if [ $$ok -ne 1 ]; then
-                    echo "could not create bucket $$B" >&2
-                    exit 1
-                  fi
-                  echo "bucket $$B ready"
+                    echo "bucket $$B ready"
                 done
         depends_on:
             seaweedfs:

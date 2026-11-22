@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore';
 
 export type ReservationStatus =
-    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
+    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
 
 export interface ReservationItem {
     id: string;

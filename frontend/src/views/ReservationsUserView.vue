@@ -4,7 +4,7 @@ import { useReservationStore } from '@/stores/ReservationStore';
 import ReservationUserCard from '@/components/ReservationUserCard.vue';
 
 export type ReservationStatus =
-    'requested' | 'accepted' | 'denied' | 'cancelled' | 'active' | 'returned';
+    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
 
 export interface ReservationItem {
     id: string;
@@ -31,7 +31,7 @@ export interface Reservation {
 const reservationStore = useReservationStore();
 
 const activeTab = ref('current');
-const currentStatus = ['requested', 'accepted', 'active'];
+const currentStatus = ['requested', 'active'];
 
 onMounted(() => {
     reservationStore.fetchReservations();

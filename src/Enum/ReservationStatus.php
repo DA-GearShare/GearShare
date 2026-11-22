@@ -7,7 +7,6 @@ namespace App\Enum;
 enum ReservationStatus: string
 {
     case Requested = 'requested';
-    case Accepted = 'accepted';
     case Denied = 'denied';
     case Active = 'active';
     case Returned = 'returned';

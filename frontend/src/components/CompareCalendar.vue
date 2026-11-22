@@ -146,7 +146,7 @@ const weekTitle = computed(() => {
                     class="entry"
                     :style="{ background: entry.color }"
                 >
-                    <strong>{{ entry.name }}</strong>
+                    <strong>{{ entry.name }} Reserviert</strong>
                     <span>{{ formatTime(entry.from, entry.dayEnd) }} – {{ formatTime(entry.to, entry.dayEnd) }}</span>
                 </div>
 

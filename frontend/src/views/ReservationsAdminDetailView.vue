@@ -275,10 +275,6 @@ function cancelAdd() {
                         <span v-else>IMG</span>
                     </div>
                     <strong>{{ getName(item) }}</strong>
-                    <span class="label">Abholung</span>
-                    <span class="hint">{{ formatDayMonthTime(selected.startDatetime) }}</span>
-                    <span class="label">Rückgabe</span>
-                    <span class="hint">{{ formatDayMonthTime(selected.endDatetime) }}</span>
                     <span class="label">Status</span>
                     <span class="hint">{{ statusLabel(item.status) }}</span>
                     <button type="button" class="btn-secondary scan-button" :disabled="!canIssue || item.status !== 'requested'" @click="scanItem(item)">
@@ -445,6 +441,12 @@ function cancelAdd() {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-s);
+}
+
+@media (max-width: 640px) {
+    .device-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .device-card {

@@ -6,6 +6,7 @@ import ReservationAdminCard from '@/components/ReservationAdminCard.vue';
 import ReservationDetailCard from '@/components/ReservationDetailCard.vue';
 import ScanModal from "@/components/ScanModal.vue";
 import type { Reservation, ReservationItem } from '@/types/reservation';
+import { useRouter } from 'vue-router';
 
 const reservationStore = useReservationStore();
 const equipmentStore = useEquipmentStore();
@@ -16,6 +17,7 @@ const scanItemTarget = ref<ReservationItem | null>(null);
 const pendingCode = ref('');
 const pendingEquipment = ref<{ name?: string } | null>(null);
 const replaceItemId = ref('');
+const router = useRouter();
 
 onMounted(() => {
     reservationStore.fetchReservations();
@@ -56,15 +58,7 @@ function getName(item: ReservationItem) {
 }
 
 function selectReservation(id: string) {
-    if (selectedId.value === id) {
-        selectedId.value = '';
-        return;
-    }
-
-    selectedId.value = id;
-    if (selectedReservation.value) {
-        loadNames(selectedReservation.value);
-    }
+    router.push(`/admin/reservierungen/${id}`);
 }
 
 function replaceReservation(updated: Reservation) {

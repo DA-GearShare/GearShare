@@ -3,10 +3,10 @@ import { useRoute } from "vue-router";
 import { computed, ref, watch } from "vue";
 import AccessoryCard from "@/components/AccessoryCard.vue";
 import { useAuthStore } from "@/stores/AuthStore.ts";
-import EquipmentAll from "@/components/EquipmentAll.vue";
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import EquipmentPhotos from "@/components/EquipmentPhotos.vue";
 import { useCartStore } from "@/stores/CartStore.ts";
+import AccessorieAdd from "@/components/AccessorieAdd.vue";
 import SingleEquipmentCalendar from "@/components/SingleEquipmentCalendar.vue";
 
 const cart = useCartStore();
@@ -139,9 +139,8 @@ function addToCart() {
     <div v-if="showPicker" class="overlay" @click.self="showPicker = false">
         <div class="popup">
             <button @click="showPicker = false">Schließen</button>
-            <EquipmentAll
-                picker-mode
-                :hide-id="String(route.params.id)"
+            <AccessorieAdd
+                :equipment-id="String(route.params.id)"
                 :exclude-ids="excludeIds"
                 @select="addAccessory"
             />

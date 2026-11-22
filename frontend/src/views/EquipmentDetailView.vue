@@ -7,6 +7,7 @@ import EquipmentAll from "@/components/EquipmentAll.vue";
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import EquipmentPhotos from "@/components/EquipmentPhotos.vue";
 import { useCartStore } from "@/stores/CartStore.ts";
+import SingleEquipmentCalendar from "@/components/SingleEquipmentCalendar.vue";
 
 const cart = useCartStore();
 
@@ -111,6 +112,11 @@ function addToCart() {
 
     <EquipmentPhotos available/>
 
+    <SingleEquipmentCalendar :equipment-id="String(route.params.id)" >
+        <button type="button" class="reserve-btn" @click="addToCart">Zur Reservierung hinzufügen</button>
+        <p v-if="message" class="message-info">{{ message }}</p>
+    </SingleEquipmentCalendar>
+
     <h2>Empfehlungen</h2>
 
     <p v-if="equipmentStore.filters.from && equipmentStore.filters.to">
@@ -141,8 +147,6 @@ function addToCart() {
             />
         </div>
     </div>
-    <button class="btn-secondary" @click="addToCart">Zum Warenkorb hinzufügen</button>
-    <p v-if="message" class="message-info">{{ message }}</p>
 </template>
 
 <style scoped>
@@ -163,5 +167,35 @@ function addToCart() {
     overflow-y: auto;
     padding: 20px;
     border-radius: 12px;
+}
+
+.reserve-btn {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 16px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFFFFF;
+    background: #12273C;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+}
+
+.reserve-btn:hover {
+    background: #2456C8;
+}
+
+.reserve-btn:focus-visible {
+    outline: 2px solid #2456C8;
+    outline-offset: 3px;
+}
+
+.message-info {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #374151;
+    text-align: center;
 }
 </style>

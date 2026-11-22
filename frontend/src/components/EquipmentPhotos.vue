@@ -203,8 +203,8 @@ async function deletePhoto(photoId: number) {
                 Noch keine Fotos vorhanden
             </div>
 
-            <div v-else class="gallery">
-                <div class="gallery__thumbs">
+            <div v-else class="gallery" :class="{ 'gallery--single': photos.length === 1 }">
+                <div v-if="photos.length > 1" class="gallery__thumbs">
                     <button
                         v-for="photo in photos"
                         :key="photo.id"
@@ -220,7 +220,7 @@ async function deletePhoto(photoId: number) {
                 <div class="gallery__main">
                     <div class="main-frame">
                         <img :src="selectedPhoto?.url" alt="Equipment-Foto"/>
-                        <span v-if="selectedPhoto?.isMain" class="tag tag-available main-label">
+                        <span v-if="selectedPhoto?.isMain &&  isAdmin" class="tag tag-available main-label">
                             Hauptbild
                         </span>
                     </div>
@@ -248,7 +248,6 @@ async function deletePhoto(photoId: number) {
         </div>
 
         <div v-if="equipment" class="info">
-            <p class="eyebrow">{{ equipment.type }}</p>
             <h1 class="name">{{ equipment.model }}</h1>
             <span class="tag">{{ equipment.name }}</span>
 
@@ -259,13 +258,17 @@ async function deletePhoto(photoId: number) {
 
             <div class="facts">
                 <div class="fact">
+                    <p class="meta">Typ</p>
+                    <p class="fact-value">{{ equipment.type }}</p>
+                </div>
+                <div class="fact">
                     <p class="meta">Abholort</p>
                     <p class="fact-value">{{ equipment.location }}</p>
                 </div>
             </div>
         </div>
 
-        <p class="meta photo-count">
+        <p class="meta photo-count" v-if="isAdmin">
             {{ photos.length }} / {{ maxPhotos }} Fotos
         </p>
 
@@ -346,6 +349,10 @@ async function deletePhoto(photoId: number) {
     opacity: 1;
 }
 
+.gallery--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .main-frame {
     position: relative;
     aspect-ratio: 4 / 3;
@@ -404,7 +411,6 @@ async function deletePhoto(photoId: number) {
 
 .info {
     margin-top: var(--space-l);
-    margin-left: calc(var(--thumb-col) + var(--space-m));
 }
 
 .name {
@@ -417,16 +423,19 @@ async function deletePhoto(photoId: number) {
 }
 
 .facts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-m);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
     margin-top: var(--space-l);
 }
 
 .fact {
+    flex: 1 1 auto;
+    min-width: 0;
     padding: var(--space-m) var(--space-l);
     background: var(--color-background);
     border-radius: var(--radius-tab);
+    overflow-wrap: anywhere;
 }
 
 .fact .meta {

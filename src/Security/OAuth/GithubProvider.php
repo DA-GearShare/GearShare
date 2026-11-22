@@ -31,17 +31,22 @@ final class GithubProvider implements OAuthProviderInterface
 
         return new OAuthUserData(
             provider: 'github',
-            providerUserId: (string)$gh->getId(),
+            providerUserId: (string) $gh->getId(),
             email: $email,
             displayName: $gh->getName() ?? $gh->getNickname(),
         );
+    }
+
+    public function getName(): string
+    {
+        return 'github';
     }
 
     private function fetchPrimaryEmail(string $token): ?string
     {
         $emails = $this->http->request('GET', 'https://api.github.com/user/emails', [
             'headers' => [
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
                 'Accept' => 'application/vnd.github+json',
             ],
         ])->toArray(false);
@@ -53,10 +58,5 @@ final class GithubProvider implements OAuthProviderInterface
         }
 
         return null;
-    }
-
-    public function getName(): string
-    {
-        return 'github';
     }
 }

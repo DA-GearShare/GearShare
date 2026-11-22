@@ -2,13 +2,13 @@
 
 namespace App\Repository;
 
+use App\Entity\Equipment;
 use App\Entity\ReservationItem;
+use App\Enum\ReservationStatus;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
-use App\Entity\Equipment;
-use DateTimeImmutable;
-use App\Enum\ReservationStatus;
 
 /**
  * @extends ServiceEntityRepository<ReservationItem>
@@ -22,6 +22,7 @@ class ReservationItemRepository extends ServiceEntityRepository
 
     /**
      * @param Equipment[] $equipment
+     *
      * @return string[]
      */
     public function findReservedEquipmentIds(array $equipment, DateTimeImmutable $from, DateTimeImmutable $to): array
@@ -42,11 +43,13 @@ class ReservationItemRepository extends ServiceEntityRepository
 
         return $ids;
     }
+
     public function findInPeriod(array $equipment, DateTimeImmutable $from, DateTimeImmutable $to): array
     {
         if ($equipment === []) {
             return [];
         }
+
         return $this->getReservationItemsQB($equipment, $from, $to)
             ->addSelect('r')
             ->andWhere('r.status NOT IN (:inactive)')
@@ -55,6 +58,7 @@ class ReservationItemRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
     public function getReservationItemsQB(array $equipment, DateTimeImmutable $from, DateTimeImmutable $to): QueryBuilder
     {
         return $this->createQueryBuilder('ri')
@@ -67,28 +71,28 @@ class ReservationItemRepository extends ServiceEntityRepository
             ->setParameter('to', $to);
     }
 
-//    /**
-//     * @return ReservationItem[] Returns an array of ReservationItem objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    //    /**
+    //     * @return ReservationItem[] Returns an array of ReservationItem objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('r')
+    //            ->andWhere('r.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('r.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-//    public function findOneBySomeField($value): ?ReservationItem
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?ReservationItem
+    //    {
+    //        return $this->createQueryBuilder('r')
+    //            ->andWhere('r.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 }

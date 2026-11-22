@@ -13,7 +13,9 @@ const authStore = useAuthStore();
 const store = useEquipmentStore();
 const compare = useCompareStore();
 
-const showCalendar = computed(() => compare.items.length > 0);
+const showCalendar = computed(() => {
+    return compare.items.length > 0;
+});
 
 onMounted(() => {
     store.fetchEquipment();

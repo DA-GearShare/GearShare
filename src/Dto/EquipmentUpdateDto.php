@@ -19,12 +19,12 @@ final class EquipmentUpdateDto
      * @param array<string, string> $errors
      */
     private function __construct(
-        public readonly string  $name = '',
-        public readonly string  $location = '',
-        public readonly string  $type = '',
-        public readonly string  $model = '',
+        public readonly string $name = '',
+        public readonly string $location = '',
+        public readonly string $type = '',
+        public readonly string $model = '',
         public readonly ?string $code = null,
-        private readonly array  $errors = [],
+        private readonly array $errors = [],
     ) {
     }
 
@@ -41,14 +41,14 @@ final class EquipmentUpdateDto
         }
 
         foreach (self::REQUIRED_STRINGS as $field) {
-            if (!array_key_exists($field, $data)) {
+            if (!\array_key_exists($field, $data)) {
                 $errors[$field] = 'Pflichtfeld';
-            } elseif (!is_string($data[$field])) {
+            } elseif (!\is_string($data[$field])) {
                 $errors[$field] = 'Muss ein String sein';
             } elseif (($value = trim($data[$field])) === '') {
                 $errors[$field] = 'Darf nicht leer sein';
             } elseif (mb_strlen($value) > self::MAX_LENGTH) {
-                $errors[$field] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
+                $errors[$field] = \sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
             } else {
                 $values[$field] = $value;
             }
@@ -56,12 +56,12 @@ final class EquipmentUpdateDto
 
         $code = null;
         if (isset($data['code'])) {
-            if (!is_string($data['code'])) {
+            if (!\is_string($data['code'])) {
                 $errors['code'] = 'Muss ein String oder null sein';
             } else {
                 $code = trim($data['code']);
                 if (mb_strlen($code) > self::MAX_LENGTH) {
-                    $errors['code'] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
+                    $errors['code'] = \sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
                 }
                 $code = $code === '' ? null : $code;
             }

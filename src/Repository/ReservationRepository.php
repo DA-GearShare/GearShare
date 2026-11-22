@@ -33,14 +33,6 @@ class ReservationRepository extends ServiceEntityRepository
         parent::__construct($registry, Reservation::class);
     }
 
-    /**
-     * @param Uuid|null $userId
-     * @param ReservationStatus|null $status
-     * @param bool|null $overdue
-     * @param int $page
-     * @param int $pageSize
-     * @return array
-     */
     public function findPaginated(?Uuid $userId, ?ReservationStatus $status, ?bool $overdue, int $page, int $pageSize): array
     {
         $qb = $this->createQueryBuilder('r')
@@ -86,12 +78,12 @@ class ReservationRepository extends ServiceEntityRepository
 
         return [
             'items' => iterator_to_array($paginator),
-            'totalItems' => count($paginator),
+            'totalItems' => \count($paginator),
         ];
     }
 
     /**
-     * Legt eine Reservierungsanfrage an
+     * Legt eine Reservierungsanfrage an.
      *
      * Verfügbarkeit: Ein Gerät ist belegt, wenn es in einer überlappenden,
      * noch offenen Reservierung tatsächlich (assigned) bzw. angefragt (requested)
@@ -105,15 +97,56 @@ class ReservationRepository extends ServiceEntityRepository
     public function createFromDto(ReservationCreateDto $dto, User $user): Reservation|Response
     {
         return $this->getEntityManager()->wrapInTransaction(
-            fn(EntityManagerInterface $em): Reservation|Response => $this->createLocked($em, $dto, $user)
+            fn (EntityManagerInterface $em): Reservation|Response => $this->createLocked($em, $dto, $user)
         );
     }
 
     /**
-     * @param EntityManagerInterface $em
-     * @param ReservationCreateDto $dto
-     * @param User $user
-     * @return Reservation|Response
+     * Checks, whether equipment is available in given time periode. Positon of the Reservation `$exclude` are ignored.
+     */
+    public function isEquipmentAvailable(Equipment $equipment, DateTimeImmutable $start, DateTimeImmutable $end, ?Reservation $exclude = null): bool
+    {
+        $qb = $this->blockingItemsQuery($start, $end)
+            ->select('COUNT(ri.id)')
+            ->andWhere('ri.requestedEquipment = :equipment')
+            ->setParameter('equipment', $equipment);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() === 0;
+    }
+
+    public function findOverdue(): mixed
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->leftJoin('r.items', 'i')
+            ->addSelect('i')
+            ->orderBy('r.startDatetime', 'DESC')
+            ->addOrderBy('r.id', 'ASC');
+
+        $unreturned = $this->getEntityManager()->createQueryBuilder()
+            ->select('1')
+            ->from(ReservationItem::class, 'ri')
+            ->where('ri.reservation = r')
+            ->andWhere('ri.status != :returned')
+            ->getDQL();
+
+        $isOverdue = $qb->expr()->andX(
+            'r.endDatetime < :now',
+            $qb->expr()->exists($unreturned),
+        );
+
+        $qb->andWhere($isOverdue)
+            ->setParameter('now', new DateTimeImmutable())
+            ->setParameter('returned', ReservationItemStatus::Returned);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @throws ORMException
      * @throws OptimisticLockException
      */
@@ -129,7 +162,7 @@ class ReservationRepository extends ServiceEntityRepository
         foreach ($equipmentIds as $id) {
             $e = $em->find(Equipment::class, $id, LockMode::PESSIMISTIC_WRITE);
             if ($e === null || $e->isDeleted()) {
-                $notFound[sprintf('equipmentIds[%d]', array_search($id, $dto->equipmentIds, true))] = 'Gerät nicht gefunden';
+                $notFound[\sprintf('equipmentIds[%d]', array_search($id, $dto->equipmentIds, true))] = 'Gerät nicht gefunden';
                 continue;
             }
             $equipment[$id] = $e;
@@ -202,6 +235,7 @@ class ReservationRepository extends ServiceEntityRepository
 
     /**
      * @param list<Equipment> $equipment
+     *
      * @return list<string>
      */
     private function findBusyEquipmentIds(array $equipment, DateTimeImmutable $start, DateTimeImmutable $end): array
@@ -215,64 +249,9 @@ class ReservationRepository extends ServiceEntityRepository
 
         $busy = [];
         foreach ($rows as $row) {
-            $busy[] = strtolower((string) ($row['requested']));
+            $busy[] = strtolower((string) $row['requested']);
         }
 
         return array_values(array_unique($busy));
-    }
-
-
-    /**
-     * Checks, whether equipment is available in given time periode. Positon of the Reservation `$exclude` are ignored.
-     *
-     * @param Equipment $equipment
-     * @param DateTimeImmutable $start
-     * @param DateTimeImmutable $end
-     * @param Reservation|null $exclude
-     * @return bool
-     */
-    public function isEquipmentAvailable(Equipment $equipment, DateTimeImmutable $start, DateTimeImmutable $end, ?Reservation $exclude = null): bool
-    {
-        $qb = $this->blockingItemsQuery($start, $end)
-            ->select('COUNT(ri.id)')
-            ->andWhere('ri.requestedEquipment = :equipment')
-            ->setParameter('equipment', $equipment);
-
-        if ($exclude !== null) {
-            $qb->andWhere('r != :exclude')
-                ->setParameter('exclude', $exclude);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult() === 0;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function findOverdue(): mixed
-    {
-        $qb = $this->createQueryBuilder('r')
-            ->leftJoin('r.items', 'i')
-            ->addSelect('i')
-            ->orderBy('r.startDatetime', 'DESC')
-            ->addOrderBy('r.id', 'ASC');
-
-            $unreturned = $this->getEntityManager()->createQueryBuilder()
-                ->select('1')
-                ->from(ReservationItem::class, 'ri')
-                ->where('ri.reservation = r')
-                ->andWhere('ri.status != :returned')
-                ->getDQL();
-
-            $isOverdue = $qb->expr()->andX(
-                'r.endDatetime < :now',
-                $qb->expr()->exists($unreturned),
-            );
-
-            $qb->andWhere($isOverdue)
-                ->setParameter('now', new DateTimeImmutable())
-                ->setParameter('returned', ReservationItemStatus::Returned);
-
-        return $qb->getQuery()->getResult();
     }
 }

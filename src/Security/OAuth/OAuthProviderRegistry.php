@@ -13,7 +13,8 @@ final class OAuthProviderRegistry
     private array $providers = [];
 
     public function __construct(
-        #[AutowireIterator('app.oauth_provider')] iterable $providers,
+        #[AutowireIterator('app.oauth_provider')]
+        iterable $providers,
     ) {
         foreach ($providers as $provider) {
             $this->providers[$provider->getName()] = $provider;
@@ -23,6 +24,6 @@ final class OAuthProviderRegistry
     public function get(string $name): OAuthProviderInterface
     {
         return $this->providers[$name]
-            ?? throw new NotFoundHttpException(sprintf('Unknown OAuth provider "%s".', $name));
+            ?? throw new NotFoundHttpException(\sprintf('Unknown OAuth provider "%s".', $name));
     }
 }

@@ -22,10 +22,11 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 class OAuthAuthenticator extends OAuth2Authenticator
 {
     public function __construct(
-        private readonly ClientRegistry                            $clientRegistry,
-        private readonly OAuthProviderRegistry                     $providers,
-        private readonly EntityManagerInterface                    $em,
-        #[Autowire('%env(FRONTEND_URL)%')] private readonly string $frontendUrl,
+        private readonly ClientRegistry $clientRegistry,
+        private readonly OAuthProviderRegistry $providers,
+        private readonly EntityManagerInterface $em,
+        #[Autowire('%env(FRONTEND_URL)%')]
+        private readonly string $frontendUrl,
     ) {
     }
 

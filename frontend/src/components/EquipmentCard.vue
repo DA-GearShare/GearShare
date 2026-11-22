@@ -54,7 +54,9 @@ async function loadMainPhoto() {
         if (!res.ok) return;
 
         const photos: EquipmentPhoto[] = await res.json();
-        mainPhoto.value = photos.find(photo => photo.isMain === true || photo.is_main === true) ?? null;
+        mainPhoto.value = photos.find(photo => {
+            return photo.isMain === true || photo.is_main === true;
+        }) ?? null;
     } catch (error) {
         console.error("Hauptbild konnte nicht geladen werden:", error);
     }

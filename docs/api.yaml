@@ -1207,7 +1207,9 @@ paths:
                 **Ablauf:**
 
                 1. Ist das gescannte Gerät bereits als Position in der Reservierung
-                   enthalten, wird diese Position als `issued` markiert.
+                   enthalten, wird diese Position als `issued` markiert. Eine bereits
+                   zurückgegebene Position (`returned`) wird nur dann erneut ausgegeben,
+                   wenn das Gerät im Reservierungszeitraum nicht anderweitig reserviert ist.
 
                 2. Ist das Gerät **nicht** in der Reservierung enthalten und
                    `confirmAdd` ist `false` (Standard), wird nichts geändert und
@@ -1220,7 +1222,11 @@ paths:
                    Position hinzugefügt und als `issued` markiert. Wird zusätzlich
                    `replaceItemId` angegeben (Auswahl per Dropdown aus den
                    Positionen der Reservierung), wird diese Position aus der
-                   Reservierung entfernt (das neue Gerät ersetzt sie).
+                   Reservierung entfernt (das neue Gerät ersetzt sie). Ersetzt werden
+                   können nur Positionen im Status `requested`.
+
+
+                Nur Reservierungen im Status `requested` oder `active` erlauben eine Ausgabe.
             requestBody:
                 required: true
                 content:
@@ -1237,8 +1243,14 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Reservation'
                 '400':
-                    description: >
-                        `replaceItemId` ohne `confirmAdd: true` angegeben.
+                    description: |
+                        Ungültiger Request Body, z. B.:
+                        - kein gültiges JSON bzw. kein JSON-Objekt,
+                        - `code` fehlt oder ist leer, unbekannte Felder,
+                        - `confirmAdd` ist kein Boolean, `replaceItemId` ist keine UUID,
+                        - `replaceItemId` ohne `confirmAdd: true` angegeben.
+
+                        Bei Validierungsfehlern enthält `errors` die Meldung pro Feld.
                     content:
                         application/json:
                             schema:
@@ -1250,7 +1262,8 @@ paths:
                 '404':
                     description: >
                         Reservierung nicht gefunden, kein Gerät mit diesem Code
-                        gefunden oder kein Gerät mit der `replaceItemId` gefunden.
+                        gefunden oder die `replaceItemId` ist keine Position dieser
+                        Reservierung.
                     content:
                         application/json:
                             schema:
@@ -1260,18 +1273,28 @@ paths:
                         Gerät ist nicht in der Reservierung enthalten → Rückfrage nötig (siehe Ablauf).
                         Antwort ist dann `EquipmentNotInReservation` (erkennbar am Feld `equipment`).
 
-                        Sonst eine `MessageError`, z. B. wenn:
-                        - das Gerät bzw. die zu ersetzende Position bereits ausgegeben wurde,
+                        Sonst eine `MessageError`, wenn:
+                        - das Gerät in dieser Reservierung bereits ausgegeben ist,
+                        - die zu ersetzende Position nicht mehr im Status `requested` ist
+                          (bereits ausgegeben oder zurückgegeben),
                         - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
-                          oder nicht ausleihbar ist,
+                          oder gelöscht ist (gilt auch für die erneute Ausgabe einer
+                          zurückgegebenen Position),
                         - die Reservierung sich in einem Status befindet, der keine Ausgabe
-                          erlaubt (z. B. `denied`, `cancelled`, `returned`).
+                          erlaubt (`denied`, `cancelled`, `returned`).
                     content:
                         application/json:
                             schema:
                                 oneOf:
                                     -   $ref: '#/components/schemas/EquipmentNotInReservation'
                                     -   $ref: '#/components/schemas/MessageError'
+                '500':
+                    description: >
+                        Die gefundene Position hat einen unbekannten Status.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MessageError'
 
     /reservations/{reservationId}/items/{itemId}/issue:
         parameters:
@@ -2407,7 +2430,7 @@ components:
                     description: >
                         Nur zusammen mit `confirmAdd: true`. Position der Reservierung,
                         die durch das gescannte Gerät ersetzt (entfernt) werden soll.
-                        Die Position darf noch nicht ausgegeben sein. Weglassen bzw.
+                        Die Position muss im Status `requested` sein. Weglassen bzw.
                         `null`, um das Gerät zusätzlich hinzuzufügen.
 
         MessageError:
@@ -2417,6 +2440,13 @@ components:
                 message:
                     type: string
                     example: "Diese Position wurde bereits ausgegeben."
+                errors:
+                    type: object
+                    description: Nur bei Validierungsfehlern (400). Meldung pro Feld.
+                    additionalProperties:
+                        type: string
+                    example:
+                        code: "Pflichtfeld, muss ein nicht-leerer String sein"
 
         EquipmentNotInReservation:
             type: object

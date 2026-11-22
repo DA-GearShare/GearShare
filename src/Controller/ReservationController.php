@@ -223,7 +223,7 @@ final class ReservationController extends AbstractController
     {
         $reservation = $reservationRepository->find($reservationId);
         if ($reservation === null) {
-            return new Response('Reservierung nicht gefunden.', Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Reservierung nicht gefunden.'], Response::HTTP_NOT_FOUND);
         } else if (!in_array($reservation->getStatus(), [ReservationStatus::Requested, ReservationStatus::Active], true)) {
             return new JsonResponse(['message' => 'Reservierung erlaubt keine Ausgabe.'], Response::HTTP_CONFLICT);
         }
@@ -231,10 +231,10 @@ final class ReservationController extends AbstractController
         try {
             $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'Malformed JSON'], Response::HTTP_BAD_REQUEST);
         }
         if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
-            return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'Body muss ein JSON Objekt sein'], Response::HTTP_BAD_REQUEST);
         }
 
         $dto = ReservationIssueScanDto::fromArray($parameters);
@@ -248,7 +248,10 @@ final class ReservationController extends AbstractController
         $equipment = $equipmentRepository->findByCode($dto->code);
 
         if ($equipment === null) {
-            return new Response(sprintf('Kein Gerät mit code "%s" gefunden', $dto->code), Response::HTTP_NOT_FOUND);
+            return new JsonResponse(
+                ['message' => sprintf('Kein Gerät mit code "%s" gefunden', $dto->code)],
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
 
@@ -264,12 +267,30 @@ final class ReservationController extends AbstractController
                         ['message' => 'Dieses Gerät wurde bereits ausgegeben.'],
                         Response::HTTP_CONFLICT,
                     );
-                case ReservationItemStatus::Requested:
                 case ReservationItemStatus::Returned:
+                    // A returned position doesn't block the equipment
+                    $available = $reservationRepository->isEquipmentAvailable(
+                        $equipment,
+                        $reservation->getStartDatetime(),
+                        $reservation->getEndDatetime(),
+                        $reservation,
+                    );
+                    if (!$available) {
+                        return new JsonResponse(
+                            ['message' => 'Das Gerät ist im Zeitraum der Reservierung nicht verfügbar.'],
+                            Response::HTTP_CONFLICT,
+                        );
+                    }
+                // fallthrough
+                case ReservationItemStatus::Requested:
                     $item->setStatus(ReservationItemStatus::Issued);
                     $item->setIssuedAt(new DateTimeImmutable());
                     $item->setReturnedAt(null);
                     $em->persist($item);
+
+                    $reservation->setStatus(ReservationStatus::Active);
+                    $em->persist($reservation);
+
                     $em->flush();
 
                     return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
@@ -305,7 +326,8 @@ final class ReservationController extends AbstractController
                             );
                         }
 
-                        if ($replacedItem->getStatus() === ReservationItemStatus::Issued) {
+                        // Only replace requested Equipment (History)
+                        if ($replacedItem->getStatus() !== ReservationItemStatus::Requested) {
                             return new JsonResponse(
                                 ['message' => 'Die zu ersetzende Position wurde bereits ausgegeben.'],
                                 Response::HTTP_CONFLICT,
@@ -319,7 +341,8 @@ final class ReservationController extends AbstractController
                         new ReservationItem()
                             ->setRequestedEquipment($equipment)
                             ->setStatus(ReservationItemStatus::Issued)
-                            ->setIssuedAt(new DateTimeImmutable()));
+                            ->setIssuedAt(new DateTimeImmutable()))
+                        ->setStatus(ReservationStatus::Active);
 
                     $em->persist($reservation);
                     $em->flush();

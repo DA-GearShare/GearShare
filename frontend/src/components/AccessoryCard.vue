@@ -13,19 +13,111 @@ const cart = useCartStore();
 </script>
 
 <template>
-    <div :class="{ unavailable: !available }">
-        <h3>{{name}}</h3>
-        <span v-if="!available">Nicht verfügbar</span>
-        <button v-if="isAdmin" @click="emit('remove', id)">Entfernen</button>
-        <span v-else>
-            <button :hidden="!available || cart.has(id)" @click="cart.add(id)">{{ cart.has(id) ? '✓' : '+' }}</button>
-            <button :hidden="!available || cart.hasNot(id)" @click="cart.remove(id)">-</button>
+    <div class="accessory-card" :class="{ unavailable: !available }">
+        <div class="accessory-thumb"></div>
+
+        <div class="accessory-info">
+            <h3>{{ name }}</h3>
+            <div class="accessory-tags">
+                <span class="accessory-tag">{{ available ? 'Verfügbar' : 'Nicht verfügbar' }}</span>
+            </div>
+        </div>
+
+        <button v-if="isAdmin" class="accessory-btn remove" @click="emit('remove', id)">Entfernen</button>
+        <span v-else class="accessory-actions">
+            <button class="accessory-btn" :hidden="!available || cart.has(id)" @click="cart.add(id)">{{ cart.has(id) ? '✓' : '+' }}</button>
+            <button class="accessory-btn" :hidden="!available || cart.hasNot(id)" @click="cart.remove(id)">-</button>
         </span>
     </div>
 </template>
 
 <style scoped>
-    .unavailable {
-        opacity: 0.5;
-    }
+.accessory-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    margin-bottom: 14px;
+    background: #FFFFFF;
+    border: 1px solid #E8EAEE;
+    border-radius: 16px;
+}
+
+.accessory-thumb {
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(145deg, #F3F4F6, #E9EDF1);
+    border-radius: 12px;
+}
+
+.accessory-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.accessory-info h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 700;
+    color: #111827;
+    overflow-wrap: anywhere;
+}
+
+.accessory-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.accessory-tag {
+    padding: 2px 8px;
+    font-size: 12px;
+    line-height: 18px;
+    color: #374151;
+    background: #F3F4F6;
+    border-radius: 999px;
+}
+
+.accessory-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+}
+
+.accessory-btn {
+    flex-shrink: 0;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 20px;
+    color: #111827;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.accessory-btn:hover {
+    background: #F3F4F6;
+}
+
+.accessory-btn:focus-visible {
+    outline: 2px solid #2456C8;
+    outline-offset: 3px;
+}
+
+.accessory-btn.remove {
+    font-size: 13px;
+    font-weight: 700;
+    color: #B91C1C;
+    background: #FEECEC;
+    border-color: #FEECEC;
+}
+
+.unavailable {
+    opacity: 0.5;
+}
 </style>

@@ -354,4 +354,110 @@ final class ReservationController extends AbstractController
 
         return new JsonResponse(['message' => 'Unbekannter Positionsstatus.'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
+
+    #[Route('/reservations/{reservationId}/items/{itemId}/issue', name: 'item_issue', requirements: ['reservationId' => Requirement::UUID, 'itemId' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function itemIssue(
+        Uuid                   $reservationId,
+        Uuid                   $itemId,
+        Request                $request,
+        ReservationRepository  $reservationRepository,
+        EquipmentRepository    $equipmentRepository,
+        EntityManagerInterface $em,
+    ): Response
+    {
+        $reservation = $reservationRepository->find($reservationId);
+        if ($reservation === null) {
+            return new JsonResponse(['message' => 'Reservierung nicht gefunden.'], Response::HTTP_NOT_FOUND);
+        } else if (!in_array($reservation->getStatus(), [ReservationStatus::Requested, ReservationStatus::Active], true)) {
+            return new JsonResponse(['message' => 'Reservierung erlaubt keine Ausgabe.'], Response::HTTP_CONFLICT);
+        }
+
+        try {
+            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return new JsonResponse(['message' => 'Malformed JSON'], Response::HTTP_BAD_REQUEST);
+        }
+        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+            return new JsonResponse(['message' => 'Body muss ein JSON Objekt sein'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $dto = ReservationIssueScanDto::fromArray($parameters);
+        if ($dto->hasErrors()) {
+            return new JsonResponse([
+                'message' => 'Invalider Request Body',
+                'errors' => $dto->getErrors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($dto->replaceItemId !== null || $dto->confirmAdd !== null) {
+            return new JsonResponse(['message' => 'Invalider Request Body']);
+        }
+
+        $equipment = $equipmentRepository->find($itemId);
+
+        if ($equipment === null) {
+            return new JsonResponse(
+                ['message' => sprintf('Kein Gerät mit code "%s" gefunden', $dto->code)],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        if ($equipment->getCode() !== $dto->code) {
+            return new JsonResponse(
+                ['message' => 'Code passt nicht zu Equipment'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+
+        $item = $reservation->getItems()->findFirst(
+            fn($key, ReservationItem $item) => $item->getRequestedEquipment()?->getId()?->equals($equipment->getId()) === true,
+        );
+
+        // Equipment part of reservation
+        if ($item !== null) {
+            switch ($item->getStatus()) {
+                case ReservationItemStatus::Issued:
+                    return new JsonResponse(
+                        ['message' => 'Dieses Gerät wurde bereits ausgegeben.'],
+                        Response::HTTP_CONFLICT,
+                    );
+                case ReservationItemStatus::Returned:
+                    // A returned position doesn't block the equipment
+                    $available = $reservationRepository->isEquipmentAvailable(
+                        $equipment,
+                        $reservation->getStartDatetime(),
+                        $reservation->getEndDatetime(),
+                        $reservation,
+                    );
+                    if (!$available) {
+                        return new JsonResponse(
+                            ['message' => 'Das Gerät ist im Zeitraum der Reservierung nicht verfügbar.'],
+                            Response::HTTP_CONFLICT,
+                        );
+                    }
+                // fallthrough
+                case ReservationItemStatus::Requested:
+                    $item->setStatus(ReservationItemStatus::Issued);
+                    $item->setIssuedAt(new DateTimeImmutable());
+                    $item->setReturnedAt(null);
+                    $em->persist($item);
+
+                    $reservation->setStatus(ReservationStatus::Active);
+                    $em->persist($reservation);
+
+                    $em->flush();
+
+                    return $this->json($this->serializeReservation($reservation), Response::HTTP_OK);
+            }
+        } else {
+            return new JsonResponse(
+                ['message' => 'Equipment nicht teil der Reservierung.'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        return new JsonResponse(['message' => 'Unbekannter Positionsstatus.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
 }

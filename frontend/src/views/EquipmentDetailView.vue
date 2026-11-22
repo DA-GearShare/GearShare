@@ -99,11 +99,11 @@ function formatDate(value: string) {
 function addToCart() {
     const id = route.params.id as string;
     if (cart.has(id)) {
-        message.value = 'Das Equipment ist bereits im Warenkorb.';
+        message.value = 'Das Equipment ist bereits in der Reservierung.';
         return;
     }
     cart.add(id);
-    message.value = 'Equipment erfolgreich zum Warenkorb hinzugefügt.';
+    message.value = 'Equipment erfolgreich zur Reservierung hinzugefügt.';
 }
 
 </script>
@@ -133,7 +133,7 @@ function addToCart() {
         @remove="removeAccessory"
     />
 
-    <button v-if="isAdmin" @click="showPicker = true">Accessory hinzufügen</button>
+    <button v-if="isAdmin" @click="showPicker = true" class="btn-primary">Accessory hinzufügen</button>
     <p v-if="error">{{ error }}</p>
 
     <div v-if="showPicker" class="overlay" @click.self="showPicker = false">

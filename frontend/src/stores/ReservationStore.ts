@@ -1,6 +1,15 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
+async function readError(res: Response, fallback: string): Promise<string> {
+    try {
+        const data = await res.json();
+        return data.message || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
 export const useReservationStore = defineStore('reservation', () => {
     const reservations = ref();
     const reservationItems = ref();
@@ -66,7 +75,10 @@ export const useReservationStore = defineStore('reservation', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error('Status ' + res.status);
+            if (!res.ok) {
+                error.value = await readError(res, "Das Gerät konnte nicht als ausgegeben markiert werden.");
+                return;
+            }
             return await res.json();
         } catch (e) {
             console.error(e);
@@ -89,10 +101,17 @@ export const useReservationStore = defineStore('reservation', () => {
 
             if (res.status === 409) {
                 const data = await res.json();
-                return { conflict: true, equipment: data.equipment };
+                if (data.equipment) {
+                    return { conflict: true, equipment: data.equipment };
+                }
+                error.value = data.message || "Der Scan konnte nicht verarbeitet werden.";
+                return;
             }
 
-            if (!res.ok) throw new Error('Status ' + res.status);
+            if (!res.ok) {
+                error.value = await readError(res, "Der Scan konnte nicht verarbeitet werden.");
+                return;
+            }
             return await res.json();
         } catch (e) {
             console.error(e);

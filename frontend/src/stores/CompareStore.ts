@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
-import {computed, ref} from "vue";
+import { computed, ref } from "vue";
 
 export const useCompareStore = defineStore('compare', () => {
     const maxEquipments = 10;
     const items = ref<string[]>([]);
 
-    const isFull = computed(() => items.length >= maxEquipments);
+    const isFull = computed(() => {
+        return items.value.length >= maxEquipments;
+    });
 
     function has(id: string){
         return items.value.includes(id);
@@ -16,10 +18,12 @@ export const useCompareStore = defineStore('compare', () => {
         }
     }
     function remove(id: string){
-        items.value = items.value.filter(i => i !== id);
+        items.value = items.value.filter(i => {
+            return i !== id;
+        });
     }
     function clear(){
         items.value = [];
     }
-    return {items, maxEquipments, isFull, has, add, remove, clear}
-})
+    return { items, maxEquipments, isFull, has, add, remove, clear };
+});

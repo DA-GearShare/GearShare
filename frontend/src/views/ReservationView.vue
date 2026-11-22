@@ -333,17 +333,6 @@ async function submitReservation() {
 
 
 <style scoped>
-.reservation-page {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-m);
-    width: 100%;
-    max-width: 560px;
-    margin: 0 auto;
-    padding: var(--space-m);
-    color: var(--color-text-primary);
-}
-
 .reservation-page h1 {
     margin: 0 0 var(--space-xs);
     font-size: 21px;

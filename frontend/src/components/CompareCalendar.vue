@@ -35,7 +35,7 @@ const days = computed(() => {
         result[i] = day;
     }
     return result;
-})
+});
 async function load() {
     error.value = '';
 
@@ -66,7 +66,9 @@ async function load() {
     calendarData.value = await res.json();
 }
 
-watch(() => [compare.items.join(','), weekOffset.value], load, { immediate: true });
+watch(() => {
+    return [compare.items.join(','), weekOffset.value];
+}, load, { immediate: true });
 
 function entriesFor(day: Date) {
     const dayEnd = new Date(day);
@@ -91,7 +93,9 @@ function entriesFor(day: Date) {
         });
     });
 
-    return entries.sort((a, b) => a.from - b.from);
+    return entries.sort((a, b) => {
+        return a.from - b.from;
+    });
 }
 
 function formatTime(date: Date, dayEnd: Date) {

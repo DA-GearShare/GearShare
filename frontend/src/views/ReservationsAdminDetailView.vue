@@ -224,7 +224,7 @@ function cancelAdd() {
         <section v-if="selected" class="card detail">
             <div>
                 <h2 class="detail-name">{{ personName(selected) }}</h2>
-                <span class="hint">R-{{ selected.id.slice(-4).toUpperCase() }} · {{ statusLabel(selected.status) }}</span>
+                <span class="hint">{{ statusLabel(selected.status) }}</span>
             </div>
 
             <div class="time-box">

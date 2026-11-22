@@ -6,7 +6,6 @@ import type { Reservation } from '@/types/reservation';
 
 const props = defineProps<{
     reservation: Reservation;
-    selected: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -58,7 +57,7 @@ function formatTime(text: string) {
 </script>
 
 <template>
-    <article class="card reservation" :class="{ selected: selected }">
+    <article class="card reservation">
         <div class="top">
             <div class="date-box">
                 <strong>{{ formatRange(reservation.startDatetime, reservation.endDatetime) }}</strong>
@@ -94,11 +93,6 @@ function formatTime(text: string) {
 <style scoped>
 .reservation {
     padding: var(--space-m);
-}
-
-.reservation.selected {
-    background: var(--color-info);
-    border-color: var(--color-accent);
 }
 
 .top {
@@ -172,9 +166,5 @@ function formatTime(text: string) {
 
 .chevron-icon {
     transition: transform 0.15s;
-}
-
-.selected .chevron-icon {
-    transform: rotate(90deg);
 }
 </style>

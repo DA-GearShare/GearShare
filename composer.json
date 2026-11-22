@@ -9,19 +9,19 @@
         "php": ">=8.5.10",
         "ext-ctype": "*",
         "ext-iconv": "*",
-        "doctrine/doctrine-bundle": "^3.3",
+        "doctrine/doctrine-bundle": "^3.4.2",
         "doctrine/doctrine-migrations-bundle": "^4.0",
-        "doctrine/orm": "^3.7.2",
+        "doctrine/orm": "^3.8.0",
         "knpuniversity/oauth2-client-bundle": "^2.20",
         "league/flysystem-async-aws-s3": "^3.31",
         "league/flysystem-bundle": "^3.7",
         "league/oauth2-github": "^3.1",
-        "nelmio/api-doc-bundle": "^5.12",
+        "nelmio/api-doc-bundle": "^5.14",
         "nelmio/cors-bundle": "^2.6",
         "symfony/asset": "8.1.*",
         "symfony/console": "8.1.*",
         "symfony/dotenv": "8.1.*",
-        "symfony/flex": "^2",
+        "symfony/flex": "^2.12",
         "symfony/framework-bundle": "8.1.*",
         "symfony/http-client": "8.1.*",
         "symfony/mime": "8.1.*",
@@ -76,7 +76,13 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "lint": "php-cs-fixer check --diff",
+        "fix": "php-cs-fixer fix"
+    },
+    "scripts-descriptions": {
+        "lint": "Checks Code-Stil of PHP",
+        "fix": "Fixes Code-Stil of PHP"
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -90,6 +96,7 @@
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.3",
+        "friendsofphp/php-cs-fixer": "^3.95.32",
         "symfony/maker-bundle": "^1.68"
     }
 }

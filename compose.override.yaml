@@ -34,7 +34,7 @@ services:
   frontend:
     # Vue 3 + Vite dev server with hot module reload. Not published on its own
     # port; the gateway forwards to it (see gateway/default.conf).
-    image: node:22-alpine
+    image: node:24-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev"
     restart: unless-stopped

@@ -27,6 +27,8 @@ use Symfony\Component\Uid\Uuid;
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
+    use SerializesEquipment;
+
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
         EquipmentRepository          $repository,
@@ -354,19 +356,4 @@ final class EquipmentController extends AbstractController
         ], $equipmentList));
     }
 
-
-    /** @return array<string, mixed> */
-    private function serializeEquipment(Equipment $equipment): array
-    {
-        return [
-            'id' => $equipment->getId()?->toRfc4122(),
-            'poolId' => $equipment->getPool()?->getId()?->toRfc4122(),
-            'name' => $equipment->getName(),
-            'location' => $equipment->getLocation(),
-            'type' => $equipment->getType(),
-            'model' => $equipment->getModel(),
-            'code' => $equipment->getCode(),
-            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
-        ];
-    }
 }

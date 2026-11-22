@@ -127,12 +127,30 @@ label {
 }
 
 input[type='radio'] {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
     width: 18px;
     height: 18px;
     min-height: 0;
+    margin: 0;
     padding: 0;
-    accent-color: var(--color-navy);
+    background: var(--color-surface);
+    border: 2px solid var(--color-muted);
+    border-radius: 50%;
+    cursor: pointer;
 }
+
+input[type='radio']:checked {
+    border-color: var(--color-navy);
+    background: radial-gradient(var(--color-navy) 0 4px, var(--color-surface) 5px);
+}
+
+input[type='radio']:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+}
+
 .date-label {
     flex-direction: column;
     align-items: stretch;
@@ -143,5 +161,15 @@ input[type='radio'] {
 
 input[type='datetime-local'] {
     width: 100%;
+}
+
+@media (max-width: 640px) {
+    .menu {
+        left: 0;
+        right: auto;
+        min-width: 0;
+        width: calc(100vw - 48px);
+        max-width: 360px;
+    }
 }
 </style>

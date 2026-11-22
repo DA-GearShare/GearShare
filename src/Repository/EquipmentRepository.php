@@ -87,6 +87,20 @@ class EquipmentRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param string $code
+     * @return Equipment|null
+     */
+    public function findByCode(string $code): ?Equipment
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.code = :code')
+            ->setParameter('code', $code)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
      * Nächster freier automatischer Code im Format der Fixtures: EQ-0001, EQ-0002, ...
      * Händisch vergebene Codes in anderen Formaten werden ignoriert.
      */

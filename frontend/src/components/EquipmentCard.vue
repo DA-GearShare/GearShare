@@ -2,31 +2,36 @@
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
-import { ref, onMounted } from "vue";
 import { useCompareStore } from '@/stores/CompareStore.ts';
 import { Pencil, Trash2 } from "lucide-vue-next";
-
-const mainPhoto = ref<EquipmentPhoto | null>(null);
+import { ref, onMounted } from "vue";
 
 const props = defineProps<{
     id: string
     name: string
     model: string
     type: string
-    selectable?: boolean
-    selectDisabled?: boolean
 }>();
 
+const emit = defineEmits(['deleted']);
 
 const authStore = useAuthStore();
 const equipmentStore = useEquipmentStore();
-const emit = defineEmits(['select', 'deleted']);
-
 const compare = useCompareStore();
-function toggleCompare(){
-    if (compare.has(props.id)){
+
+interface EquipmentPhoto {
+    id: number;
+    url: string;
+    isMain?: boolean;
+    is_main?: boolean;
+}
+
+const mainPhoto = ref<EquipmentPhoto | null>(null);
+
+function toggleCompare() {
+    if (compare.has(props.id)) {
         compare.remove(props.id);
-    }else{
+    } else {
         compare.add(props.id);
     }
 }
@@ -43,25 +48,26 @@ async function onDelete() {
     }
 }
 
-onMounted(async () => {
-    mainPhoto.value = await equipmentStore.fetchMainPhoto(props.id);
-});
+async function loadMainPhoto() {
+    try {
+        const res = await fetch(`/api/v1/equipment/${props.id}/photos`, { credentials: "include" });
+        if (!res.ok) return;
+
+        const photos: EquipmentPhoto[] = await res.json();
+        mainPhoto.value = photos.find(photo => photo.isMain === true || photo.is_main === true) ?? null;
+    } catch (error) {
+        console.error("Hauptbild konnte nicht geladen werden:", error);
+    }
+}
+
+onMounted(loadMainPhoto);
 </script>
 
 <template>
-    <component
-        :is="selectable ? 'div' : RouterLink"
-        :to="selectable ? undefined : { name: 'equipment-detail', params: { id } }"
-        class="card-link"
-    >
+    <RouterLink :to="{ name: 'equipment-detail', params: { id } }" class="card-link">
         <div class="card card-row">
             <div class="thumb">
-                <img
-                    v-if="mainPhoto"
-                    :src="mainPhoto.url"
-                    :alt="`Hauptbild von ${name}`"
-                    class="thumb-image"
-                />
+                <img v-if="mainPhoto" :src="mainPhoto.url" :alt="`Hauptbild von ${name}`" class="thumb-image" />
                 <div v-else class="thumb-placeholder">
                     <span>Kein Bild</span>
                 </div>
@@ -75,49 +81,22 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div
-                v-if="!selectable && authStore.hasRole(['Admin'])"
-                class="card-actions"
-            >
-                <RouterLink
-                    :to="`/inventar/${id}/bearbeiten`"
-                    class="icon-button"
-                    aria-label="Equipment bearbeiten"
-                    title="Bearbeiten"
-                    @click.stop
-                >
+            <div v-if="authStore.hasRole(['Admin'])" class="card-actions">
+                <RouterLink :to="`/inventar/${id}/bearbeiten`" class="icon-button" aria-label="Equipment bearbeiten" title="Bearbeiten" @click.stop>
                     <Pencil />
                 </RouterLink>
-
-                <button
-                    type="button"
-                    class="icon-button delete-button"
-                    aria-label="Equipment löschen"
-                    title="Löschen"
-                    @click.prevent.stop="onDelete"
-                >
+                <button type="button" class="icon-button delete-button" aria-label="Equipment löschen" title="Löschen" @click.prevent.stop="onDelete">
                     <Trash2 />
                 </button>
             </div>
 
-
-            <button v-if="!selectable" type="button" class="compare-btn" @click.prevent.stop="toggleCompare">
+            <button type="button" class="compare-btn" @click.prevent.stop="toggleCompare">
                 {{ compare.has(id) ? '✓' : '⇄' }}
             </button>
 
-
             <span class="chevron">›</span>
         </div>
-
-        <button
-            v-if="selectable"
-            class="btn-primary"
-            :disabled="selectDisabled"
-            @click="emit('select', id)"
-        >
-            {{ selectDisabled ? 'Bereits zugeordnet' : 'Hinzufügen' }}
-        </button>
-    </component>
+    </RouterLink>
 </template>
 
 <style scoped>
@@ -216,14 +195,23 @@ onMounted(async () => {
     background: #fbdada;
 }
 
+.compare-btn {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-tab);
+    cursor: pointer;
+}
+
 .chevron {
-    margin-left: auto;
     flex-shrink: 0;
     font-size: 28px;
     color: var(--color-text-primary);
 }
 
-/* Tablet und Mobile */
 @media (max-width: 640px) {
     .card-row {
         gap: var(--space-s);
@@ -249,14 +237,5 @@ onMounted(async () => {
     .chevron {
         display: none;
     }
-}
-.compare-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-tab);
-    cursor: pointer;
 }
 </style>

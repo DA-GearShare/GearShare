@@ -8,19 +8,26 @@ use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
+use InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Testuser: 1 Admin + 6 normale User (Lehrkraft-Funktionen gibt es noch nicht).
  *
- * Microsoft-ID eintragen:
- *   Der Login sucht den User über `oauth_user_id` = "microsoft:<id>" (siehe OAuthAuthenticator).
- *   <id> ist der `sub`-Claim des ID-Tokens (Fallback `oid`), NICHT zwingend die Object-ID aus Entra.
- *   Am einfachsten: einmal einloggen und den Wert aus `SELECT oauth_user_id FROM "user"` übernehmen
- *   (ohne das Präfix "microsoft:").
+ * Persönliche Daten (Microsoft-ID, E-Mail, Name) kommen aus der Env-Variable FIXTURE_USERS und
+ * gehören in die nicht versionierte .env.local, damit sie nicht im Git landen:
  *
- * Solange MICROSOFT_ID leer ist, bekommt der User die Platzhalter-ID "fixture:<key>" und kann sich
- * nicht einloggen. E-Mail und Anzeigename werden beim ersten Login mit den Daten von Microsoft
- * überschrieben, die Werte hier sind nur Platzhalter.
+ *   FIXTURE_USERS='{"admin":{"microsoftId":"<sub>","email":"...","name":"..."},"user-1":{...}}'
+ *
+ * Jedes Feld ist optional, fehlende Werte werden durch die Platzhalter unten ersetzt.
+ *
+ * Der Login sucht den User über `oauth_user_id` = "microsoft:<id>" (siehe OAuthAuthenticator).
+ * <id> ist der `sub`-Claim des ID-Tokens (Fallback `oid`), NICHT zwingend die Object-ID aus Entra.
+ * Am einfachsten: einmal einloggen und den Wert aus `SELECT oauth_user_id FROM "user"` übernehmen
+ * (ohne das Präfix "microsoft:").
+ *
+ * User ohne Microsoft-ID bekommen die Platzhalter-ID "fixture:<key>" und können sich nicht einloggen.
+ * E-Mail und Name werden beim Login ohnehin mit den Daten von Microsoft überschrieben.
  */
 class UserFixtures extends Fixture implements FixtureGroupInterface
 {
@@ -34,18 +41,55 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
 
     private const OAUTH_PROVIDER = 'microsoft';
 
+    private const FIELDS = ['microsoftId', 'email', 'name'];
+
     /**
-     * Key => [Microsoft-ID, E-Mail, Anzeigename, isAdmin]
+     * Key => [Platzhalter-E-Mail, Platzhalter-Name, isAdmin]
      */
     private const USERS = [
-        self::ADMIN => ['p0Uk5Zb5CRo6koLygXoVD0TY71EAQ2F3zSWjLE5WVEI', 'alexander.bachinger@htl.rennweg.at', 'Bachinger Alexander', true],
-        self::USER_1 => ['', 'lena.gruber@example.com', 'Lena Gruber', false],
-        self::USER_2 => ['', 'jonas.berger@example.com', 'Jonas Berger', false],
-        self::USER_3 => ['', 'mia.huber@example.com', 'Mia Huber', false],
-        self::USER_4 => ['', 'elias.steiner@example.com', 'Elias Steiner', false],
-        self::USER_5 => ['', 'sophie.bauer@example.com', 'Sophie Bauer', false],
-        self::USER_6 => ['', 'noah.fischer@example.com', 'Noah Fischer', false],
+        self::ADMIN => ['admin@example.com', 'Admin', true],
+        self::USER_1 => ['user1@example.com', 'Testuser 1', false],
+        self::USER_2 => ['user2@example.com', 'Testuser 2', false],
+        self::USER_3 => ['user3@example.com', 'Testuser 3', false],
+        self::USER_4 => ['user4@example.com', 'Testuser 4', false],
+        self::USER_5 => ['user5@example.com', 'Testuser 5', false],
+        self::USER_6 => ['user6@example.com', 'Testuser 6', false],
     ];
+
+    /**
+     * @param array<string, array{microsoftId?: string, email?: string, name?: string}> $userData
+     *        Key => persönliche Daten, aus FIXTURE_USERS
+     */
+    public function __construct(
+        #[Autowire('%env(json:FIXTURE_USERS)%')]
+        private readonly array $userData,
+    )
+    {
+        $unknown = array_diff(array_keys($this->userData), array_keys(self::USERS));
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(sprintf(
+                'FIXTURE_USERS enthält unbekannte User: %s (erlaubt: %s)',
+                implode(', ', $unknown),
+                implode(', ', array_keys(self::USERS)),
+            ));
+        }
+
+        foreach ($this->userData as $key => $data) {
+            if (!is_array($data)) {
+                throw new InvalidArgumentException(sprintf('FIXTURE_USERS["%s"] muss ein Objekt sein.', $key));
+            }
+
+            $unknownFields = array_diff(array_keys($data), self::FIELDS);
+            if ($unknownFields !== []) {
+                throw new InvalidArgumentException(sprintf(
+                    'FIXTURE_USERS["%s"] enthält unbekannte Felder: %s (erlaubt: %s)',
+                    $key,
+                    implode(', ', $unknownFields),
+                    implode(', ', self::FIELDS),
+                ));
+            }
+        }
+    }
 
     public static function getGroups(): array
     {
@@ -56,17 +100,20 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
     {
         $repository = $manager->getRepository(User::class);
 
-        foreach (self::USERS as $key => [$microsoftId, $email, $name, $isAdmin]) {
+        foreach (self::USERS as $key => [$defaultEmail, $defaultName, $isAdmin]) {
+            $microsoftId = $this->value($key, 'microsoftId') ?? '';
+            $email = $this->value($key, 'email') ?? $defaultEmail;
+            $name = $this->value($key, 'name') ?? $defaultName;
+
             $oauthId = $microsoftId !== ''
                 ? self::OAUTH_PROVIDER . ':' . $microsoftId
                 : 'fixture:' . $key;
 
-            // Mit --append soll erneutes Laden nicht an UNIQUE (email / oauth_user_id) scheitern
             $user = $repository->findOneBy(['oAuthUserId' => $oauthId])
                 ?? $repository->findOneBy(['email' => $email]);
 
             if ($user === null) {
-                $user = (new User($oauthId, $email))
+                $user = new User($oauthId, $email)
                     ->setDisplayName($name)
                     ->setIsAdmin($isAdmin);
 
@@ -83,5 +130,12 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
     public static function ref(string $key): string
     {
         return 'user.' . $key;
+    }
+
+    private function value(string $key, string $field): ?string
+    {
+        $value = trim((string) ($this->userData[$key][$field] ?? ''));
+
+        return $value !== '' ? $value : null;
     }
 }

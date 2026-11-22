@@ -2,7 +2,7 @@
 import { useCartStore } from '@/stores/CartStore.ts';
 import { useEquipmentStore, type EquipmentPhoto } from "@/stores/EquipmentStore.ts";
 import { Trash2 } from "lucide-vue-next";
-import {onMounted, ref} from "vue";
+import { onMounted, ref } from "vue";
 
 const props = defineProps<{
     id: string

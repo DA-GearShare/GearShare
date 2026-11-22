@@ -20,7 +20,9 @@ const authStore = useAuthStore();
 const store = useEquipmentStore();
 const compare = useCompareStore();
 
-const showCalendar = computed(() => !props.pickerMode && compare.items.length > 0);
+const showCalendar = computed(() => {
+    return !props.pickerMode && compare.items.length > 0;
+});
 
 const visibleEquipment = computed(() => {
     return store.equipment.filter((item: any) => {

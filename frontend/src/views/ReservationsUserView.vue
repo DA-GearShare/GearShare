@@ -2,31 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useReservationStore } from '@/stores/ReservationStore';
 import ReservationUserCard from '@/components/ReservationUserCard.vue';
-
-export type ReservationStatus =
-    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
-
-export interface ReservationItem {
-    id: string;
-    reservationId: string;
-    requestedEquipmentId: string | null;
-    requestedPoolId: string | null;
-    status: string;
-    issuedAt: string | null;
-    returnedAt: string | null;
-}
-
-export interface Reservation {
-    id: string;
-    requestedByUserId: string;
-    responsibleUserId: string | null;
-    status: ReservationStatus;
-    startDatetime: string;
-    endDatetime: string;
-    isOverdue: boolean;
-    createdAt: string;
-    items: ReservationItem[];
-}
+import type { Reservation } from '@/types/reservation';
 
 const reservationStore = useReservationStore();
 

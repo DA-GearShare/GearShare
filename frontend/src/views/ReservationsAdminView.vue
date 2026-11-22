@@ -5,31 +5,7 @@ import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 import ReservationAdminCard from '@/components/ReservationAdminCard.vue';
 import ReservationDetailCard from '@/components/ReservationDetailCard.vue';
 import ScanModal from "@/components/ScanModal.vue";
-
-export type ReservationStatus =
-    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
-
-export interface ReservationItem {
-    id: string;
-    reservationId: string;
-    requestedEquipmentId: string | null;
-    requestedPoolId: string | null;
-    status: string;
-    issuedAt: string | null;
-    returnedAt: string | null;
-}
-
-export interface Reservation {
-    id: string;
-    requestedByUserId: string;
-    responsibleUserId: string | null;
-    status: ReservationStatus;
-    startDatetime: string;
-    endDatetime: string;
-    isOverdue: boolean;
-    createdAt: string;
-    items: ReservationItem[];
-}
+import type { Reservation, ReservationItem } from '@/types/reservation';
 
 const reservationStore = useReservationStore();
 const equipmentStore = useEquipmentStore();
@@ -190,7 +166,11 @@ function cancelAdd() {
 
 <template>
     <p class="eyebrow">Verwaltung</p>
-    <h1>Admin-Reservierungen</h1>
+    <div class="page-header">
+        <h1>Admin</h1>
+        <span class="meta">{{ reservationStore.reservations?.length ?? 0 }} Reservierungen</span>
+    </div>
+    <h2>Reservierungen</h2>
 
     <p v-if="reservationStore.error" class="message-error">{{ reservationStore.error }}</p>
 
@@ -279,5 +259,11 @@ function cancelAdd() {
 
 .dialog-actions button {
     flex: 1;
+}
+
+.page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
 }
 </style>

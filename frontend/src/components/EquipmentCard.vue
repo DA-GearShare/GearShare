@@ -6,6 +6,7 @@ import { ref, onMounted } from "vue";
 import { useCompareStore } from '@/stores/CompareStore.ts';
 import { Pencil, Trash2 } from "lucide-vue-next";
 
+const mainPhoto = ref<EquipmentPhoto | null>(null);
 
 const props = defineProps<{
     id: string
@@ -16,6 +17,7 @@ const props = defineProps<{
     selectDisabled?: boolean
 }>();
 
+
 const authStore = useAuthStore();
 const equipmentStore = useEquipmentStore();
 const emit = defineEmits(['select', 'deleted']);
@@ -25,11 +27,9 @@ function toggleCompare(){
     if (compare.has(props.id)){
         compare.remove(props.id);
     }else{
-        compare.add(props.id)
+        compare.add(props.id);
     }
 }
-
-const mainPhoto = ref<EquipmentPhoto | null>(null);
 
 async function onDelete() {
     if (!confirm('Wollen Sie das Equipment wirklich löschen?')) return;
@@ -43,36 +43,9 @@ async function onDelete() {
     }
 }
 
-interface EquipmentPhoto {
-    id: number;
-    url: string;
-    isMain?: boolean;
-    is_main?: boolean;
-}
-
-async function loadMainPhoto() {
-    try {
-        const res = await fetch(
-            `/api/v1/equipment/${props.id}/photos`,
-            { credentials: "include" }
-        );
-
-        if (!res.ok) return;
-
-        const photos: EquipmentPhoto[] = await res.json();
-
-        mainPhoto.value =
-            photos.find(photo => {
-                return photo.isMain === true || photo.is_main === true;
-            })
-            ?? null;
-
-    } catch (error) {
-        console.error("Hauptbild konnte nicht geladen werden:", error);
-    }
-}
-
-onMounted(loadMainPhoto);
+onMounted(async () => {
+    mainPhoto.value = await equipmentStore.fetchMainPhoto(props.id);
+});
 </script>
 
 <template>
@@ -89,7 +62,6 @@ onMounted(loadMainPhoto);
                     :alt="`Hauptbild von ${name}`"
                     class="thumb-image"
                 />
-
                 <div v-else class="thumb-placeholder">
                     <span>Kein Bild</span>
                 </div>

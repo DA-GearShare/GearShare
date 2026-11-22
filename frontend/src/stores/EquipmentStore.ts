@@ -1,5 +1,12 @@
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref} from 'vue';
 import { defineStore } from 'pinia';
+
+interface EquipmentPhoto {
+    id: number;
+    url: string;
+    isMain?: boolean;
+    is_main?: boolean;
+}
 
 export const useEquipmentStore = defineStore('equipment', () => {
     const equipment = ref([]);
@@ -94,5 +101,21 @@ export const useEquipmentStore = defineStore('equipment', () => {
         }
     }
 
-    return { equipment, meta, fetchEquipment, filters, createEquipment, updateEquipment, fetchEquipmentById, deleteEquipment };
+    async function fetchMainPhoto(id: string): Promise<EquipmentPhoto | null> {
+        try {
+            const res = await fetch(`/api/v1/equipment/${id}/photos`, { credentials: "include" });
+
+            if (!res.ok) return null;
+
+            const photos: EquipmentPhoto[] = await res.json();
+            return photos.find(photo => {
+                return photo.isMain === true || photo.is_main === true;
+            }) ?? null;
+        } catch (error) {
+            console.error("Hauptbild konnte nicht geladen werden:", error);
+            return null;
+        }
+    }
+
+    return { equipment, meta, fetchEquipment, filters, createEquipment, updateEquipment, fetchEquipmentById, deleteEquipment, fetchMainPhoto };
 });

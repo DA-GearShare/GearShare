@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useCartStore } from '@/stores/CartStore.ts';
+import { useEquipmentStore, type EquipmentPhoto } from "@/stores/EquipmentStore.ts";
 import { Trash2 } from "lucide-vue-next";
+import {onMounted, ref} from "vue";
 
 const props = defineProps<{
     id: string
@@ -9,13 +11,26 @@ const props = defineProps<{
     isAdmin: boolean
 }>();
 
+const mainPhoto = ref<EquipmentPhoto | null>(null);
 const emit = defineEmits(['remove']);
 const cart = useCartStore();
+const equipmentStore = useEquipmentStore();
+
+onMounted(async () => {
+    mainPhoto.value = await equipmentStore.fetchMainPhoto(props.id);
+});
 </script>
 
 <template>
     <div class="accessory-card" :class="{ unavailable: !available }">
-        <div class="accessory-thumb"></div>
+        <div class="accessory-thumb">
+            <img
+                v-if="mainPhoto"
+                :src="mainPhoto.url"
+                :alt="`Hauptbild von ${name}`"
+                class="thumb-image"
+            />
+        </div>
 
         <div class="accessory-info">
             <h3>{{ name }}</h3>
@@ -48,8 +63,16 @@ const cart = useCartStore();
     flex-shrink: 0;
     width: 72px;
     height: 72px;
+    overflow: hidden;
     background: linear-gradient(145deg, #F3F4F6, #E9EDF1);
     border-radius: 12px;
+}
+
+.thumb-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .accessory-info {

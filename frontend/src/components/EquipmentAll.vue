@@ -1,31 +1,19 @@
-
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { useAuthStore } from '@/stores/AuthStore.ts';
+import { useCompareStore } from '@/stores/CompareStore.ts';
 import EquipmentCard from "@/components/EquipmentCard.vue";
 import SearchForm from "@/components/SearchForm.vue";
 import FilterDropdown from "@/components/FilterDropdown.vue";
 import ButtonsPagination from "@/components/ButtonsPagination.vue";
-
-const props = defineProps<{
-    pickerMode?: boolean;
-    excludeIds?: string[];
-    hideId?: string;
-}>();
-
-const visibleEquipment = computed(() => {
-    return store.equipment.filter((item: any) => {
-        return item.id !== props.hideId;
-    });
-});
-
-const emit = defineEmits<{
-    (e: 'select', id: string): void;
-}>();
+import CompareCalendar from '@/components/CompareCalendar.vue';
 
 const authStore = useAuthStore();
 const store = useEquipmentStore();
+const compare = useCompareStore();
+
+const showCalendar = computed(() => compare.items.length > 0);
 
 onMounted(() => {
     store.fetchEquipment();
@@ -41,12 +29,7 @@ const handleSearch = (search: string) => {
     applyFilter();
 };
 
-const handleFilter = (
-    sort: string,
-    order: string,
-    from: string,
-    to: string
-) => {
+const handleFilter = (sort: string, order: string, from: string, to: string) => {
     store.filters.sort = sort;
     store.filters.order = order;
     store.filters.from = from;
@@ -58,15 +41,10 @@ const handlePageChange = (page: number) => {
     store.filters.page = page;
     store.fetchEquipment();
 };
-
-const handleSelect = (id: string) => {
-    emit('select', id);
-};
 </script>
 
 <template>
-    <div class="page-header" v-if="!pickerMode">
-
+    <div class="page-header">
         <RouterLink v-if="authStore.hasRole(['Admin'])" to="/inventar/neu" class="btn-primary">Equipment hinzufügen</RouterLink>
     </div>
 
@@ -75,19 +53,19 @@ const handleSelect = (id: string) => {
         <FilterDropdown @filter="handleFilter" />
     </div>
 
-    <div class="card-list">
-        <EquipmentCard
-            v-for="item in visibleEquipment"
-            :key="item.id"
-            :id="item.id"
-            :name="item.name"
-            :model="item.model"
-            :type="item.type"
-            :selectable="props.pickerMode"
-            :select-disabled="props.excludeIds?.includes(item.id)"
-            @select="handleSelect"
-            @deleted="equipmentStore.fetchEquipment()"
-        />
+    <div class="list-layout" :class="{ 'with-calendar': showCalendar }">
+        <div class="card-list">
+            <EquipmentCard
+                v-for="item in store.equipment"
+                :key="item.id"
+                :id="item.id"
+                :name="item.name"
+                :model="item.model"
+                :type="item.type"
+                @deleted="store.fetchEquipment()"
+            />
+        </div>
+        <CompareCalendar v-if="showCalendar" class="compare-panel" />
     </div>
 
     <div class="pagination-area">
@@ -110,10 +88,6 @@ const handleSelect = (id: string) => {
     margin-bottom: var(--space-l);
 }
 
-.page-header h1 {
-    margin: 0;
-}
-
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -126,9 +100,32 @@ const handleSelect = (id: string) => {
     min-width: 200px;
 }
 
+.list-layout.with-calendar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-xl);
+    align-items: start;
+}
+
+.compare-panel {
+    position: sticky;
+    top: var(--space-l);
+}
+
 .pagination-area {
     display: flex;
     justify-content: center;
     margin-top: var(--space-xl);
+}
+
+@media (max-width: 1023px) {
+    .list-layout.with-calendar {
+        grid-template-columns: 1fr;
+    }
+
+    .compare-panel {
+        position: static;
+        order: -1;
+    }
 }
 </style>

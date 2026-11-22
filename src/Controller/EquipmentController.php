@@ -10,6 +10,7 @@ use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
 use App\Service\EquipmentPhotoService;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use DateTimeImmutable;
 use App\Repository\ReservationItemRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -25,6 +27,8 @@ use Symfony\Component\Uid\Uuid;
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
+    use SerializesEquipment;
+
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
         EquipmentRepository          $repository,
@@ -50,7 +54,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
             $toDate   = $to   ? new DateTimeImmutable($to)   : null;
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
 
@@ -72,7 +76,7 @@ final class EquipmentController extends AbstractController
             ],
         ]);
     }
-    #[Route('/{equipmentId}', name: 'get', methods: ['GET'])]
+    #[Route('/{equipmentId}', name: 'get', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
     public function getEquipment(
         Uuid $equipmentId,
         EquipmentRepository $repository,
@@ -83,10 +87,10 @@ final class EquipmentController extends AbstractController
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json($this->serializeEquipment($equipment));
+        return $this->json($this->serializeEquipment($equipment), Response::HTTP_OK);
     }
 
-    #[Route('/{equipmentId}', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{equipmentId}', name: 'delete', requirements: ['equipmentId' => Requirement::UUID], methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN')]
     public function deleteEquipment(
         Uuid $equipmentId,
@@ -107,7 +111,7 @@ final class EquipmentController extends AbstractController
         return new Response('', Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{equipmentId}/accessories', name: 'getAccessories', methods: ['GET'])]
+    #[Route('/{equipmentId}/accessories', name: 'getAccessories', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
     public function getAccessories(
         Uuid $equipmentId,
         EquipmentRepository $repository,
@@ -128,7 +132,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
             $toDate   = $to   ? new DateTimeImmutable($to)   : null;
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
 
@@ -151,7 +155,7 @@ final class EquipmentController extends AbstractController
         return $this->json($items);
     }
 
-    #[Route('/{equipmentId}/accessories', name: 'addAccessories', methods: ['POST'])]
+    #[Route('/{equipmentId}/accessories', name: 'addAccessories', requirements: ['equipmentId' => Requirement::UUID], methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN')]
     public function addAccessories(
         Uuid $equipmentId,
@@ -191,7 +195,7 @@ final class EquipmentController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/{equipmentId}/accessories/{accessoryId}', name: 'removeAccessories', methods: ['DELETE'])]
+    #[Route('/{equipmentId}/accessories/{accessoryId}', name: 'removeAccessories', requirements: ['equipmentId' => Requirement::UUID, 'accessoryId' => Requirement::UUID], methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN')]
     public function removeAccessories(
         Uuid $equipmentId,
@@ -250,7 +254,7 @@ final class EquipmentController extends AbstractController
     }
 
     #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}', name: 'edit', methods: ['PUT'])]
+    #[Route('/{equipmentId}', name: 'edit', requirements: ['equipmentId' => Requirement::UUID], methods: ['PUT'])]
     public function editEquipment(
         Uuid $equipmentId,
         Request $request,
@@ -286,8 +290,8 @@ final class EquipmentController extends AbstractController
 
         return $this->json($this->serializeEquipment($equipment));
     }
-    #[Route('/calender', name: 'get_calender', methods: ['POST'])]
-    public function getCalender(
+    #[Route('/calendar', name: 'get_calendar', methods: ['POST'])]
+    public function getCalendar(
         Request $request,
         EquipmentRepository $repository,
         ReservationItemRepository $reservationItemRepository,
@@ -309,7 +313,7 @@ final class EquipmentController extends AbstractController
         try {
             $fromDate = new DateTimeImmutable($from);
             $toDate   = new DateTimeImmutable($to);
-        } catch (\Exception) {
+        } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
         if ($fromDate >= $toDate) {
@@ -328,55 +332,28 @@ final class EquipmentController extends AbstractController
         }
         $reservationItems = $reservationItemRepository->findInPeriod($equipmentList, $fromDate, $toDate);
 
-        $busy = [];
+        $notAvailable = [];
         foreach ($equipmentList as $equipment) {
-            $busy[$equipment->getId()->toRfc4122()] = [];
+            $notAvailable[$equipment->getId()->toRfc4122()] = [];
         }
-
         foreach ($reservationItems as $item) {
             $reservation = $item->getReservation();
+            $startDatetime = $reservation->getStartDatetime();
+            $endDatetime = $reservation->getEndDatetime();
 
-            $devices = [$item->getRequestedEquipment()];
-            if ($item->getAssignedEquipment() !== $item->getRequestedEquipment()) {
-                $devices[] = $item->getAssignedEquipment();
-            }
+            $requestedEquipment = $item->getRequestedEquipment();
+            if ($requestedEquipment === null) { continue; }
 
-            foreach ($devices as $device) {
-                if ($device === null) {
-                    continue;
-                }
-                $deviceId = $device->getId()->toRfc4122();
-                if (!isset($busy[$deviceId])) {
-                    continue;
-                }
-                $busy[$deviceId][] = [
-                    'start' => $reservation->getStartDatetime()->format(DATE_ATOM),
-                    'end'   => $reservation->getEndDatetime()->format(DATE_ATOM),
-                ];
-            }
+            $notAvailable[$requestedEquipment->getId()->toRfc4122()][] = [
+                'from' => $startDatetime->format(DATE_ATOM),
+                'to'   => $endDatetime->format(DATE_ATOM),
+            ];
         }
-        return $this->json([
-            'equipment' => array_map(fn($e) => [
-                'id'   => $e->getId()->toRfc4122(),
-                'name' => $e->getName(),
-                'busy' => $busy[$e->getId()->toRfc4122()],
-            ], $equipmentList),
-        ]);
+
+        return $this->json(array_map(fn(Equipment $e) => [
+            ...$this->serializeEquipment($e),
+            'notAvailable' => $notAvailable[$e->getId()->toRfc4122()],
+        ], $equipmentList));
     }
 
-
-    /** @return array<string, mixed> */
-    private function serializeEquipment(Equipment $equipment): array
-    {
-        return [
-            'id' => $equipment->getId()?->toRfc4122(),
-            'poolId' => $equipment->getPool()?->getId()?->toRfc4122(),
-            'name' => $equipment->getName(),
-            'location' => $equipment->getLocation(),
-            'type' => $equipment->getType(),
-            'model' => $equipment->getModel(),
-            'code' => $equipment->getCode(),
-            'mainPhotoUrl' => $equipment->getMainPhoto()?->getUrl(),
-        ];
-    }
 }

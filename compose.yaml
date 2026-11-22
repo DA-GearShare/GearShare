@@ -96,6 +96,8 @@ services:
       -filer.disableDirListing
       -s3
       -s3.port=8333
+      -master.volumeSizeLimitMB=256
+      -volume.max=32
     environment:
       AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
       AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"

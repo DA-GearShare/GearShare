@@ -16,12 +16,16 @@
         "lint:eslint": "eslint . --fix --cache"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.22",
+        "@fullcalendar/daygrid": "^6.1.22",
+        "@mdi/font": "^7.4.47",
         "jspdf": "^4.2.1",
         "lucide-vue-next": "^1.0.0",
         "pinia": "^4.0.3",
         "qrcode": "^1.5.4",
         "vue": "^3.5.42",
-        "vue-router": "^5.3.1"
+        "vue-router": "^5.3.1",
+        "vuetify": "^4.3.4"
     },
     "devDependencies": {
         "@tsconfig/node24": "^24.0.5",

@@ -10,6 +10,8 @@ use App\Entity\ReservationItem;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\ORM\Exception\ORMException;
+use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -41,7 +43,7 @@ class EquipmentRepository extends ServiceEntityRepository
                 ->select('ri.id')
                 ->from(ReservationItem::class, 'ri')
                 ->innerJoin('ri.reservation', 'r')
-                ->where('ri.requestedEquipment = e OR ri.assignedEquipment = e')
+                ->where('ri.requestedEquipment = e')
                 ->andWhere('r.startDatetime < :to')
                 ->andWhere('r.endDatetime > :from');
 
@@ -85,6 +87,20 @@ class EquipmentRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param string $code
+     * @return Equipment|null
+     */
+    public function findByCode(string $code): ?Equipment
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.code = :code')
+            ->setParameter('code', $code)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
      * Nächster freier automatischer Code im Format der Fixtures: EQ-0001, EQ-0002, ...
      * Händisch vergebene Codes in anderen Formaten werden ignoriert.
      */
@@ -107,6 +123,10 @@ class EquipmentRepository extends ServiceEntityRepository
         return sprintf('EQ-%04d', $max + 1);
     }
 
+    /**
+     * @throws OptimisticLockException
+     * @throws ORMException
+     */
     public function createFromDto(EquipmentCreateDto $dto): Equipment|Response
     {
         $em = $this->getEntityManager();
@@ -117,7 +137,7 @@ class EquipmentRepository extends ServiceEntityRepository
             if ($pool === null) {
                 return new JsonResponse([
                     'message' => 'Invalider Request Body',
-                    'errors' => ['poolId' => 'Pool not found'],
+                    'errors' => ['poolId' => 'Pool nicht gefunden'],
                 ], Response::HTTP_BAD_REQUEST);
             }
         }

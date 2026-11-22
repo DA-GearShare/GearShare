@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 <template>
     <header class="header">
         <RouterLink to="/inventar" class="logo-link" aria-label="Zum Inventar">
-            <img src="@/assets/logo.svg" alt="GearShare" class="logo" />
+            <img src="../assets/logo.svg" alt="GearShare" class="logo" />
         </RouterLink>
 
         <nav class="nav">
@@ -77,19 +77,33 @@ onBeforeUnmount(() => {
         </nav>
 
         <div class="actions" v-if="authStore.isLoggedIn">
-            <button type="button" class="icon-button" aria-label="Reservierungen" @click="goToReservations">
-                <ShoppingCart />
+            <button
+                type="button"
+                class="icon-button"
+                :class="{ 'icon-button-active': $route.path === '/reservierung' }"
+                aria-label="Reservierungen"
+                @click="goToReservations"
+            >
+                <img src="/ShoppingCart.svg" alt="Reservierungen" />
             </button>
 
             <div class="profile-container" ref="profileMenu" v-if="authStore.isLoggedIn">
-                <button type="button" class="icon-button" aria-label="Mein Profil" :aria-expanded="isProfileOpen" aria-controls="profile-dropdown" @click="toggleProfile">
-                    <User />
+                <button
+                    type="button"
+                    class="icon-button"
+                    :class="{ 'icon-button-active': isProfileOpen || $route.path === '/reservierungen' || $route.path === '/admin/reservierungen' || $route.path === '/admin/nutzer' }"
+                    aria-label="Mein Profil"
+                    :aria-expanded="isProfileOpen"
+                    aria-controls="profile-dropdown"
+                    @click="toggleProfile"
+                >
+                    <img src="/UserIcon.svg" alt="Benutzer" />
                 </button>
 
                 <div v-if="isProfileOpen" id="profile-dropdown" class="profile-dropdown">
                     <div class="dropdown-items">
 
-                        <RouterLink to="/account" class="dropdown-item" @click="closeProfile">
+                        <RouterLink to="/reservierungen" class="dropdown-item" @click="closeProfile">
                             <ClipboardList />
                             <span>Meine Reservierungen</span>
                         </RouterLink>
@@ -134,8 +148,8 @@ onBeforeUnmount(() => {
 
 .logo {
     display: block;
-    height: 40px;
-    max-width: 180px;
+    height: 48px;
+    max-width: 200px;
 }
 
 .nav {
@@ -171,26 +185,49 @@ onBeforeUnmount(() => {
 }
 
 .icon-button {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     padding: 0;
-    color: var(--color-text-primary);
-    background: none;
+    background: transparent;
     border: none;
-    border-radius: var(--radius-tab);
+    border-radius: 0;
     cursor: pointer;
 }
 
-.icon-button:hover {
-    background: var(--color-border);
+.icon-button img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
 }
 
-.icon-button svg {
-    width: 24px;
-    height: 24px;
+.icon-button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background: #000;
+    border-radius: var(--radius-pill);
+    transform: translateX(-50%);
+    transition: width 0.2s ease;
+}
+
+.icon-button:hover::after,
+.icon-button-active::after {
+    width: 65%;
+}
+
+.icon-button:hover {
+    background: transparent;
+}
+
+.icon-button:hover img {
+    transform: none;
 }
 
 .profile-container {
@@ -269,14 +306,15 @@ onBeforeUnmount(() => {
     }
 
     .logo {
-        height: 32px;
+        height: 45px;
     }
 
     .nav {
         grid-column: 1 / -1;
         grid-row: 2;
-        flex-wrap: wrap;
-        gap: 65px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
         margin-top: var(--space-m);
     }
 

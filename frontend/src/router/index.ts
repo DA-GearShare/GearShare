@@ -4,12 +4,15 @@ import EquipmentView from '../views/EquipmentView.vue';
 import InstructionsView from '../views/InstructionsView.vue';
 import LaboratoryView from '../views/LaboratorytimeView.vue';
 import LoginView from '../views/LoginView.vue';
-import AccountView from '../views/AccountView.vue';
+import AdminView from '../views/AdminView.vue';
 import AdminUserView from '../views/AdminUserView.vue';
 import EquipmentAddView from "@/views/EquipmentAddView.vue";
 import EquipmentDetailView from '../views/EquipmentDetailView.vue';
 import EquipmentEditView from '../views/EquipmentEditView.vue';
 import ReservationView from '../views/ReservationView.vue';
+import ReservationsUserView from '../views/ReservationsUserView.vue';
+import ReservationsAdminView from '../views/ReservationsAdminView.vue';
+import ReservationsAdminDetailView from '../views/ReservationsAdminDetailView.vue';
 import { useAuthStore, type Role } from '@/stores/AuthStore.ts';
 
 const router = createRouter({
@@ -22,11 +25,6 @@ const router = createRouter({
         {
             path: '/login',
             component: LoginView
-        },
-        {
-            path: '/account',
-            component: AccountView,
-            meta: { requiresAuth: true }
         },
         {
             path: '/inventar',
@@ -66,7 +64,27 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/reservierungen',
+            component: ReservationsUserView,
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/admin/reservierungen',
+            component: ReservationsAdminView,
+            meta: { requiresAuth: true, roles: ['Admin'] }
+        },
+        {
+            path: '/admin/reservierungen/:id',
+            component: ReservationsAdminDetailView,
+            meta: { requiresAuth: true, roles: ['Admin'] }
+        },
+        {
             path: '/admin/nutzer',
+            component: AdminView,
+            meta: { requiresAuth: true, roles: ['Admin'] }
+        },
+        {
+            path: '/admin/nutzer/:id',
             component: AdminUserView,
             meta: { requiresAuth: true, roles: ['Admin'] }
         }

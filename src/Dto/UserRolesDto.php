@@ -31,17 +31,17 @@ final class UserRolesDto
         $errors = [];
 
         foreach (array_diff(array_keys($data), self::ALLOWED_FIELDS) as $key) {
-            $errors[(string)$key] = 'Unknown field';
+            $errors[(string)$key] = 'Unbekanntes Feld';
         }
 
         foreach (self::ALLOWED_FIELDS as $field) {
             if (array_key_exists($field, $data) && !is_bool($data[$field])) {
-                $errors[$field] = 'Must be a boolean';
+                $errors[$field] = 'Muss ein Boolean sein';
             }
         }
 
         if (!array_intersect(self::ALLOWED_FIELDS, array_keys($data))) {
-            $errors['body'] = 'Provide at least one of isAdmin or isTeacher';
+            $errors['body'] = 'Mindestens eines von isAdmin oder isTeacher angeben';
         }
 
         if ($errors !== []) {

@@ -1,10 +1,10 @@
-```vue
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
 import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 import { ref, onMounted } from "vue";
 import { useCompareStore } from '@/stores/CompareStore.ts';
+import { Pencil, Trash2 } from "lucide-vue-next";
 
 
 const props = defineProps<{
@@ -109,18 +109,22 @@ onMounted(loadMainPhoto);
             >
                 <RouterLink
                     :to="`/inventar/${id}/bearbeiten`"
-                    class="btn-secondary card-action"
+                    class="icon-button"
+                    aria-label="Equipment bearbeiten"
+                    title="Bearbeiten"
                     @click.stop
                 >
-                    Bearbeiten
+                    <Pencil />
                 </RouterLink>
 
                 <button
                     type="button"
-                    class="btn-secondary card-action delete-button"
+                    class="icon-button delete-button"
+                    aria-label="Equipment löschen"
+                    title="Löschen"
                     @click.prevent.stop="onDelete"
                 >
-                    Löschen
+                    <Trash2 />
                 </button>
             </div>
 
@@ -200,15 +204,6 @@ onMounted(loadMainPhoto);
     overflow-wrap: anywhere;
 }
 
-.card-action {
-    min-height: 36px;
-    padding: 0 var(--space-l);
-    font-size: var(--text-label-size);
-    line-height: var(--text-label-line);
-    white-space: nowrap;
-    border-radius: var(--radius-tab);
-}
-
 .card-actions {
     display: flex;
     flex-shrink: 0;
@@ -219,10 +214,34 @@ onMounted(loadMainPhoto);
     margin-left: 0;
 }
 
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    color: var(--color-text-primary);
+    background: var(--color-soft-surface);
+    border: none;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.icon-button svg {
+    width: 16px;
+    height: 16px;
+}
+
 .delete-button {
     color: var(--color-error-text);
     background: var(--color-error-bg);
-    border-color: var(--color-error-text);
+}
+
+.delete-button:hover {
+    background: #fbdada;
 }
 
 .chevron {

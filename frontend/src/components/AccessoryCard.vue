@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCartStore } from '@/stores/CartStore.ts';
+import { Trash2 } from "lucide-vue-next";
 
 const props = defineProps<{
     id: string
@@ -23,7 +24,7 @@ const cart = useCartStore();
             </div>
         </div>
 
-        <button v-if="isAdmin" class="accessory-btn remove" @click="emit('remove', id)">Entfernen</button>
+        <button v-if="isAdmin" class="remove-button" @click="emit('remove', id)"><Trash2 /></button>
         <span v-else class="accessory-actions">
             <button class="accessory-btn" :hidden="!available || cart.has(id)" @click="cart.add(id)">{{ cart.has(id) ? '✓' : '+' }}</button>
             <button class="accessory-btn" :hidden="!available || cart.hasNot(id)" @click="cart.remove(id)">-</button>
@@ -109,12 +110,29 @@ const cart = useCartStore();
     outline-offset: 3px;
 }
 
-.accessory-btn.remove {
-    font-size: 13px;
-    font-weight: 700;
-    color: #B91C1C;
-    background: #FEECEC;
-    border-color: #FEECEC;
+.remove-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+.remove-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 43px;
+    height: 43px;
+    padding: 0;
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border: none;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.remove-button:hover {
+    background: #fbdada;
 }
 
 .unavailable {

@@ -15,6 +15,7 @@ interface Equipment {
     name: string;
     description?: string;
     code: string;
+    location: string;
 }
 
 defineProps<{
@@ -258,12 +259,8 @@ async function deletePhoto(photoId: number) {
 
             <div class="facts">
                 <div class="fact">
-                    <p class="meta">Inventarnr.</p>
-                    <p class="fact-value">{{ equipment.code }}</p>
-                </div>
-                <div class="fact">
-                    <p class="meta">Status</p>
-                    <p class="fact-value">{{ available === false ? 'Nicht verfügbar' : 'Verfügbar' }}</p>
+                    <p class="meta">Abholort</p>
+                    <p class="fact-value">{{ equipment.location }}</p>
                 </div>
             </div>
         </div>

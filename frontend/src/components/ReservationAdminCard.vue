@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useUsersStore } from '@/stores/UsersStore.ts';
 import { useEquipmentStore, type EquipmentPhoto } from "@/stores/EquipmentStore.ts";
 import type { Reservation } from '@/types/reservation';
+import { formatRange, formatTime } from '@/utils/dateFormat.ts';
 
 const props = defineProps<{
     reservation: Reservation;
@@ -31,29 +32,6 @@ onMounted(async () => {
         })
     );
 });
-
-function pad(n: number) {
-    return String(n).padStart(2, '0');
-}
-
-function formatRange(startText: string, endText: string) {
-    const start = new Date(startText);
-    const end = new Date(endText);
-    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-
-    if (sameMonth) {
-        const month = pad(start.getMonth() + 1) + '.' + start.getFullYear();
-        if (start.getDate() === end.getDate()) {
-            return pad(start.getDate()) + '.' + month;
-        }
-        return pad(start.getDate()) + '.–' + pad(end.getDate()) + '.' + month;
-    }
-    return start.toLocaleDateString('de-AT') + ' – ' + end.toLocaleDateString('de-AT');
-}
-
-function formatTime(text: string) {
-    return new Date(text).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
-}
 </script>
 
 <template>

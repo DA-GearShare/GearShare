@@ -217,31 +217,14 @@ function cancelAdd() {
 
     <p class="eyebrow">Verwaltung</p>
     <h1>Admin-Reservierungen</h1>
-    <p class="meta">Person auswählen und Reservierungszeiten einsehen.</p>
 
     <p v-if="reservationStore.error" class="error-text">{{ reservationStore.error }}</p>
 
     <div class="layout">
-        <aside class="persons">
-            <h2 class="persons-title">Personen</h2>
-
-            <RouterLink
-                v-for="reservation in reservations"
-                :key="reservation.id"
-                :to="`/admin/reservierungen/${reservation.id}`"
-                class="person-card"
-                :class="{ active: reservation.id === id }"
-            >
-                <div class="person-thumb">IMG</div>
-                <strong>{{ personName(reservation) }}</strong>
-                <span class="hint">{{ reservation.items.length }} Geräte</span>
-                <span class="hint">{{ formatDayMonth(reservation.startDatetime) }}–{{ formatDayMonth(reservation.endDatetime) }}</span>
-            </RouterLink>
-        </aside>
         <section v-if="selected" class="card detail">
             <div>
                 <h2 class="detail-name">{{ personName(selected) }}</h2>
-                <span class="hint">R-{{ selected.id.slice(-4).toUpperCase() }} · {{ statusLabel(selected.status) }}</span>
+                <span class="hint">{{ statusLabel(selected.status) }}</span>
             </div>
 
             <div class="time-box">
@@ -332,40 +315,9 @@ function cancelAdd() {
 }
 
 .layout {
-    display: grid;
-    grid-template-columns: 110px 1fr;
     gap: var(--space-s);
     align-items: start;
     margin-top: var(--space-l);
-}
-
-.persons {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-s);
-}
-
-.persons-title {
-    margin: 0;
-    font-size: var(--text-label-size);
-}
-
-.person-card {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: var(--space-s);
-    color: var(--color-text-primary);
-    text-decoration: none;
-    background: var(--color-surface);
-    border: var(--border-card);
-    border-radius: var(--radius-tab);
-    box-shadow: var(--shadow-card);
-}
-
-.person-card.active {
-    background: var(--color-info);
-    border-color: var(--color-accent);
 }
 
 .person-thumb,
@@ -441,12 +393,6 @@ function cancelAdd() {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-s);
-}
-
-@media (max-width: 640px) {
-    .device-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 .device-card {

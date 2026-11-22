@@ -21,13 +21,13 @@ final class EquipmentCreateDto
      * @param array<string, string> $errors
      */
     private function __construct(
-        public readonly string  $name = '',
-        public readonly string  $location = '',
-        public readonly string  $type = '',
-        public readonly string  $model = '',
+        public readonly string $name = '',
+        public readonly string $location = '',
+        public readonly string $type = '',
+        public readonly string $model = '',
         public readonly ?string $code = null,
         public readonly ?string $poolId = null,
-        private readonly array  $errors = [],
+        private readonly array $errors = [],
     ) {
     }
 
@@ -44,14 +44,14 @@ final class EquipmentCreateDto
         }
 
         foreach (self::REQUIRED_STRINGS as $field) {
-            if (!array_key_exists($field, $data)) {
+            if (!\array_key_exists($field, $data)) {
                 $errors[$field] = 'Pflichtfeld';
-            } elseif (!is_string($data[$field])) {
+            } elseif (!\is_string($data[$field])) {
                 $errors[$field] = 'Muss ein String sein';
             } elseif (($value = trim($data[$field])) === '') {
                 $errors[$field] = 'Darf nicht leer sein';
             } elseif (mb_strlen($value) > self::MAX_LENGTH) {
-                $errors[$field] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
+                $errors[$field] = \sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
             } else {
                 $values[$field] = $value;
             }
@@ -59,17 +59,17 @@ final class EquipmentCreateDto
 
         $code = null;
         if (isset($data['code'])) {
-            if (!is_string($data['code'])) {
+            if (!\is_string($data['code'])) {
                 $errors['code'] = 'Muss ein String oder null sein';
             } elseif (mb_strlen($code = trim($data['code'])) > self::MAX_LENGTH) {
-                $errors['code'] = sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
+                $errors['code'] = \sprintf('Maximal %d Zeichen', self::MAX_LENGTH);
             }
             $code = $code === '' ? null : $code;
         }
 
         $poolId = null;
         if (isset($data['poolId'])) {
-            if (!is_string($data['poolId']) || !Uuid::isValid($data['poolId'])) {
+            if (!\is_string($data['poolId']) || !Uuid::isValid($data['poolId'])) {
                 $errors['poolId'] = 'Muss eine UUID oder null sein';
             } else {
                 $poolId = strtolower($data['poolId']);

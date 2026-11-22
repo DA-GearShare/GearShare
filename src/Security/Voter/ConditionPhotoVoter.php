@@ -31,7 +31,7 @@ final class ConditionPhotoVoter extends Voter
             || ($attribute === self::UPLOAD && $subject instanceof Reservation);
     }
 
-    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, Vote|null $vote = null): bool
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
     {
         $user = $token->getUser();
         if (!$user instanceof User) {

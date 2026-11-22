@@ -20,10 +20,6 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
-    /**
-     * @param $id
-     * @return User|null
-     */
     public function findOneById($id): ?User
     {
         return $this->createQueryBuilder('u')
@@ -33,12 +29,6 @@ class UserRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    /**
-     * @param string|null $search
-     * @param int $page
-     * @param int $pageSize
-     * @return WindowPage
-     */
     public function findPaginated(?string $search, int $page, int $pageSize): WindowPage
     {
         $qb = $this->createQueryBuilder('u')
@@ -46,24 +36,23 @@ class UserRepository extends ServiceEntityRepository
 
         if ($search !== null && $search !== '') {
             $qb->andWhere('u.displayName LIKE :search OR u.email LIKE :search')
-                ->setParameter('search', '%' . $search . '%');
+                ->setParameter('search', '%'.$search.'%');
         }
 
         return new OffsetPaginator()
             ->paginate($qb->getQuery(), new Window(($page - 1) * $pageSize, $pageSize));
     }
 
-    /**
-     * @param User $user
-     * @param UserRolesDto $roles
-     * @param bool $flush
-     * @return void
-     */
     public function applyRoles(User $user, UserRolesDto $roles, bool $flush = true): void
     {
-        if ($roles->isAdmin !== null) $user->setIsAdmin($roles->isAdmin);
-        if ($roles->isTeacher !== null) $user->setIsTeacher($roles->isTeacher);
-        if ($flush) $this->getEntityManager()->flush();
+        if ($roles->isAdmin !== null) {
+            $user->setIsAdmin($roles->isAdmin);
+        }
+        if ($roles->isTeacher !== null) {
+            $user->setIsTeacher($roles->isTeacher);
+        }
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
-
 }

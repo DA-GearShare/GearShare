@@ -8,7 +8,9 @@ use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
 use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
+use App\Repository\ReservationItemRepository;
 use App\Service\EquipmentPhotoService;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use JsonException;
@@ -19,8 +21,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
-use DateTimeImmutable;
-use App\Repository\ReservationItemRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 
@@ -31,17 +31,23 @@ final class EquipmentController extends AbstractController
 
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
-        EquipmentRepository          $repository,
-        #[MapQueryParameter] string  $sort = 'name',
-        #[MapQueryParameter] string  $order = 'asc',
-        #[MapQueryParameter] ?string $from = null,
-        #[MapQueryParameter] ?string $to = null,
-        #[MapQueryParameter] ?string $search = null,
-        #[MapQueryParameter] int     $page = 1,
-        #[MapQueryParameter] int     $pageSize = 20,
-    ): Response
-    {
-        if (!in_array($sort, ['name', 'location', 'type']) || !in_array($order, ['asc', 'desc'])) {
+        EquipmentRepository $repository,
+        #[MapQueryParameter]
+        string $sort = 'name',
+        #[MapQueryParameter]
+        string $order = 'asc',
+        #[MapQueryParameter]
+        ?string $from = null,
+        #[MapQueryParameter]
+        ?string $to = null,
+        #[MapQueryParameter]
+        ?string $search = null,
+        #[MapQueryParameter]
+        int $page = 1,
+        #[MapQueryParameter]
+        int $pageSize = 20,
+    ): Response {
+        if (!\in_array($sort, ['name', 'location', 'type']) || !\in_array($order, ['asc', 'desc'])) {
             return new Response('Ungültige Sortierung.', Response::HTTP_BAD_REQUEST);
         }
         if ($page < 1 || $pageSize < 1) {
@@ -53,7 +59,7 @@ final class EquipmentController extends AbstractController
 
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
-            $toDate   = $to   ? new DateTimeImmutable($to)   : null;
+            $toDate = $to ? new DateTimeImmutable($to) : null;
         } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
@@ -64,7 +70,7 @@ final class EquipmentController extends AbstractController
 
         $result = $repository->findPaginated($sort, $order, $fromDate, $toDate, $search, $page, $pageSize);
 
-        $items = array_map(fn($e) => $this->serializeEquipment($e), $result['items']);
+        $items = array_map(fn ($e) => $this->serializeEquipment($e), $result['items']);
 
         return $this->json([
             'items' => $items,
@@ -76,12 +82,12 @@ final class EquipmentController extends AbstractController
             ],
         ]);
     }
+
     #[Route('/{equipmentId}', name: 'get', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
     public function getEquipment(
         Uuid $equipmentId,
         EquipmentRepository $repository,
-    ): Response
-    {
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -96,8 +102,7 @@ final class EquipmentController extends AbstractController
         Uuid $equipmentId,
         EquipmentRepository $repository,
         EquipmentPhotoService $photoService,
-    ): Response
-    {
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -116,10 +121,11 @@ final class EquipmentController extends AbstractController
         Uuid $equipmentId,
         EquipmentRepository $repository,
         ReservationItemRepository $reservationItemRepository,
-        #[MapQueryParameter] ?string $from = null,
-        #[MapQueryParameter] ?string $to = null,
-    ):Response
-    {
+        #[MapQueryParameter]
+        ?string $from = null,
+        #[MapQueryParameter]
+        ?string $to = null,
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -131,7 +137,7 @@ final class EquipmentController extends AbstractController
 
         try {
             $fromDate = $from ? new DateTimeImmutable($from) : null;
-            $toDate   = $to   ? new DateTimeImmutable($to)   : null;
+            $toDate = $to ? new DateTimeImmutable($to) : null;
         } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
@@ -140,18 +146,19 @@ final class EquipmentController extends AbstractController
             return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
         }
 
-        $accessories = $equipment->getAccessories()->filter(fn($accessory) => !$accessory->isDeleted())->getValues();
+        $accessories = $equipment->getAccessories()->filter(static fn ($accessory) => !$accessory->isDeleted())->getValues();
 
         $reservedIds = [];
         if ($fromDate !== null) {
             $reservedIds = $reservationItemRepository->findReservedEquipmentIds($accessories, $fromDate, $toDate);
         }
 
-        $items = array_map(fn($e) => [
+        $items = array_map(static fn ($e) => [
             'accessoryEquipmentId' => $e->getId(),
             'name' => $e->getName(),
-            'availableInRequestedPeriod' => !in_array($e->getId()->toRfc4122(), $reservedIds, true),
+            'availableInRequestedPeriod' => !\in_array($e->getId()->toRfc4122(), $reservedIds, true),
         ], $accessories);
+
         return $this->json($items);
     }
 
@@ -162,8 +169,7 @@ final class EquipmentController extends AbstractController
         Request $request,
         EquipmentRepository $repository,
         EntityManagerInterface $entityManager,
-    ):Response
-    {
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -172,7 +178,7 @@ final class EquipmentController extends AbstractController
         $data = $request->toArray();
         $accessoryId = $data['accessoryEquipmentId'] ?? null;
 
-        if (!is_string($accessoryId) || !Uuid::isValid($accessoryId)) {
+        if (!\is_string($accessoryId) || !Uuid::isValid($accessoryId)) {
             return new Response('accessoryEquipmentId fehlt oder ist ungültig.', Response::HTTP_BAD_REQUEST);
         }
 
@@ -202,8 +208,7 @@ final class EquipmentController extends AbstractController
         Uuid $accessoryId,
         EquipmentRepository $repository,
         EntityManagerInterface $entityManager,
-    ):Response
-    {
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -222,16 +227,15 @@ final class EquipmentController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'create', methods: ['POST'])]
     public function createEquipment(
-        Request             $request,
+        Request $request,
         EquipmentRepository $equipmentRepository,
-    ): Response
-    {
+    ): Response {
         try {
-            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+            $parameters = json_decode($request->getContent(), true, 8, \JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
         }
-        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+        if (!\is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
             return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
         }
 
@@ -249,7 +253,7 @@ final class EquipmentController extends AbstractController
         }
 
         return $this->json($this->serializeEquipment($equipment), Response::HTTP_CREATED, [
-            'Location' => '/api/v1/equipment/' . $equipment->getId()?->toRfc4122(),
+            'Location' => '/api/v1/equipment/'.$equipment->getId()?->toRfc4122(),
         ]);
     }
 
@@ -259,19 +263,18 @@ final class EquipmentController extends AbstractController
         Uuid $equipmentId,
         Request $request,
         EquipmentRepository $repository,
-    ): Response
-    {
+    ): Response {
         $equipment = $repository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
         }
 
         try {
-            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+            $parameters = json_decode($request->getContent(), true, 8, \JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return new Response('Malformed JSON', Response::HTTP_BAD_REQUEST);
         }
-        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+        if (!\is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
             return new Response('Body muss ein JSON Objekt sein', Response::HTTP_BAD_REQUEST);
         }
 
@@ -290,6 +293,7 @@ final class EquipmentController extends AbstractController
 
         return $this->json($this->serializeEquipment($equipment));
     }
+
     #[Route('/calendar', name: 'get_calendar', methods: ['POST'])]
     public function getCalendar(
         Request $request,
@@ -299,20 +303,20 @@ final class EquipmentController extends AbstractController
         $data = $request->toArray();
         $ids = $data['equipmentIds'] ?? [];
         $from = $data['from'] ?? null;
-        $to   = $data['to'] ?? null;
+        $to = $data['to'] ?? null;
 
-        if (!is_array($ids) || count($ids) === 0) {
+        if (!\is_array($ids) || \count($ids) === 0) {
             return new Response('equipmentIds muss eine nicht leere Liste sein.', Response::HTTP_BAD_REQUEST);
         }
-        if (count($ids) > 10) {
+        if (\count($ids) > 10) {
             return new Response('Es können maximal 10 Geräte ausgewählt werden.', Response::HTTP_BAD_REQUEST);
         }
-        if (!is_string($from) || !is_string($to)) {
+        if (!\is_string($from) || !\is_string($to)) {
             return new Response('from und to müssen angegeben werden.', Response::HTTP_BAD_REQUEST);
         }
         try {
             $fromDate = new DateTimeImmutable($from);
-            $toDate   = new DateTimeImmutable($to);
+            $toDate = new DateTimeImmutable($to);
         } catch (Exception) {
             return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
         }
@@ -321,7 +325,7 @@ final class EquipmentController extends AbstractController
         }
         $equipmentList = [];
         foreach (array_unique($ids) as $id) {
-            if (!is_string($id) || !Uuid::isValid($id)) {
+            if (!\is_string($id) || !Uuid::isValid($id)) {
                 return new Response('Ungültige  ID.'.$id, Response::HTTP_BAD_REQUEST);
             }
             $equipment = $repository->find(Uuid::fromString($id));
@@ -342,18 +346,19 @@ final class EquipmentController extends AbstractController
             $endDatetime = $reservation->getEndDatetime();
 
             $requestedEquipment = $item->getRequestedEquipment();
-            if ($requestedEquipment === null) { continue; }
+            if ($requestedEquipment === null) {
+                continue;
+            }
 
             $notAvailable[$requestedEquipment->getId()->toRfc4122()][] = [
-                'from' => $startDatetime->format(DATE_ATOM),
-                'to'   => $endDatetime->format(DATE_ATOM),
+                'from' => $startDatetime->format(\DATE_ATOM),
+                'to' => $endDatetime->format(\DATE_ATOM),
             ];
         }
 
-        return $this->json(array_map(fn(Equipment $e) => [
+        return $this->json(array_map(fn (Equipment $e) => [
             ...$this->serializeEquipment($e),
             'notAvailable' => $notAvailable[$e->getId()->toRfc4122()],
         ], $equipmentList));
     }
-
 }

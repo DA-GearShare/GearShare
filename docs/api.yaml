@@ -1207,23 +1207,23 @@ paths:
                 **Ablauf:**
 
                 1. Ist das gescannte Gerät bereits als Position in der Reservierung
-                   enthalten, wird diese Position als `issued` markiert. Eine bereits
-                   zurückgegebene Position (`returned`) wird nur dann erneut ausgegeben,
-                   wenn das Gerät im Reservierungszeitraum nicht anderweitig reserviert ist.
+                    enthalten, wird diese Position als `issued` markiert. Eine bereits
+                    zurückgegebene Position (`returned`) wird nur dann erneut ausgegeben,
+                    wenn das Gerät im Reservierungszeitraum nicht anderweitig reserviert ist.
 
                 2. Ist das Gerät **nicht** in der Reservierung enthalten und
-                   `confirmAdd` ist `false` (Standard), wird nichts geändert und
-                   mit `409` geantwortet. Die Antwort enthält das gescannte Gerät
-                   (`equipment`), damit das Frontend rückfragen kann, ob es
-                   hinzugefügt werden soll.
+                    `confirmAdd` ist `false` (Standard), wird nichts geändert und
+                    mit `409` geantwortet. Die Antwort enthält das gescannte Gerät
+                    (`equipment`), damit das Frontend rückfragen kann, ob es
+                    hinzugefügt werden soll.
 
                 3. Bestätigt der Admin, wird die Anfrage mit demselben `code` und
-                   `confirmAdd: true` erneut gesendet. Das Gerät wird als neue
-                   Position hinzugefügt und als `issued` markiert. Wird zusätzlich
-                   `replaceItemId` angegeben (Auswahl per Dropdown aus den
-                   Positionen der Reservierung), wird diese Position aus der
-                   Reservierung entfernt (das neue Gerät ersetzt sie). Ersetzt werden
-                   können nur Positionen im Status `requested`.
+                    `confirmAdd: true` erneut gesendet. Das Gerät wird als neue
+                    Position hinzugefügt und als `issued` markiert. Wird zusätzlich
+                    `replaceItemId` angegeben (Auswahl per Dropdown aus den
+                    Positionen der Reservierung), wird diese Position aus der
+                    Reservierung entfernt (das neue Gerät ersetzt sie). Ersetzt werden
+                    können nur Positionen im Status `requested`.
 
 
                 Nur Reservierungen im Status `requested` oder `active` erlauben eine Ausgabe.
@@ -1276,12 +1276,12 @@ paths:
                         Sonst eine `MessageError`, wenn:
                         - das Gerät in dieser Reservierung bereits ausgegeben ist,
                         - die zu ersetzende Position nicht mehr im Status `requested` ist
-                          (bereits ausgegeben oder zurückgegeben),
+                            (bereits ausgegeben oder zurückgegeben),
                         - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
-                          oder gelöscht ist (gilt auch für die erneute Ausgabe einer
-                          zurückgegebenen Position),
+                            oder gelöscht ist (gilt auch für die erneute Ausgabe einer
+                            zurückgegebenen Position),
                         - die Reservierung sich in einem Status befindet, der keine Ausgabe
-                          erlaubt (`denied`, `cancelled`, `returned`).
+                            erlaubt (`denied`, `cancelled`, `returned`).
                     content:
                         application/json:
                             schema:
@@ -1309,14 +1309,14 @@ paths:
 
 
                 - Entspricht das gescannte Gerät dem Gerät der Position, wird die
-                  Position als `issued` markiert. Eine bereits zurückgegebene Position
-                  (`returned`) wird nur dann erneut ausgegeben, wenn das Gerät im
-                  Reservierungszeitraum nicht anderweitig reserviert ist.
+                    Position als `issued` markiert. Eine bereits zurückgegebene Position
+                    (`returned`) wird nur dann erneut ausgegeben, wenn das Gerät im
+                    Reservierungszeitraum nicht anderweitig reserviert ist.
 
                 - Handelt es sich um ein anderes Gerät, wird die Position aus der
-                  Reservierung entfernt und das gescannte Gerät als neue Position
-                  hinzugefügt und als `issued` markiert. Ersetzt werden können nur
-                  Positionen im Status `requested`.
+                    Reservierung entfernt und das gescannte Gerät als neue Position
+                    hinzugefügt und als `issued` markiert. Ersetzt werden können nur
+                    Positionen im Status `requested`.
 
 
                 Nur Reservierungen im Status `requested` oder `active` erlauben eine Ausgabe.
@@ -1371,14 +1371,14 @@ paths:
                         Z. B. wenn:
                         - die Position (gleiches Gerät) bereits ausgegeben wurde,
                         - beim Ersetzen die Position nicht mehr im Status `requested` ist
-                          (bereits ausgegeben oder zurückgegeben),
+                            (bereits ausgegeben oder zurückgegeben),
                         - das gescannte Gerät bereits eine andere Position dieser Reservierung
-                          ist (stattdessen deren Scan verwenden),
+                            ist (stattdessen deren Scan verwenden),
                         - das Gerät im Reservierungszeitraum anderweitig reserviert/ausgegeben
-                          oder gelöscht ist (gilt auch für die erneute Ausgabe einer
-                          zurückgegebenen Position),
+                            oder gelöscht ist (gilt auch für die erneute Ausgabe einer
+                            zurückgegebenen Position),
                         - die Reservierung sich in einem Status befindet, der keine Ausgabe
-                          erlaubt (`denied`, `cancelled`, `returned`).
+                            erlaubt (`denied`, `cancelled`, `returned`).
                     content:
                         application/json:
                             schema:

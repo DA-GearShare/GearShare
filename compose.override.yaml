@@ -4,57 +4,57 @@
 #
 # is all you need. Production uses compose.prod.yaml instead (never this file).
 services:
-  gateway:
-    volumes:
-      - ./gateway/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Media routes (public equipment photos + internal condition photos).
-      - ./gateway/snippets:/etc/nginx/snippets:ro
-    depends_on:
-      frontend:
-        condition: service_started
+    gateway:
+        volumes:
+            - ./gateway/default.conf:/etc/nginx/conf.d/default.conf:ro
+            # Media routes (public equipment photos + internal condition photos).
+            - ./gateway/snippets:/etc/nginx/snippets:ro
+        depends_on:
+            frontend:
+                condition: service_started
 
-  app:
-    build:
-      target: dev
-    image: gearshare
-    environment:
-      APP_ENV: "${APP_ENV:-dev}"
-      APP_DEBUG: "${APP_DEBUG:-1}"
-      # Development value only.
-      APP_SECRET: "${APP_SECRET:-dev-only-not-a-production-secret}"
-      CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$$}"
-      DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
-      LOAD_FIXTURES: "${LOAD_FIXTURES:-1}"
-      # OAuth credentials and FRONTEND_URL come from .env / .env.local via the bind mount.
-    volumes:
-      # Live editing: changes in src/, templates/ and config/ are served
-      # immediately, no rebuild. Only public/ is reachable over HTTP.
-      - .:/var/www/html
+    app:
+        build:
+            target: dev
+        image: gearshare
+        environment:
+            APP_ENV: "${APP_ENV:-dev}"
+            APP_DEBUG: "${APP_DEBUG:-1}"
+            # Development value only.
+            APP_SECRET: "${APP_SECRET:-dev-only-not-a-production-secret}"
+            CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$$}"
+            DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
+            LOAD_FIXTURES: "${LOAD_FIXTURES:-1}"
+            # OAuth credentials and FRONTEND_URL come from .env / .env.local via the bind mount.
+        volumes:
+            # Live editing: changes in src/, templates/ and config/ are served
+            # immediately, no rebuild. Only public/ is reachable over HTTP.
+            - .:/var/www/html
 
-  frontend:
-    # Vue 3 + Vite dev server with hot module reload. Not published on its own
-    # port; the gateway forwards to it (see gateway/default.conf).
-    image: node:24-alpine
-    working_dir: /app
-    command: sh -c "npm install && npm run dev"
-    restart: unless-stopped
-    environment:
-      # Port the browser uses for the gateway, so hot reload connects through it.
-      VITE_PUBLIC_PORT: "${HTTP_PORT:-80}"
-      # Set to true if hot reload doesn't pick up changes (Docker Desktop on macOS/Windows).
-      CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-false}"
-    volumes:
-      - ./frontend:/app
-      # Keep node_modules inside Docker so host and container binaries don't clash.
-      - frontend_node_modules:/app/node_modules
+    frontend:
+        # Vue 3 + Vite dev server with hot module reload. Not published on its own
+        # port; the gateway forwards to it (see gateway/default.conf).
+        image: node:24-alpine
+        working_dir: /app
+        command: sh -c "npm install && npm run dev"
+        restart: unless-stopped
+        environment:
+            # Port the browser uses for the gateway, so hot reload connects through it.
+            VITE_PUBLIC_PORT: "${HTTP_PORT:-80}"
+            # Set to true if hot reload doesn't pick up changes (Docker Desktop on macOS/Windows).
+            CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-false}"
+        volumes:
+            - ./frontend:/app
+            # Keep node_modules inside Docker so host and container binaries don't clash.
+            - frontend_node_modules:/app/node_modules
 
-  database:
-    ports:
-      - "5432:5432"
+    database:
+        ports:
+            - "5432:5432"
 
-  seaweedfs:
-    # Master UI, for debugging only.
-    ports: [ "9333:9333" ]
+    seaweedfs:
+        # Master UI, for debugging only.
+        ports: [ "9333:9333" ]
 
 volumes:
-  frontend_node_modules:
+    frontend_node_modules:

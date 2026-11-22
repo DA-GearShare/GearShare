@@ -24,7 +24,6 @@ final class PhotoStorage
 
     /**
      * @return string der erkannte MIME-Type
-     *
      */
     public function putEquipment(UploadedFile $file, Uuid $id): string
     {
@@ -33,7 +32,6 @@ final class PhotoStorage
 
     /**
      * @return string der erkannte MIME-Type
-     *
      */
     public function putCondition(UploadedFile $file, Uuid $id): string
     {
@@ -59,11 +57,11 @@ final class PhotoStorage
     private function put(FilesystemOperator $fs, UploadedFile $file, Uuid $id): string
     {
         $mime = $file->getMimeType();
-        if (!in_array($mime, self::ALLOWED, true)) {
+        if (!\in_array($mime, self::ALLOWED, true)) {
             throw new UnsupportedMediaTypeHttpException('Nur JPEG, PNG oder WebP.');
         }
 
-        $stream = fopen($file->getPathname(), 'rb');
+        $stream = fopen($file->getPathname(), 'r');
         if ($stream === false) {
             throw new RuntimeException('Hochgeladene Datei konnte nicht gelesen werden.');
         }
@@ -72,7 +70,7 @@ final class PhotoStorage
             // Key = nur die UUID, passend zur Regex in media.conf
             $fs->writeStream($id->toRfc4122(), $stream, ['ContentType' => $mime]);
         } finally {
-            if (is_resource($stream)) {
+            if (\is_resource($stream)) {
                 fclose($stream);
             }
         }

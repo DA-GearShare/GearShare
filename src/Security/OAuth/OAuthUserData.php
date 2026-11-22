@@ -7,9 +7,9 @@ namespace App\Security\OAuth;
 final readonly class OAuthUserData
 {
     public function __construct(
-        public string  $provider,
-        public string  $providerUserId,
-        public string  $email,
+        public string $provider,
+        public string $providerUserId,
+        public string $email,
         public ?string $displayName = null,
     ) {
     }

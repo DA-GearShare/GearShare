@@ -31,10 +31,11 @@ class EquipmentRepository extends ServiceEntityRepository
     /**
      * @return array{items: Equipment[], totalItems: int}
      */
-    public function findPaginated(string $sort, string $order, ?DateTimeImmutable $from, ?DateTimeImmutable $to, ?string $search, int $page, int $pageSize ): array{
+    public function findPaginated(string $sort, string $order, ?DateTimeImmutable $from, ?DateTimeImmutable $to, ?string $search, int $page, int $pageSize): array
+    {
         $qb = $this->createQueryBuilder('e')
             ->where('e.deletedAt IS NULL')
-            ->orderBy('e.' . $sort, $order)
+            ->orderBy('e.'.$sort, $order)
             ->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
 
@@ -52,13 +53,14 @@ class EquipmentRepository extends ServiceEntityRepository
                 ->setParameter('to', $to);
         }
 
-        if ($search){
-            $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%' . $search . '%');
+        if ($search) {
+            $qb->andWhere('e.name LIKE :search OR e.model LIKE :search')->setParameter('search', '%'.$search.'%');
         }
         $paginator = new Paginator($qb);
+
         return [
             'items' => iterator_to_array($paginator),
-            'totalItems' => count($paginator),
+            'totalItems' => \count($paginator),
         ];
     }
 
@@ -86,10 +88,6 @@ class EquipmentRepository extends ServiceEntityRepository
         return (int) $count > 0;
     }
 
-    /**
-     * @param string $code
-     * @return Equipment|null
-     */
     public function findByCode(string $code): ?Equipment
     {
         return $this->createQueryBuilder('e')
@@ -115,12 +113,12 @@ class EquipmentRepository extends ServiceEntityRepository
 
         $max = 0;
         foreach ($codes as $code) {
-            if (preg_match('/^EQ-(\d+)$/', (string)$code, $m)) {
-                $max = max($max, (int)$m[1]);
+            if (preg_match('/^EQ-(\d+)$/', (string) $code, $m)) {
+                $max = max($max, (int) $m[1]);
             }
         }
 
-        return sprintf('EQ-%04d', $max + 1);
+        return \sprintf('EQ-%04d', $max + 1);
     }
 
     /**
@@ -144,7 +142,7 @@ class EquipmentRepository extends ServiceEntityRepository
 
         if ($dto->code !== null && $this->codeExists($dto->code)) {
             return new Response(
-                sprintf('Code "%s" ist bereits vergeben.', $dto->code),
+                \sprintf('Code "%s" ist bereits vergeben.', $dto->code),
                 Response::HTTP_CONFLICT
             );
         }
@@ -182,7 +180,7 @@ class EquipmentRepository extends ServiceEntityRepository
         $codeChanged = $dto->code !== null && $dto->code !== $equipment->getCode();
         if ($codeChanged && $this->codeExistsForOther($dto->code, $equipment)) {
             return new Response(
-                sprintf('Code "%s" ist bereits vergeben.', $dto->code),
+                \sprintf('Code "%s" ist bereits vergeben.', $dto->code),
                 Response::HTTP_CONFLICT
             );
         }
@@ -209,10 +207,6 @@ class EquipmentRepository extends ServiceEntityRepository
         return $equipment;
     }
 
-    /**
-     * @param Equipment $equipment
-     * @return void
-     */
     public function deleteEquipment(Equipment $equipment): void
     {
         $em = $this->getEntityManager();

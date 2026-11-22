@@ -23,28 +23,22 @@ use Throwable;
 #[Route('/api/v1/equipment', name: 'equipment_photo')]
 final class EquipmentPhotoController extends AbstractController
 {
-
     public function __construct(
-        #[Autowire('%env(MEDIA_BASE_URL)%')] private readonly string $mediaBaseUrl,
-        #[Autowire('%env(int:MAX_PHOTO_MB)%')] private readonly int $maxPhotoMB,
-        #[Autowire('%env(int:MAX_PHOTOS_PER_EQUIPMENT)%')] private readonly int $maxPhotosPerEquipment,
-    )
-    {
+        #[Autowire('%env(MEDIA_BASE_URL)%')]
+        private readonly string $mediaBaseUrl,
+        #[Autowire('%env(int:MAX_PHOTO_MB)%')]
+        private readonly int $maxPhotoMB,
+        #[Autowire('%env(int:MAX_PHOTOS_PER_EQUIPMENT)%')]
+        private readonly int $maxPhotosPerEquipment,
+    ) {
     }
 
-    /**
-     * @param Uuid $equipmentId
-     * @param EquipmentPhotoRepository $photoRepository
-     * @param EquipmentRepository $equipmentRepository
-     * @return Response
-     */
     #[Route('/{equipmentId}/photos', name: 'photo_list', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
     public function listPhotos(
-        Uuid                     $equipmentId,
+        Uuid $equipmentId,
         EquipmentPhotoRepository $photoRepository,
-        EquipmentRepository      $equipmentRepository,
-    ): Response
-    {
+        EquipmentRepository $equipmentRepository,
+    ): Response {
         $equipment = $equipmentRepository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -56,7 +50,6 @@ final class EquipmentPhotoController extends AbstractController
         ));
     }
 
-
     /**
      * @throws FilesystemException
      * @throws Throwable
@@ -64,13 +57,12 @@ final class EquipmentPhotoController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     #[Route('/{equipmentId}/photos', name: 'photo_upload', requirements: ['equipmentId' => Requirement::UUID], methods: ['POST'])]
     public function uploadPhoto(
-        Uuid                     $equipmentId,
-        Request                  $request,
-        PhotoStorage             $storage,
+        Uuid $equipmentId,
+        Request $request,
+        PhotoStorage $storage,
         EquipmentPhotoRepository $photoRepository,
-        EquipmentRepository      $equipmentRepository,
-    ): Response
-    {
+        EquipmentRepository $equipmentRepository,
+    ): Response {
         $equipment = $equipmentRepository->find($equipmentId);
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
@@ -84,11 +76,11 @@ final class EquipmentPhotoController extends AbstractController
             return new Response($file->getErrorMessage(), Response::HTTP_BAD_REQUEST);
         }
         if ($file->getSize() > ($this->maxPhotoMB * 1024 * 1024)) {
-            return new Response(sprintf('Maximal %s MB pro Foto', $this->maxPhotoMB), Response::HTTP_BAD_REQUEST);
+            return new Response(\sprintf('Maximal %s MB pro Foto', $this->maxPhotoMB), Response::HTTP_BAD_REQUEST);
         }
 
-        if (count($equipment->getPhotos()) >= $this->maxPhotosPerEquipment) {
-            return new Response(sprintf('Maximal %s Fotos pro Equipment', $this->maxPhotosPerEquipment), Response::HTTP_BAD_REQUEST);
+        if (\count($equipment->getPhotos()) >= $this->maxPhotosPerEquipment) {
+            return new Response(\sprintf('Maximal %s Fotos pro Equipment', $this->maxPhotosPerEquipment), Response::HTTP_BAD_REQUEST);
         }
 
         $id = Uuid::v4();
@@ -98,7 +90,7 @@ final class EquipmentPhotoController extends AbstractController
             $photo = $photoRepository->createForEquipment(
                 $equipment,
                 $id,
-                rtrim($this->mediaBaseUrl, '/') . '/equipment/' . $id->toRfc4122(),
+                rtrim($this->mediaBaseUrl, '/').'/equipment/'.$id->toRfc4122(),
                 $request->request->getBoolean('isMain'),
             );
         } catch (Throwable $e) {
@@ -112,37 +104,14 @@ final class EquipmentPhotoController extends AbstractController
         return $this->json($this->serializePhoto($photo), Response::HTTP_CREATED);
     }
 
-    /**
-     * @param EquipmentPhoto $photo
-     * @return array
-     */
-    private function serializePhoto(EquipmentPhoto $photo): array
-    {
-        return [
-            'id' => $photo->getId()->toRfc4122(),
-            'equipmentId' => $photo->getEquipment()?->getId()?->toRfc4122(),
-            'url' => $photo->getUrl(),
-            'isMain' => $photo->isMain(),
-            'uploadedAt' => $photo->getUploadedAt()?->format(DATE_ATOM),
-        ];
-    }
-
-    /**
-     * @param Uuid $equipmentId
-     * @param Uuid $photoId
-     * @param EquipmentPhotoRepository $photoRepository
-     * @param EquipmentRepository $equipmentRepository
-     * @return Response
-     */
     #[IsGranted('ROLE_ADMIN')]
     #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_mark_isMain', requirements: ['equipmentId' => Requirement::UUID, 'photoId' => Requirement::UUID], methods: ['PATCH'])]
     public function markAsMainPhoto(
-        Uuid                     $equipmentId,
-        Uuid                     $photoId,
+        Uuid $equipmentId,
+        Uuid $photoId,
         EquipmentPhotoRepository $photoRepository,
-        EquipmentRepository      $equipmentRepository,
-    ): Response
-    {
+        EquipmentRepository $equipmentRepository,
+    ): Response {
         $equipment = $equipmentRepository->find($equipmentId);
         $photo = $photoRepository->find($photoId);
 
@@ -155,14 +124,40 @@ final class EquipmentPhotoController extends AbstractController
         return $this->json($this->serializePhoto($photo));
     }
 
-    /**
-     * @param EquipmentPhoto|null $photo
-     * @param Equipment|null $equipment
-     * @return Response|null
-     */
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', requirements: ['equipmentId' => Requirement::UUID, 'photoId' => Requirement::UUID], methods: ['DELETE'])]
+    public function deletePhoto(
+        Uuid $equipmentId,
+        Uuid $photoId,
+        EquipmentPhotoRepository $photoRepository,
+        EquipmentRepository $equipmentRepository,
+        EquipmentPhotoService $photoService,
+    ): Response {
+        $equipment = $equipmentRepository->find($equipmentId);
+        $photo = $photoRepository->find($photoId);
+
+        if ($notFound = $this->checkPhotoBelongsTo($photo, $equipment)) {
+            return $notFound;
+        }
+
+        $photoService->delete($photo, $equipment);
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    private function serializePhoto(EquipmentPhoto $photo): array
+    {
+        return [
+            'id' => $photo->getId()->toRfc4122(),
+            'equipmentId' => $photo->getEquipment()?->getId()?->toRfc4122(),
+            'url' => $photo->getUrl(),
+            'isMain' => $photo->isMain(),
+            'uploadedAt' => $photo->getUploadedAt()?->format(\DATE_ATOM),
+        ];
+    }
+
     private function checkPhotoBelongsTo(?EquipmentPhoto $photo, ?Equipment $equipment): ?Response
     {
-
         if ($equipment === null || $equipment->isDeleted()) {
             return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
         }
@@ -176,35 +171,5 @@ final class EquipmentPhotoController extends AbstractController
         }
 
         return null;
-    }
-
-    /**
-     * @param Uuid $equipmentId
-     * @param Uuid $photoId
-     * @param EquipmentPhotoRepository $photoRepository
-     * @param EquipmentRepository $equipmentRepository
-     * @param EquipmentPhotoService $photoService
-     * @return Response
-     */
-    #[IsGranted('ROLE_ADMIN')]
-    #[Route('/{equipmentId}/photos/{photoId}', name: 'photo_delete', requirements: ['equipmentId' => Requirement::UUID, 'photoId' => Requirement::UUID], methods: ['DELETE'])]
-    public function deletePhoto(
-        Uuid                     $equipmentId,
-        Uuid                     $photoId,
-        EquipmentPhotoRepository $photoRepository,
-        EquipmentRepository      $equipmentRepository,
-        EquipmentPhotoService    $photoService,
-    ): Response
-    {
-        $equipment = $equipmentRepository->find($equipmentId);
-        $photo = $photoRepository->find($photoId);
-
-        if ($notFound = $this->checkPhotoBelongsTo($photo, $equipment)) {
-            return $notFound;
-        }
-
-        $photoService->delete($photo, $equipment);
-
-        return new Response(null, Response::HTTP_NO_CONTENT);
     }
 }

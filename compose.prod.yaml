@@ -17,49 +17,49 @@
 # The gateway speaks plain HTTP. Put a TLS-terminating proxy in front of it
 # (it forwards X-Forwarded-Proto, Symfony trusts private-range proxies).
 services:
-  gateway:
-    image: ${IMAGES_PREFIX:-}gearshare-gateway
-    build:
-      # Context is the frontend (filtered by frontend/.dockerignore);
-      # nginx config comes in through the extra "gateway" context.
-      context: ./frontend
-      dockerfile: ../gateway/Dockerfile
-      additional_contexts:
-        gateway: ./gateway
+    gateway:
+        image: ${IMAGES_PREFIX:-}gearshare-gateway
+        build:
+            # Context is the frontend (filtered by frontend/.dockerignore);
+            # nginx config comes in through the extra "gateway" context.
+            context: ./frontend
+            dockerfile: ../gateway/Dockerfile
+            additional_contexts:
+                gateway: ./gateway
 
-  app:
-    image: ${IMAGES_PREFIX:-}gearshare-prod
-    build:
-      target: prod
-    environment:
-      APP_ENV: prod
-      APP_DEBUG: "0"
-      APP_SECRET: "${APP_SECRET:?set APP_SECRET (e.g. openssl rand -hex 32)}"
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8"
-      # Public URL of the site, e.g. https://gearshare.example.com
-      DEFAULT_URI: "${DEFAULT_URI:?set DEFAULT_URI to the public URL}"
-      FRONTEND_URL: "${FRONTEND_URL:-${DEFAULT_URI}}"
-      # Regex, e.g. ^https://gearshare\.example\.com$
-      CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:?set CORS_ALLOW_ORIGIN}"
-      LOAD_FIXTURES: "0"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
-      OAUTH_GITHUB_CLIENT_ID: "${OAUTH_GITHUB_CLIENT_ID:?set OAUTH_GITHUB_CLIENT_ID}"
-      OAUTH_GITHUB_CLIENT_SECRET: "${OAUTH_GITHUB_CLIENT_SECRET:?set OAUTH_GITHUB_CLIENT_SECRET}"
-      OAUTH_MS_CLIENT_ID: "${OAUTH_MS_CLIENT_ID:?set OAUTH_MS_CLIENT_ID}"
-      OAUTH_MS_CLIENT_SECRET: "${OAUTH_MS_CLIENT_SECRET:?set OAUTH_MS_CLIENT_SECRET}"
-      OAUTH_MS_TENANT_ID: "${OAUTH_MS_TENANT_ID:?set OAUTH_MS_TENANT_ID}"
+    app:
+        image: ${IMAGES_PREFIX:-}gearshare-prod
+        build:
+            target: prod
+        environment:
+            APP_ENV: prod
+            APP_DEBUG: "0"
+            APP_SECRET: "${APP_SECRET:?set APP_SECRET (e.g. openssl rand -hex 32)}"
+            DATABASE_URL: "postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8"
+            # Public URL of the site, e.g. https://gearshare.example.com
+            DEFAULT_URI: "${DEFAULT_URI:?set DEFAULT_URI to the public URL}"
+            FRONTEND_URL: "${FRONTEND_URL:-${DEFAULT_URI}}"
+            # Regex, e.g. ^https://gearshare\.example\.com$
+            CORS_ALLOW_ORIGIN: "${CORS_ALLOW_ORIGIN:?set CORS_ALLOW_ORIGIN}"
+            LOAD_FIXTURES: "0"
+            S3_ACCESS_KEY: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
+            S3_SECRET_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
+            OAUTH_GITHUB_CLIENT_ID: "${OAUTH_GITHUB_CLIENT_ID:?set OAUTH_GITHUB_CLIENT_ID}"
+            OAUTH_GITHUB_CLIENT_SECRET: "${OAUTH_GITHUB_CLIENT_SECRET:?set OAUTH_GITHUB_CLIENT_SECRET}"
+            OAUTH_MS_CLIENT_ID: "${OAUTH_MS_CLIENT_ID:?set OAUTH_MS_CLIENT_ID}"
+            OAUTH_MS_CLIENT_SECRET: "${OAUTH_MS_CLIENT_SECRET:?set OAUTH_MS_CLIENT_SECRET}"
+            OAUTH_MS_TENANT_ID: "${OAUTH_MS_TENANT_ID:?set OAUTH_MS_TENANT_ID}"
 
-  database:
-    environment:
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}"
+    database:
+        environment:
+            POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}"
 
-  seaweedfs:
-    environment:
-      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
-      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
+    seaweedfs:
+        environment:
+            AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
+            AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
 
-  seaweedfs-init:
-    environment:
-      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
-      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
+    seaweedfs-init:
+        environment:
+            AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
+            AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"

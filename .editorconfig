@@ -16,6 +16,12 @@ trim_trailing_whitespace = true
 [*.{yml,yaml}]
 indent_size = 4
 
+# nginx gateway conf
+[gateway/**.conf]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
 # Symfony-Konfiguration
 [**/{Dockerfile,*.sh}]
 indent_style = tab

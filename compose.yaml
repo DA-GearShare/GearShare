@@ -23,126 +23,126 @@
 # /media is reserved for user-uploaded content. Do NOT create frontend/public/media,
 # the gateway would shadow it. Build-time assets (logos, icons) stay in frontend/public.
 services:
-  gateway:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "${HTTP_PORT:-80}:80"
-    depends_on:
-      app:
-        condition: service_started
-      seaweedfs:
-        condition: service_started
+    gateway:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "${HTTP_PORT:-80}:80"
+        depends_on:
+            app:
+                condition: service_started
+            seaweedfs:
+                condition: service_started
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    # No published port: reached through the gateway.
-    environment:
-      DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
-      # Image storage (S3 API). The app is the only writer, all uploads go through it.
-      S3_ENDPOINT: "http://seaweedfs:8333"
-      S3_REGION: "${S3_REGION:-eu-central-1}"
-      # Public, non-sensitive photos: browsers read them via MEDIA_BASE_URL/equipment/<uuid>.
-      S3_EQUIPMENT_BUCKET: "${S3_EQUIPMENT_BUCKET:-equipment}"
-      # Sensitive photos: never public. Read only through the auth-checked API endpoint.
-      S3_CONDITION_BUCKET: "${S3_CONDITION_BUCKET:-condition}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY:-gearshare-dev}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
-      S3_USE_PATH_STYLE: "true"
-      MEDIA_BASE_URL: "/media"
-      # Path the gateway serves internally for X-Accel-Redirect (see gateway/snippets/media.conf).
-      CONDITION_ACCEL_PREFIX: "/_internal/condition"
-      MAX_PHOTO_MB: "${MAX_PHOTO_MB:-15}"
-      MAX_PHOTOS_PER_EQUIPMENT: "${MAX_PHOTOS_PER_EQUIPMENT:-5}"
-    depends_on:
-      database:
-        condition: service_healthy
-      seaweedfs-init:
-        condition: service_completed_successfully
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        # No published port: reached through the gateway.
+        environment:
+            DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
+            # Image storage (S3 API). The app is the only writer, all uploads go through it.
+            S3_ENDPOINT: "http://seaweedfs:8333"
+            S3_REGION: "${S3_REGION:-eu-central-1}"
+            # Public, non-sensitive photos: browsers read them via MEDIA_BASE_URL/equipment/<uuid>.
+            S3_EQUIPMENT_BUCKET: "${S3_EQUIPMENT_BUCKET:-equipment}"
+            # Sensitive photos: never public. Read only through the auth-checked API endpoint.
+            S3_CONDITION_BUCKET: "${S3_CONDITION_BUCKET:-condition}"
+            S3_ACCESS_KEY: "${S3_ACCESS_KEY:-gearshare-dev}"
+            S3_SECRET_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+            S3_USE_PATH_STYLE: "true"
+            MEDIA_BASE_URL: "/media"
+            # Path the gateway serves internally for X-Accel-Redirect (see gateway/snippets/media.conf).
+            CONDITION_ACCEL_PREFIX: "/_internal/condition"
+            MAX_PHOTO_MB: "${MAX_PHOTO_MB:-15}"
+            MAX_PHOTOS_PER_EQUIPMENT: "${MAX_PHOTOS_PER_EQUIPMENT:-5}"
+        depends_on:
+            database:
+                condition: service_healthy
+            seaweedfs-init:
+                condition: service_completed_successfully
 
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}" ]
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    volumes:
-      - database_data:/var/lib/postgresql:rw
+    database:
+        image: postgres:${POSTGRES_VERSION:-16}-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB:-app}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+            POSTGRES_USER: ${POSTGRES_USER:-app}
+        healthcheck:
+            test: [ "CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}" ]
+            timeout: 5s
+            retries: 5
+            start_period: 60s
+        volumes:
+            - database_data:/var/lib/postgresql:rw
 
-  # Object storage for images. master + volume + filer + S3 run in one container
-  # ("weed server"). The S3 API (:8333) and the filer (:8888) are reachable from
-  # inside the Docker network only:
-  #   app      -> S3 :8333     (uploads, with credentials)
-  #   gateway  -> filer :8888  (public equipment/<uuid> and the internal condition route)
-  # The filer has no auth, so it must never get a published port or a catch-all route.
-  seaweedfs:
-    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-latest}   # pin a release for reproducible builds
-    restart: unless-stopped
-    command: >
-      server
-      -ip=seaweedfs
-      -ip.bind=0.0.0.0
-      -dir=/data
-      -filer
-      -filer.disableDirListing
-      -s3
-      -s3.port=8333
-      -master.volumeSizeLimitMB=256
-      -volume.max=32
-    environment:
-      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
-      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
-    volumes:
-      - seaweedfs_data:/data
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/healthz" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
+    # Object storage for images. master + volume + filer + S3 run in one container
+    # ("weed server"). The S3 API (:8333) and the filer (:8888) are reachable from
+    # inside the Docker network only:
+    #   app      -> S3 :8333     (uploads, with credentials)
+    #   gateway  -> filer :8888  (public equipment/<uuid> and the internal condition route)
+    # The filer has no auth, so it must never get a published port or a catch-all route.
+    seaweedfs:
+        image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-latest}   # pin a release for reproducible builds
+        restart: unless-stopped
+        command: >
+            server
+            -ip=seaweedfs
+            -ip.bind=0.0.0.0
+            -dir=/data
+            -filer
+            -filer.disableDirListing
+            -s3
+            -s3.port=8333
+            -master.volumeSizeLimitMB=256
+            -volume.max=32
+        environment:
+            AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+            AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+        volumes:
+            - seaweedfs_data:/data
+        healthcheck:
+            test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/healthz" ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 20s
 
-  # One-shot job: creates the equipment and condition buckets if they don't exist, then exits.
-  seaweedfs-init:
-    image: amazon/aws-cli
-    restart: "no"
-    environment:
-      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
-      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
-      AWS_DEFAULT_REGION: "eu-central-1"
-      BUCKETS: "${S3_EQUIPMENT_BUCKET:-equipment} ${S3_CONDITION_BUCKET:-condition}"
-    entrypoint: [ "/bin/sh", "-c" ]
-    command:
-      - |
-        EP=http://seaweedfs:8333
-        for B in $$BUCKETS; do
-          ok=0
-          for i in $$(seq 1 30); do
-            if aws --endpoint-url $$EP s3api head-bucket --bucket $$B 2>/dev/null \
-               || aws --endpoint-url $$EP s3 mb s3://$$B; then
-              ok=1
-              break
-            fi
-            sleep 2
-          done
-          if [ $$ok -ne 1 ]; then
-            echo "could not create bucket $$B" >&2
-            exit 1
-          fi
-          echo "bucket $$B ready"
-        done
-    depends_on:
-      seaweedfs:
-        condition: service_healthy
+    # One-shot job: creates the equipment and condition buckets if they don't exist, then exits.
+    seaweedfs-init:
+        image: amazon/aws-cli
+        restart: "no"
+        environment:
+            AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-gearshare-dev}"
+            AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-gearshare-dev-secret}"
+            AWS_DEFAULT_REGION: "eu-central-1"
+            BUCKETS: "${S3_EQUIPMENT_BUCKET:-equipment} ${S3_CONDITION_BUCKET:-condition}"
+        entrypoint: [ "/bin/sh", "-c" ]
+        command:
+            - |
+                EP=http://seaweedfs:8333
+                for B in $$BUCKETS; do
+                  ok=0
+                  for i in $$(seq 1 30); do
+                    if aws --endpoint-url $$EP s3api head-bucket --bucket $$B 2>/dev/null \
+                       || aws --endpoint-url $$EP s3 mb s3://$$B; then
+                      ok=1
+                      break
+                    fi
+                    sleep 2
+                  done
+                  if [ $$ok -ne 1 ]; then
+                    echo "could not create bucket $$B" >&2
+                    exit 1
+                  fi
+                  echo "bucket $$B ready"
+                done
+        depends_on:
+            seaweedfs:
+                condition: service_healthy
 
 volumes:
-  database_data:
-  seaweedfs_data:
+    database_data:
+    seaweedfs_data:

@@ -76,7 +76,13 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "lint": "php-cs-fixer check --diff",
+        "fix": "php-cs-fixer fix"
+    },
+    "scripts-descriptions": {
+        "lint": "Checks Code-Stil of PHP",
+        "fix": "Fixes Code-Stil of PHP"
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -90,6 +96,7 @@
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.3",
+        "friendsofphp/php-cs-fixer": "^3.95",
         "symfony/maker-bundle": "^1.68"
     }
 }

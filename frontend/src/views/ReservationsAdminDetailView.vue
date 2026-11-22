@@ -14,9 +14,17 @@ const reservationStore = useReservationStore();
 const usersStore = useUsersStore();
 const equipmentStore = useEquipmentStore();
 
-const id = computed(() => route.params.id as string);
-const reservations = computed<Reservation[]>(() => reservationStore.reservations ?? []);
-const selected = computed(() => reservations.value.find(r => r.id === id.value));
+const id = computed(() => {
+    return route.params.id as string;
+});
+const reservations = computed<Reservation[]>(() => {
+    return reservationStore.reservations ?? [];
+});
+const selected = computed(() => {
+    return reservations.value.find(r => {
+        return r.id === id.value;
+    });
+});
 
 onMounted(() => {
     reservationStore.fetchReservations();
@@ -24,7 +32,9 @@ onMounted(() => {
 });
 
 function personName(reservation: Reservation) {
-    const user = usersStore.users.find(u => u.id === reservation.requestedByUserId);
+    const user = usersStore.users.find(u => {
+        return u.id === reservation.requestedByUserId;
+    });
     return user?.name ?? user?.email ?? '…';
 }
 

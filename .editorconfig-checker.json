@@ -1,0 +1,10 @@
+{
+    "Exclude": [
+        "^vendor/",
+        "^var/",
+        "^public/bundles/",
+        "^migrations/",
+        "^\\.idea/",
+        "\\.(woff2|png|jpe?g|gif|ico|svg)$"
+    ]
+}

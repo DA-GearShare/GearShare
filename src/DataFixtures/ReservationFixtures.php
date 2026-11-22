@@ -54,7 +54,7 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
 
     public function getDependencies(): array
     {
-        return [EquipmentFixtures::class, UserFixtures::class];
+        return [EquipmentFixtures::class, U::class];
     }
 
     public static function getGroups(): array
@@ -70,9 +70,9 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
             $startAt = $this->at(...$start);
             $endAt = $this->at(...$end);
 
-            $user = $this->getReference(UserFixtures::ref($requestedBy), User::class);
+            $user = $this->getReference(U::ref($requestedBy), User::class);
 
-            $reservation = (new Reservation())
+            $reservation = new Reservation()
                 ->setRequestedBy($user)
                 ->setResponsibleUser($user)
                 ->setStatus($status)
@@ -97,15 +97,15 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
         DateTimeImmutable $startAt,
         DateTimeImmutable $endAt,
     ): ReservationItem {
-        $item = (new ReservationItem())
+        $item = new ReservationItem()
             ->setRequestedEquipment($equipment)
             ->setStatus(match ($status) {
-                ReservationStatus::Active   => ReservationItemStatus::Issued,
+                ReservationStatus::Active => ReservationItemStatus::Issued,
                 ReservationStatus::Returned => ReservationItemStatus::Returned,
-                default                     => ReservationItemStatus::Requested,
+                default => ReservationItemStatus::Requested,
             });
 
-        if (in_array($status, [ReservationStatus::Active, ReservationStatus::Returned], true)) {
+        if (\in_array($status, [ReservationStatus::Active, ReservationStatus::Returned], true)) {
             $item->setIssuedAt($startAt);
         }
 
@@ -120,8 +120,8 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface, 
     {
         [$hour, $minute] = array_map('intval', explode(':', $time));
 
-        return (new DateTimeImmutable('today'))
-            ->modify(sprintf('%+d days', $dayOffset))
+        return new DateTimeImmutable('today')
+            ->modify(\sprintf('%+d days', $dayOffset))
             ->setTime($hour, $minute);
     }
 }

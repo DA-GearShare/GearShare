@@ -31,11 +31,11 @@ final class UserRolesDto
         $errors = [];
 
         foreach (array_diff(array_keys($data), self::ALLOWED_FIELDS) as $key) {
-            $errors[(string)$key] = 'Unbekanntes Feld';
+            $errors[(string) $key] = 'Unbekanntes Feld';
         }
 
         foreach (self::ALLOWED_FIELDS as $field) {
-            if (array_key_exists($field, $data) && !is_bool($data[$field])) {
+            if (\array_key_exists($field, $data) && !\is_bool($data[$field])) {
                 $errors[$field] = 'Muss ein Boolean sein';
             }
         }

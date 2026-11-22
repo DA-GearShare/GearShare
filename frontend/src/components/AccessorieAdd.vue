@@ -25,7 +25,9 @@ async function load() {
     if (!res.ok) return;
 
     const data = await res.json();
-    equipment.value = data.items.filter((item: any) => item.id !== props.equipmentId);
+    equipment.value = data.items.filter((item: any) => {
+        return item.id !== props.equipmentId;
+    });
     totalPages.value = data.meta.totalPages;
 }
 

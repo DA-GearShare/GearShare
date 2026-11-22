@@ -1,0 +1,119 @@
+name: Lint
+
+on:
+    push:
+        branches: [ '**' ]
+    pull_request:
+        branches: [ main ]
+    workflow_dispatch: ~
+
+permissions:
+    contents: read
+
+concurrency:
+    group: lint-${{ github.event_name }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    php:
+        name: PHP & Symfony
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v5
+
+            -   uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.5'
+                    extensions: ctype, iconv, intl, pdo_pgsql
+                    tools: composer
+                    coverage: none
+
+            -   name: Get Composer cache directory
+                id: composer-cache
+                run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+            -   uses: actions/cache@v4
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: composer-${{ hashFiles('composer.lock') }}
+                    restore-keys: composer-
+
+            -   name: Validate composer.json
+                run: composer validate --no-check-publish
+
+            -   name: Install dependencies
+                run: composer install --no-interaction --no-progress --prefer-dist
+
+            -   name: PHP syntax
+                run: git ls-files -z '*.php' | xargs -0 -n1 php -d display_errors=stderr -l > /dev/null
+
+            -   name: YAML config
+                run: php bin/console lint:yaml config --parse-tags
+
+            -   name: Service container
+                run: php bin/console lint:container
+
+            -   name: Doctrine mapping
+                run: php bin/console doctrine:schema:validate --skip-sync
+
+    code-style:
+        name: Code style
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v5
+
+            -   uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.5'
+                    extensions: ctype, iconv, intl
+                    tools: composer
+                    coverage: none
+
+            -   name: Get Composer cache directory
+                id: composer-cache
+                run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+            -   uses: actions/cache@v4
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: composer-${{ hashFiles('composer.lock') }}
+                    restore-keys: composer-
+
+            -   name: Install dependencies
+                run: composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+            -   name: PHP-CS-Fixer
+                run: vendor/bin/php-cs-fixer check --diff --show-progress=none
+
+            -   name: editorconfig-checker
+                if: ${{ !cancelled() }}
+                run: docker run --rm -v "$PWD":/check -w /check mstruebing/editorconfig-checker:v3.4.0 ec
+
+    frontend:
+        name: Frontend
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: frontend
+        steps:
+            -   uses: actions/checkout@v5
+
+            -   uses: actions/setup-node@v5
+                with:
+                    node-version: '24'
+                    cache: npm
+                    cache-dependency-path: frontend/package-lock.json
+
+            -   name: Install dependencies
+                run: npm ci --no-audit --no-fund
+
+            -   name: Oxlint
+                run: npx oxlint . --format=github
+
+            -   name: ESLint
+                if: ${{ !cancelled() }}
+                run: npx eslint . --max-warnings=0
+
+            -   name: TypeScript
+                if: ${{ !cancelled() }}
+                run: npm run type-check

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore';
-import type { Reservation } from '@/types/reservation';
+import { formatRange, formatTime } from '@/utils/dateFormat.ts';
+import type { Reservation, ReservationItem } from '@/types/reservation';
 
 const props = defineProps<{
     reservation: Reservation;
@@ -10,14 +11,33 @@ const props = defineProps<{
 const equipmentStore = useEquipmentStore();
 const expanded = ref(false);
 const equipmentById = ref<Record<string, { name: string; category: string }>>({});
+const equipmentPhotos = ref<Record<string, string>>({});
 
-function formatDate(text: string) {
-    return new Date(text).toLocaleDateString('de-AT');
+async function loadPhoto(item: ReservationItem) {
+    const id = item.requestedEquipmentId;
+
+    if (!id || equipmentPhotos.value[id]) {
+        return;
+    }
+
+    const photo = await equipmentStore.fetchMainPhoto(id);
+    if (photo) {
+        equipmentPhotos.value[id] = photo.url;
+    }
 }
 
-function formatTime(text: string) {
-    return new Date(text).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+function getPhoto(item: ReservationItem) {
+    if (!item.requestedEquipmentId) {
+        return '';
+    }
+    return equipmentPhotos.value[item.requestedEquipmentId] || '';
 }
+
+onMounted(() => {
+    for (const item of props.reservation.items.slice(0, 3)) {
+        loadPhoto(item);
+    }
+});
 
 async function toggle() {
     expanded.value = !expanded.value;
@@ -37,20 +57,25 @@ async function toggle() {
         if (equipment) {
             equipmentById.value[id] = { name: equipment.name, category: equipment.category };
         }
+
+        await loadPhoto(item);
     }
 }
 </script>
 
 <template>
     <article class="card reservation">
-        <div class="card-row">
+        <div class="top">
             <div class="date-box">
-                <strong>{{ formatDate(reservation.startDatetime) }} – {{ formatDate(reservation.endDatetime) }}</strong>
+                <strong>{{ formatRange(reservation.startDatetime, reservation.endDatetime) }}</strong>
                 <span class="meta">{{ formatTime(reservation.startDatetime) }}–{{ formatTime(reservation.endDatetime) }}</span>
             </div>
 
             <div class="thumbs">
-                <div v-for="item in reservation.items.slice(0, 3)" :key="item.id" class="thumb thumb-small">IMG</div>
+                <div v-for="item in reservation.items.slice(0, 3)" :key="item.id" class="thumb-tile">
+                    <img v-if="getPhoto(item)" :src="getPhoto(item)" alt="Gerätefoto" class="thumb-image" />
+                    <span v-else>IMG</span>
+                </div>
             </div>
 
             <button v-if="reservation.status === 'active'" type="button" class="btn-secondary photo-button" aria-label="Zustandsfotos">
@@ -79,7 +104,10 @@ async function toggle() {
 
         <ul v-if="expanded" class="item-list">
             <li v-for="item in reservation.items" :key="item.id" class="card-row item-row">
-                <div class="thumb thumb-small">IMG</div>
+                <div class="thumb thumb-small">
+                    <img v-if="getPhoto(item)" :src="getPhoto(item)" alt="Gerätefoto" class="thumb-image" />
+                    <span v-else>IMG</span>
+                </div>
                 <div>
                     <strong>
                         {{ (item.requestedEquipmentId && equipmentById[item.requestedEquipmentId]?.name) || 'Wird geladen…' }}
@@ -95,13 +123,21 @@ async function toggle() {
 
 <style scoped>
 .reservation {
-    padding: var(--space-m) var(--space-l);
+    padding: var(--space-m);
+}
+
+.top {
+    display: flex;
+    gap: var(--space-s);
 }
 
 .date-box {
     display: flex;
     flex-direction: column;
-    padding: var(--space-s) var(--space-m);
+    width: 150px;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+    padding: var(--space-m);
     color: var(--color-text-primary);
     background: var(--color-soft-surface);
     border-radius: var(--radius-tab);
@@ -109,7 +145,30 @@ async function toggle() {
 
 .thumbs {
     display: flex;
+    flex: 1;
     gap: var(--space-s);
+    min-width: 0;
+}
+
+.thumb-tile {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    max-width: 100px;
+    overflow: hidden;
+    font-size: var(--text-help-size);
+    color: var(--color-muted);
+    background: var(--color-soft-surface);
+    border-radius: var(--radius-tab);
+}
+
+.thumb-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .thumb-small {
@@ -118,11 +177,13 @@ async function toggle() {
     justify-content: center;
     width: 44px;
     height: 44px;
+    overflow: hidden;
     font-size: var(--text-help-size);
     color: var(--color-muted);
 }
 
 .photo-button {
+    align-self: center;
     min-height: 40px;
     margin-left: auto;
     padding: 0 var(--space-m);

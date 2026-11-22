@@ -51,11 +51,9 @@ class User implements UserInterface
     public function __construct(
         #[ORM\Column(name: 'oauth_user_id', type: Types::STRING, length: 64, unique: true)]
         private readonly string $oAuthUserId,
-
         #[ORM\Column(name: 'email', type: Types::STRING, length: 255, unique: true)]
-        private string          $email,
-    )
-    {
+        private string $email,
+    ) {
         $this->requestedReservations = new ArrayCollection();
         $this->responsibleReservations = new ArrayCollection();
         $this->openingHoursRecurring = new ArrayCollection();

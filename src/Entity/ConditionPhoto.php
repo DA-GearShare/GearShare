@@ -44,18 +44,17 @@ class ConditionPhoto
     private ?DateTimeImmutable $createdAt = null;
 
     public function __construct(
-        Uuid           $id,
-        Reservation    $reservation,
-        ?User          $takenBy,
+        Uuid $id,
+        Reservation $reservation,
+        ?User $takenBy,
         ConditionPhase $phase,
-        string         $mimeType,
-    )
-    {
+        string $mimeType,
+    ) {
         $this->id = $id;
         $this->takenBy = $takenBy;
         $this->phase = $phase;
         $this->mimeType = $mimeType;
-        $this->url = '/api/v1/condition-photos/' . $id->toRfc4122();
+        $this->url = '/api/v1/condition-photos/'.$id->toRfc4122();
         $reservation->addConditionPhoto($this);
     }
 

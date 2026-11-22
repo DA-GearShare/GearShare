@@ -26,7 +26,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class EquipmentFixtures extends Fixture implements FixtureGroupInterface
 {
-    private const IMAGE_DIR = __DIR__ . '/images';
+    private const IMAGE_DIR = __DIR__.'/images';
 
     /** Fester Namespace für die UUIDv5 der Fixture-Fotos. */
     private const PHOTO_NAMESPACE = '6f1c7d3e-2b4a-4e8f-9c51-0a7d2e9b4f63';
@@ -61,7 +61,7 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
         ['EQ-0030', 'Beamer mobil',          'Raum 2.04',  'Beamer',          'Epson EB-L210W',                            ['beamer-alt']],
         ['EQ-0017', 'HDMI-Kabel 5 m',        'Aula',       'Kabel',           'Hama Ultra High Speed HDMI',                ['hdmi']],
         ['EQ-0018', 'Mobile Leinwand',       'Aula',       'Leinwand',        'Reflecta Crystal-Line 200x200',             ['leinwand']],
-        ['EQ-0019', 'Dokumentenkamera',      'Raum 2.04',  'Dokumentenkamera','Elmo MX-P3',                                ['dokumentenkamera']],
+        ['EQ-0019', 'Dokumentenkamera',      'Raum 2.04',  'Dokumentenkamera', 'Elmo MX-P3',                                ['dokumentenkamera']],
         ['EQ-0040', 'Presenter',             'Aula',       'Presenter',       'Logitech R500s',                            ['presenter']],
 
         // ── Tablets ───────────────────────────────────────────────────────────────
@@ -168,11 +168,10 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
 
     public function __construct(
         private readonly FilesystemOperator $equipmentStorage,
-        private readonly LoggerInterface    $logger,
+        private readonly LoggerInterface $logger,
         #[Autowire('%env(MEDIA_BASE_URL)%')]
-        private readonly string             $mediaBaseUrl,
-    )
-    {
+        private readonly string $mediaBaseUrl,
+    ) {
     }
 
     public static function getGroups(): array
@@ -182,7 +181,7 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
 
     public static function ref(string $code): string
     {
-        return 'equipment.' . $code;
+        return 'equipment.'.$code;
     }
 
     public function load(ObjectManager $manager): void
@@ -191,7 +190,7 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
         $items = [];
 
         foreach (self::EQUIPMENT as [$code, $name, $location, $type, $model, $photos]) {
-            $equipment = (new Equipment())
+            $equipment = new Equipment()
                 ->setName($name)
                 ->setLocation($location)
                 ->setType($type)
@@ -222,13 +221,13 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
             return;
         }
 
-        $path = self::IMAGE_DIR . '/' . $image . '.jpg';
-        $stream = @fopen($path, 'rb');
+        $path = self::IMAGE_DIR.'/'.$image.'.jpg';
+        $stream = @fopen($path, 'r');
         if ($stream === false) {
-            throw new RuntimeException(sprintf('Fixture-Bild "%s" fehlt.', $path));
+            throw new RuntimeException(\sprintf('Fixture-Bild "%s" fehlt.', $path));
         }
 
-        $id = Uuid::v5(Uuid::fromString(self::PHOTO_NAMESPACE), $code . '#' . $index);
+        $id = Uuid::v5(Uuid::fromString(self::PHOTO_NAMESPACE), $code.'#'.$index);
 
         try {
             // Key = nur die UUID, wie in PhotoStorage (passend zur Regex in media.conf)
@@ -240,12 +239,12 @@ class EquipmentFixtures extends Fixture implements FixtureGroupInterface
 
             return;
         } finally {
-            if (is_resource($stream)) {
+            if (\is_resource($stream)) {
                 fclose($stream);
             }
         }
 
-        $photo = new EquipmentPhoto($id, $equipment, rtrim($this->mediaBaseUrl, '/') . '/equipment/' . $id->toRfc4122());
+        $photo = new EquipmentPhoto($id, $equipment, rtrim($this->mediaBaseUrl, '/').'/equipment/'.$id->toRfc4122());
         $photo->setIsMain($index === 0);
     }
 }

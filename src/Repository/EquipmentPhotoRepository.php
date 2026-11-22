@@ -21,10 +21,7 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Main Image first, then by upload-timing
-     *
-     * @param Equipment $equipment
-     * @return array
+     * Main Image first, then by upload-timing.
      */
     public function findForEquipment(Equipment $equipment): array
     {
@@ -35,13 +32,7 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Create photo. Will be main image if requested or if first image
-     *
-     * @param Equipment $equipment
-     * @param Uuid $id
-     * @param string $url
-     * @param bool $isMain
-     * @return EquipmentPhoto
+     * Create photo. Will be main image if requested or if first image.
      */
     public function createForEquipment(Equipment $equipment, Uuid $id, string $url, bool $isMain): EquipmentPhoto
     {
@@ -58,11 +49,6 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
         return $photo;
     }
 
-    /**
-     * @param EquipmentPhoto $photo
-     * @param Equipment $equipment
-     * @return void
-     */
     public function markAsIsMain(EquipmentPhoto $photo, Equipment $equipment): void
     {
         $equipment->setMainPhoto($photo);
@@ -72,11 +58,7 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
     /**
      * Deletes the image from DB
      * If main image, changes oldest image to new main image
-     * File in bucket will be deleted after this call
-     *
-     * @param EquipmentPhoto $photo
-     * @param Equipment $equipment
-     * @return void
+     * File in bucket will be deleted after this call.
      */
     public function removeFromEquipment(EquipmentPhoto $photo, Equipment $equipment): void
     {
@@ -86,7 +68,7 @@ class EquipmentPhotoRepository extends ServiceEntityRepository
 
         if ($wasMain) {
             $remaining = $equipment->getPhotos()->toArray();
-            usort($remaining, fn(EquipmentPhoto $a, EquipmentPhoto $b) => $a->getUploadedAt() <=> $b->getUploadedAt());
+            usort($remaining, static fn (EquipmentPhoto $a, EquipmentPhoto $b) => $a->getUploadedAt() <=> $b->getUploadedAt());
             $equipment->setMainPhoto($remaining[0] ?? null);
         }
 

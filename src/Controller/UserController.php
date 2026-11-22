@@ -21,19 +21,21 @@ final class UserController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(
-        UserRepository                         $repository,
-        #[MapQueryParameter] ?string           $search = null,
-        #[MapQueryParameter(name: 'page')] int $pageNumber = 1,
-        #[MapQueryParameter] int               $pageSize = 20,
-    ): JsonResponse
-    {
+        UserRepository $repository,
+        #[MapQueryParameter]
+        ?string $search = null,
+        #[MapQueryParameter(name: 'page')]
+        int $pageNumber = 1,
+        #[MapQueryParameter]
+        int $pageSize = 20,
+    ): JsonResponse {
         $pageNumber = max(1, $pageNumber);
         $pageSize = max(1, min(100, $pageSize));
 
         $page = $repository->findPaginated($search, $pageNumber, $pageSize);
         $totalItems = $page->getTotalCount();
 
-        $items = array_map(fn(User $u) => [
+        $items = array_map(static fn (User $u) => [
             'id' => $u->getUserId(),
             'name' => $u->getDisplayName(),
             'email' => $u->getEmail(),
@@ -47,7 +49,7 @@ final class UserController extends AbstractController
                 'page' => $pageNumber,
                 'pageSize' => $pageSize,
                 'totalItems' => $totalItems,
-                'totalPages' => (int)ceil($totalItems / $pageSize),
+                'totalPages' => (int) ceil($totalItems / $pageSize),
             ],
         ]);
     }
@@ -56,32 +58,37 @@ final class UserController extends AbstractController
     #[Route('/{userId}/roles', name: 'set_role', requirements: ['userId' => Requirement::UUID], methods: ['PATCH'])]
     public function roles(
         UserRepository $userRepository,
-        Request        $request,
-        string         $userId
-    ): Response
-    {
+        Request $request,
+        string $userId
+    ): Response {
         $user = $userRepository->findOneById($userId);
-        if ($user === null) return new Response(sprintf('User "%s" nicht gefunden.', $userId), Response::HTTP_NOT_FOUND);
+        if ($user === null) {
+            return new Response(\sprintf('User "%s" nicht gefunden.', $userId), Response::HTTP_NOT_FOUND);
+        }
 
         try {
-            $parameters = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+            $parameters = json_decode($request->getContent(), true, 8, \JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return new JsonResponse(['message' => 'Malformed JSON'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
+        if (!\is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
             return new JsonResponse(['message' => 'Body muss ein JSON Objekt sein'], Response::HTTP_BAD_REQUEST);
         }
 
         $roles = UserRolesDto::fromArray($parameters);
-        if ($roles->hasErrors()) return new JsonResponse(['message' => 'Invalider Request Body', 'details' => $roles->getErrors()], Response::HTTP_BAD_REQUEST);
+        if ($roles->hasErrors()) {
+            return new JsonResponse(['message' => 'Invalider Request Body', 'details' => $roles->getErrors()], Response::HTTP_BAD_REQUEST);
+        }
 
         $current = $this->getUser();
         if (
             $roles->revokesAdmin()
             && $current instanceof User
             && $current->getUserId() === $user->getUserId()
-        ) return new JsonResponse(['message' => 'Du kannst deinen eigenen Admin Status nicht entfernen'], Response::HTTP_CONFLICT);
+        ) {
+            return new JsonResponse(['message' => 'Du kannst deinen eigenen Admin Status nicht entfernen'], Response::HTTP_CONFLICT);
+        }
 
         $userRepository->applyRoles($user, $roles);
 
@@ -99,7 +106,9 @@ final class UserController extends AbstractController
     public function listFromId(UserRepository $userRepository, string $userId): Response
     {
         $user = $userRepository->findOneById($userId);
-        if ($user == null) return new JsonResponse(sprintf('User "%s" not found.', $userId), Response::HTTP_NOT_FOUND);
+        if ($user == null) {
+            return new JsonResponse(\sprintf('User "%s" not found.', $userId), Response::HTTP_NOT_FOUND);
+        }
 
         return new JsonResponse([
             'id' => $user->getUserId(),

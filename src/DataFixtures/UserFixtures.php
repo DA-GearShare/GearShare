@@ -44,7 +44,7 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
     private const FIELDS = ['microsoftId', 'email', 'name'];
 
     /**
-     * Key => [Platzhalter-E-Mail, Platzhalter-Name, isAdmin]
+     * Key => [Platzhalter-E-Mail, Platzhalter-Name, isAdmin].
      */
     private const USERS = [
         self::ADMIN => ['admin@example.com', 'Admin', true],
@@ -58,35 +58,25 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
 
     /**
      * @param array<string, array{microsoftId?: string, email?: string, name?: string}> $userData
-     *        Key => persönliche Daten, aus FIXTURE_USERS
+     *                                                                                            Key => persönliche Daten, aus FIXTURE_USERS
      */
     public function __construct(
         #[Autowire('%env(json:FIXTURE_USERS)%')]
         private readonly array $userData,
-    )
-    {
+    ) {
         $unknown = array_diff(array_keys($this->userData), array_keys(self::USERS));
         if ($unknown !== []) {
-            throw new InvalidArgumentException(sprintf(
-                'FIXTURE_USERS enthält unbekannte User: %s (erlaubt: %s)',
-                implode(', ', $unknown),
-                implode(', ', array_keys(self::USERS)),
-            ));
+            throw new InvalidArgumentException(\sprintf('FIXTURE_USERS enthält unbekannte User: %s (erlaubt: %s)', implode(', ', $unknown), implode(', ', array_keys(self::USERS))));
         }
 
         foreach ($this->userData as $key => $data) {
-            if (!is_array($data)) {
-                throw new InvalidArgumentException(sprintf('FIXTURE_USERS["%s"] muss ein Objekt sein.', $key));
+            if (!\is_array($data)) {
+                throw new InvalidArgumentException(\sprintf('FIXTURE_USERS["%s"] muss ein Objekt sein.', $key));
             }
 
             $unknownFields = array_diff(array_keys($data), self::FIELDS);
             if ($unknownFields !== []) {
-                throw new InvalidArgumentException(sprintf(
-                    'FIXTURE_USERS["%s"] enthält unbekannte Felder: %s (erlaubt: %s)',
-                    $key,
-                    implode(', ', $unknownFields),
-                    implode(', ', self::FIELDS),
-                ));
+                throw new InvalidArgumentException(\sprintf('FIXTURE_USERS["%s"] enthält unbekannte Felder: %s (erlaubt: %s)', $key, implode(', ', $unknownFields), implode(', ', self::FIELDS)));
             }
         }
     }
@@ -106,8 +96,8 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
             $name = $this->value($key, 'name') ?? $defaultName;
 
             $oauthId = $microsoftId !== ''
-                ? self::OAUTH_PROVIDER . ':' . $microsoftId
-                : 'fixture:' . $key;
+                ? self::OAUTH_PROVIDER.':'.$microsoftId
+                : 'fixture:'.$key;
 
             $user = $repository->findOneBy(['oAuthUserId' => $oauthId])
                 ?? $repository->findOneBy(['email' => $email]);
@@ -129,7 +119,7 @@ class UserFixtures extends Fixture implements FixtureGroupInterface
     /** Referenz-Name für getReference() in anderen Fixtures. */
     public static function ref(string $key): string
     {
-        return 'user.' . $key;
+        return 'user.'.$key;
     }
 
     private function value(string $key, string $field): ?string

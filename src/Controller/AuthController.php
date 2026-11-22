@@ -32,7 +32,10 @@ final class AuthController extends AbstractController
     #[Route('/api/v1/auth/logout', name: 'auth_logout', methods: ['POST'])]
     public function logout(Security $security): Response
     {
-        if ($security->getUser()) $security->logout(false);
+        if ($security->getUser()) {
+            $security->logout(false);
+        }
+
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
@@ -44,7 +47,7 @@ final class AuthController extends AbstractController
             'email' => $user->getEmail(),
             'displayname' => empty($user->getDisplayName()) ? '' : $user->getDisplayName(),
             'isAdmin' => $user->isAdmin(),
-            'isTeacher' => $user->isTeacher()
+            'isTeacher' => $user->isTeacher(),
         ]);
     }
 }

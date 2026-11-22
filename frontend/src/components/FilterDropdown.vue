@@ -25,14 +25,16 @@ const resetPeriod = () => {
 <template>
     <div class="wrapper">
         <button class="btn-secondary filter-btn" type="button" :aria-expanded="show" @click="show = !show">
-            <svg width="18"
-                 height="18"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 stroke-linecap="round"
-                 aria-hidden="true">
+            <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+            >
                 <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
                 <circle cx="16" cy="7" r="2" />
                 <circle cx="8" cy="17" r="2" />

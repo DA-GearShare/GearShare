@@ -15,18 +15,13 @@ final class EquipmentPhotoService
 {
     public function __construct(
         private readonly EquipmentPhotoRepository $photoRepository,
-        private readonly PhotoStorage             $storage,
-        private readonly LoggerInterface          $logger,
-    )
-    {
+        private readonly PhotoStorage $storage,
+        private readonly LoggerInterface $logger,
+    ) {
     }
 
     /**
      * Removes the photo from the DB and afterwards from the bucket.
-     *
-     * @param EquipmentPhoto $photo
-     * @param Equipment $equipment
-     * @return void
      */
     public function delete(EquipmentPhoto $photo, Equipment $equipment): void
     {
@@ -47,9 +42,6 @@ final class EquipmentPhotoService
 
     /**
      * Deletes all photos of the given equipment.
-     *
-     * @param Equipment $equipment
-     * @return void
      */
     public function deleteAllFor(Equipment $equipment): void
     {

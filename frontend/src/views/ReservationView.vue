@@ -4,8 +4,8 @@ import { useCartStore } from '@/stores/CartStore.ts';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { Trash2 } from 'lucide-vue-next';
 
-const cart = useCartStore();
-const store = useEquipmentStore();
+const cartStore = useCartStore();
+const equipmentStore = useEquipmentStore();
 
 const items = ref<{
     id: string;
@@ -60,7 +60,7 @@ const messageKind = ref<'success' | 'error' | 'info'>('info');
 let requestId = 0;
 
 const canCheckAvailability = computed(() => {
-    return cart.items.length > 0 &&
+    return cartStore.items.length > 0 &&
         startDate.value !== '' &&
         endDate.value !== '' &&
         new Date(startDate.value).getTime() >= Date.now() - 60000 &&
@@ -73,8 +73,8 @@ const equipmentCount = computed(() => {
 
 async function loadItems() {
     const results = await Promise.all(
-        cart.items.map(id => {
-            return store.fetchEquipmentById(id);
+        cartStore.items.map(id => {
+            return equipmentStore.fetchEquipmentById(id);
         })
     );
 
@@ -87,7 +87,7 @@ onMounted(loadItems);
 
 watch(
     () => {
-        return [...cart.items];
+        return [...cartStore.items];
     },
     loadItems
 );
@@ -117,11 +117,26 @@ watch([startDate, endDate], () => {
         return;
     }
 
+    console.log(startDate.value, endDate.value);
+
     checkAvailability();
 });
 
+onMounted(() => {
+    const now = new Date();
+    startDate.value = toLocalInput(now);
+    const end = new Date(now);
+    end.setHours(17, 45, 0, 0);
+
+    if (now >= end) {
+        end.setDate(end.getDate() + 1);
+    }
+    endDate.value = toLocalInput(end);
+    loadItems();
+});
+
 function removeEquipment(id: string) {
-    cart.remove(id);
+    cartStore.remove(id);
     resetAvailability();
     checkAvailability();
 }
@@ -141,7 +156,7 @@ async function checkAvailability() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                equipmentIds: cart.items,
+                equipmentIds: cartStore.items,
                 from,
                 to
             })
@@ -163,7 +178,7 @@ async function checkAvailability() {
         }
 
         available.value = Array.isArray(calendar) &&
-            calendar.length === cart.items.length &&
+            calendar.length === cartStore.items.length &&
             calendar.every((equipment: {
                 id: string;
                 notAvailable: unknown[];
@@ -203,7 +218,7 @@ async function submitReservation() {
         const requestBody = {
             startDatetime,
             endDatetime,
-            equipmentIds: cart.items
+            equipmentIds: cartStore.items
         };
         console.log('Reservierungsdaten:', requestBody);
 

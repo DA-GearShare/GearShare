@@ -40,6 +40,7 @@ function personName(reservation: Reservation) {
 
 const equipmentNames = ref<Record<string, string>>({});
 const equipmentPhotos = ref<Record<string, string>>({});
+const equipmentCodes = ref<Record<string, string>>({});
 
 async function loadDevices() {
     if (!selected.value) {
@@ -59,6 +60,9 @@ async function loadDevices() {
         const equipment = await equipmentStore.fetchEquipmentById(equipmentId);
         if (equipment) {
             equipmentNames.value[equipmentId] = equipment.name;
+            if (equipment.code) {
+                equipmentCodes.value[equipmentId] = equipment.code;
+            }
         }
 
         const photo = await equipmentStore.fetchMainPhoto(equipmentId);
@@ -75,6 +79,13 @@ function getName(item: ReservationItem) {
         return 'Unbekanntes Gerät';
     }
     return equipmentNames.value[item.requestedEquipmentId] || 'Wird geladen…';
+}
+
+function getCode(item: ReservationItem) {
+    if (!item.requestedEquipmentId) {
+        return '';
+    }
+    return equipmentCodes.value[item.requestedEquipmentId] || '';
 }
 
 function getPhoto(item: ReservationItem) {
@@ -258,6 +269,7 @@ function cancelAdd() {
                         <span v-else>IMG</span>
                     </div>
                     <strong>{{ getName(item) }}</strong>
+                    <span v-if="getCode(item)" class="hint">{{ getCode(item) }}</span>
                     <span class="label">Status</span>
                     <span class="hint">{{ statusLabel(item.status) }}</span>
                     <button type="button" class="btn-secondary scan-button" :disabled="!canIssue || item.status !== 'requested'" @click="scanItem(item)">

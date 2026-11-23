@@ -166,12 +166,15 @@ input[type='datetime-local'] {
 }
 
 @media (max-width: 640px) {
+    .wrapper {
+        position: static;
+    }
+
     .menu {
         left: 0;
-        right: auto;
+        right: 0;
         min-width: 0;
-        width: calc(100vw - 48px);
-        max-width: 360px;
+        width: auto;
     }
 }
 </style>

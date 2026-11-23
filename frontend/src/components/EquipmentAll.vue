@@ -91,6 +91,7 @@ const handlePageChange = (page: number) => {
 }
 
 .toolbar {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-m);

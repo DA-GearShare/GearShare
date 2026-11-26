@@ -6,9 +6,9 @@
 services:
     gateway:
         volumes:
-            - ./gateway/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./gateway/default.conf:/etc/nginx/templates/default.conf.template:ro,z
             # Media routes (public equipment photos + internal condition photos).
-            - ./gateway/snippets:/etc/nginx/snippets:ro
+            - ./gateway/snippets:/etc/nginx/snippets:ro,z
         depends_on:
             frontend:
                 condition: service_started
@@ -29,7 +29,7 @@ services:
         volumes:
             # Live editing: changes in src/, templates/ and config/ are served
             # immediately, no rebuild. Only public/ is reachable over HTTP.
-            - .:/var/www/html
+            - .:/var/www/html:z
 
     frontend:
         # Vue 3 + Vite dev server with hot module reload. Not published on its own
@@ -44,7 +44,7 @@ services:
             # Set to true if hot reload doesn't pick up changes (Docker Desktop on macOS/Windows).
             CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-false}"
         volumes:
-            - ./frontend:/app
+            - ./frontend:/app:z
             # Keep node_modules inside Docker so host and container binaries don't clash.
             - frontend_node_modules:/app/node_modules
 

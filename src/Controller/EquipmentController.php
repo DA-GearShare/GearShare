@@ -6,12 +6,10 @@ namespace App\Controller;
 
 use App\Dto\EquipmentCreateDto;
 use App\Dto\EquipmentUpdateDto;
-use App\Entity\Equipment;
 use App\Repository\EquipmentRepository;
-use App\Repository\ReservationItemRepository;
 use App\Service\EquipmentPhotoService;
+use App\Service\EquipmentServices;
 use DateTimeImmutable;
-use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use JsonException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,7 +25,7 @@ use Symfony\Component\Uid\Uuid;
 #[Route('/api/v1/equipment', name: 'equipment_')]
 final class EquipmentController extends AbstractController
 {
-    use SerializesEquipment;
+    use EquipmentServices;
 
     #[Route('', name: 'list', methods: ['GET'])]
     public function getEquipments(
@@ -116,114 +114,6 @@ final class EquipmentController extends AbstractController
         return new Response('', Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{equipmentId}/accessories', name: 'getAccessories', requirements: ['equipmentId' => Requirement::UUID], methods: ['GET'])]
-    public function getAccessories(
-        Uuid $equipmentId,
-        EquipmentRepository $repository,
-        ReservationItemRepository $reservationItemRepository,
-        #[MapQueryParameter]
-        ?string $from = null,
-        #[MapQueryParameter]
-        ?string $to = null,
-    ): Response {
-        $equipment = $repository->find($equipmentId);
-        if ($equipment === null || $equipment->isDeleted()) {
-            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
-        }
-
-        if (($from && !$to) || (!$from && $to)) {
-            return new Response('from und to müssen beide angegeben werden.', Response::HTTP_BAD_REQUEST);
-        }
-
-        try {
-            $fromDate = $from ? new DateTimeImmutable($from) : null;
-            $toDate = $to ? new DateTimeImmutable($to) : null;
-        } catch (Exception) {
-            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($fromDate !== null && $fromDate >= $toDate) {
-            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
-        }
-
-        $accessories = $equipment->getAccessories()->filter(static fn ($accessory) => !$accessory->isDeleted())->getValues();
-
-        $reservedIds = [];
-        if ($fromDate !== null) {
-            $reservedIds = $reservationItemRepository->findReservedEquipmentIds($accessories, $fromDate, $toDate);
-        }
-
-        $items = array_map(static fn ($e) => [
-            'accessoryEquipmentId' => $e->getId(),
-            'name' => $e->getName(),
-            'availableInRequestedPeriod' => !\in_array($e->getId()->toRfc4122(), $reservedIds, true),
-        ], $accessories);
-
-        return $this->json($items);
-    }
-
-    #[Route('/{equipmentId}/accessories', name: 'addAccessories', requirements: ['equipmentId' => Requirement::UUID], methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN')]
-    public function addAccessories(
-        Uuid $equipmentId,
-        Request $request,
-        EquipmentRepository $repository,
-        EntityManagerInterface $entityManager,
-    ): Response {
-        $equipment = $repository->find($equipmentId);
-        if ($equipment === null || $equipment->isDeleted()) {
-            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
-        }
-
-        $data = $request->toArray();
-        $accessoryId = $data['accessoryEquipmentId'] ?? null;
-
-        if (!\is_string($accessoryId) || !Uuid::isValid($accessoryId)) {
-            return new Response('accessoryEquipmentId fehlt oder ist ungültig.', Response::HTTP_BAD_REQUEST);
-        }
-
-        $accessory = $repository->find(Uuid::fromString($accessoryId));
-        if ($accessory === null || $accessory->isDeleted()) {
-            return new Response('Zubehör nicht gefunden.', Response::HTTP_NOT_FOUND);
-        }
-        if ($accessory === $equipment) {
-            return new Response('Ein Gerät kann nicht sein eigenes Zubehör sein.', Response::HTTP_BAD_REQUEST);
-        }
-        if ($equipment->getAccessories()->contains($accessory)) {
-            return new Response('Verknüpfung besteht bereits.', Response::HTTP_CONFLICT);
-        }
-        $equipment->addAccessory($accessory);
-        $entityManager->flush();
-
-        return $this->json([
-            'accessoryEquipmentId' => $accessory->getId(),
-            'name' => $accessory->getName(),
-        ], Response::HTTP_CREATED);
-    }
-
-    #[Route('/{equipmentId}/accessories/{accessoryId}', name: 'removeAccessories', requirements: ['equipmentId' => Requirement::UUID, 'accessoryId' => Requirement::UUID], methods: ['DELETE'])]
-    #[IsGranted('ROLE_ADMIN')]
-    public function removeAccessories(
-        Uuid $equipmentId,
-        Uuid $accessoryId,
-        EquipmentRepository $repository,
-        EntityManagerInterface $entityManager,
-    ): Response {
-        $equipment = $repository->find($equipmentId);
-        if ($equipment === null || $equipment->isDeleted()) {
-            return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
-        }
-
-        $accessory = $repository->find($accessoryId);
-        if ($accessory === null || !$equipment->getAccessories()->contains($accessory)) {
-            return new Response('Verknüpfung nicht gefunden.', Response::HTTP_NOT_FOUND);
-        }
-        $equipment->removeAccessory($accessory);
-        $entityManager->flush();
-
-        return new Response(null, Response::HTTP_NO_CONTENT);
-    }
-
     #[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'create', methods: ['POST'])]
     public function createEquipment(
@@ -292,73 +182,5 @@ final class EquipmentController extends AbstractController
         }
 
         return $this->json($this->serializeEquipment($equipment));
-    }
-
-    #[Route('/calendar', name: 'get_calendar', methods: ['POST'])]
-    public function getCalendar(
-        Request $request,
-        EquipmentRepository $repository,
-        ReservationItemRepository $reservationItemRepository,
-    ): Response {
-        $data = $request->toArray();
-        $ids = $data['equipmentIds'] ?? [];
-        $from = $data['from'] ?? null;
-        $to = $data['to'] ?? null;
-
-        if (!\is_array($ids) || \count($ids) === 0) {
-            return new Response('equipmentIds muss eine nicht leere Liste sein.', Response::HTTP_BAD_REQUEST);
-        }
-        if (\count($ids) > 10) {
-            return new Response('Es können maximal 10 Geräte ausgewählt werden.', Response::HTTP_BAD_REQUEST);
-        }
-        if (!\is_string($from) || !\is_string($to)) {
-            return new Response('from und to müssen angegeben werden.', Response::HTTP_BAD_REQUEST);
-        }
-        try {
-            $fromDate = new DateTimeImmutable($from);
-            $toDate = new DateTimeImmutable($to);
-        } catch (Exception) {
-            return new Response('Ungültiges Datum.', Response::HTTP_BAD_REQUEST);
-        }
-        if ($fromDate >= $toDate) {
-            return new Response('from muss vor to liegen.', Response::HTTP_BAD_REQUEST);
-        }
-        $equipmentList = [];
-        foreach (array_unique($ids) as $id) {
-            if (!\is_string($id) || !Uuid::isValid($id)) {
-                return new Response('Ungültige  ID.'.$id, Response::HTTP_BAD_REQUEST);
-            }
-            $equipment = $repository->find(Uuid::fromString($id));
-            if ($equipment === null || $equipment->isDeleted()) {
-                return new Response('Equipment nicht gefunden.', Response::HTTP_NOT_FOUND);
-            }
-            $equipmentList[] = $equipment;
-        }
-        $reservationItems = $reservationItemRepository->findInPeriod($equipmentList, $fromDate, $toDate);
-
-        $notAvailable = [];
-        foreach ($equipmentList as $equipment) {
-            $notAvailable[$equipment->getId()->toRfc4122()] = [];
-        }
-        foreach ($reservationItems as $item) {
-            $reservation = $item->getReservation();
-            $startDatetime = $reservation->getStartDatetime();
-            $endDatetime = $reservation->getEndDatetime();
-
-            $requestedEquipment = $item->getRequestedEquipment();
-            if ($requestedEquipment === null) {
-                continue;
-            }
-
-            $notAvailable[$requestedEquipment->getId()->toRfc4122()][] = [
-                'from' => $startDatetime->format(\DATE_ATOM),
-                'to' => $endDatetime->format(\DATE_ATOM),
-            ];
-        }
-
-        return $this->json(array_map(fn (Equipment $e) => [
-            ...$this->serializeEquipment($e),
-            'notAvailable' => $notAvailable[$e->getId()->toRfc4122()],
-        ], $equipmentList));
     }
 }

@@ -449,29 +449,6 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Error'
 
-    /equipment/{equipmentId}/calendar:
-        parameters:
-            -   $ref: '#/components/parameters/EquipmentIdPath'
-        get:
-            tags: [ Equipment ]
-            summary: Verfügbarkeits-/Reservierungskalender eines Geräts
-            parameters:
-                -   $ref: '#/components/parameters/FromParam'
-                -   $ref: '#/components/parameters/ToParam'
-            responses:
-                '200':
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/CalendarSlot'
-                '401':
-                    $ref: '#/components/responses/Unauthorized'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-
     /equipment/{equipmentId}/loan-history:
         parameters:
             -   $ref: '#/components/parameters/EquipmentIdPath'
@@ -858,30 +835,6 @@ paths:
                 '404':
                     $ref: '#/components/responses/NotFound'
 
-    /equipment-pools/{poolId}/calendar:
-        parameters:
-            -   $ref: '#/components/parameters/PoolIdPath'
-        get:
-            tags: [ EquipmentPools ]
-            summary: Pool-Verfügbarkeitskalender
-            description: Zeigt je Zeitpunkt die Anzahl verfügbarer Einheiten des Pools.
-            parameters:
-                -   $ref: '#/components/parameters/FromParam'
-                -   $ref: '#/components/parameters/ToParam'
-            responses:
-                '200':
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/PoolCalendarSlot'
-                '401':
-                    $ref: '#/components/responses/Unauthorized'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-
     # ============================================================
     # RESERVATIONS
     # ============================================================
@@ -900,6 +853,11 @@ paths:
                         type: string
                         format: uuid
                     description: Nur für Admins auswertbar.
+                -   name: code
+                    in: query
+                    schema:
+                        type: string
+                    description: Gibt alle Reservierungen zurück, in denen das Gerät enthalten ist.
                 -   name: status
                     in: query
                     schema:

@@ -138,5 +138,29 @@ export const useReservationStore = defineStore('reservation', () => {
         }
     }
 
-    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchIssueGlobal, fetchOverdueReservations };
+    async function rejectReservation(id: string, reason: string) {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const res = await fetch(`/api/v1/reservations/${id}/reject`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reason),
+            });
+
+            if (!res.ok) {
+                error.value = await readError(res, "Die Reservierung konnte nicht abgelehnt werden.");
+                return;
+            }
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            error.value = "Die Reservierung konnte nicht abgelehnt werden.";
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchIssueGlobal, fetchOverdueReservations, rejectReservation };
 });

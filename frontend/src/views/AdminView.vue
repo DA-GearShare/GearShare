@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Pencil } from 'lucide-vue-next';
 import { useUsersStore, type User } from '@/stores/UsersStore.ts';
 import { useAuthStore } from '@/stores/AuthStore.ts';
-import { roleOf, displayName, initials, ROLE_LABELS, type UserRole } from '@/utils/userRoles.ts';
+import { roleOf, displayName, initials, roleLabels, type UserRole } from '@/utils/userRoles.ts';
 
 type Filter = 'all' | UserRole;
 
@@ -119,7 +119,7 @@ onMounted(usersStore.fetchUsers);
                     class="tag"
                     :class="{ 'tag-admin': roleOf(u) === 'admin', 'tag-teacher': roleOf(u) === 'teacher' }"
                 >
-                    {{ ROLE_LABELS[roleOf(u)] }}
+                    {{ roleLabels[roleOf(u)] }}
                 </span>
                 <span class="meta">{{ isSelf(u) ? 'Eigenes Konto' : 'Rolle zuweisen' }}</span>
             </div>

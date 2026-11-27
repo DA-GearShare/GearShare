@@ -1,8 +1,7 @@
-
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { User, ShoppingCart, ClipboardList, BriefcaseBusiness, Users, LogOut } from 'lucide-vue-next';
+import { ClipboardList, BriefcaseBusiness, Users, LogOut } from 'lucide-vue-next';
 import { useAuthStore } from "@/stores/AuthStore.ts";
 
 const authStore = useAuthStore();

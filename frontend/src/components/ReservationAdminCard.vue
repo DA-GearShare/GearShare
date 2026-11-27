@@ -4,6 +4,7 @@ import { useUsersStore } from '@/stores/UsersStore.ts';
 import { useEquipmentStore, type EquipmentPhoto } from "@/stores/EquipmentStore.ts";
 import type { Reservation } from '@/types/reservation';
 import { formatRange, formatTime } from '@/utils/dateFormat.ts';
+import RejectModal from "@/components/RejectModal.vue";
 
 const props = defineProps<{
     reservation: Reservation;
@@ -17,6 +18,7 @@ const photos = ref<(EquipmentPhoto | null)[]>([]);
 const equipmentStore = useEquipmentStore();
 const userStore = useUsersStore();
 const username = ref('…');
+const showReject = ref(false);
 
 const shownItems = computed(() => {
     return props.reservation.items.slice(0, 3);
@@ -32,6 +34,13 @@ onMounted(async () => {
         })
     );
 });
+
+function RejectPopUp() {
+    showReject.value = true;
+}
+function closeScan() {
+    showReject.value = false;
+}
 </script>
 
 <template>
@@ -56,8 +65,17 @@ onMounted(async () => {
             </div>
         </div>
 
+        <RejectModal
+            v-if="showReject"
+            title="Reservierung ablehnen"
+            :id=reservation.id
+            @close="closeScan"
+        />
+
         <div class="bottom">
-            <span class="hint"> </span>
+            <span class="hint">
+                <button @click="RejectPopUp" class="btn-secondary reject">ablehnen</button>
+            </span>
             <button type="button" class="open-button" @click="emit('open', reservation.id)">
                 <span>{{ reservation.items.length }} Geräte</span>
                 <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -144,5 +162,12 @@ onMounted(async () => {
 
 .chevron-icon {
     transition: transform 0.15s;
+}
+
+.reject {
+    min-height: 0;
+    padding: 6px var(--space-m);
+    font-size: var(--text-label-size);
+    line-height: 1.2;
 }
 </style>

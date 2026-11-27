@@ -5,7 +5,7 @@ import { ChevronLeft, Pencil } from 'lucide-vue-next';
 import { useReservationStore } from '@/stores/ReservationStore.ts';
 import { useUsersStore } from '@/stores/UsersStore.ts';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
-import { formatDayMonth, formatDayMonthTime, formatRange, formatTime } from '@/utils/dateFormat.ts';
+import { formatRange, formatTime } from '@/utils/dateFormat.ts';
 import type { Reservation, ReservationItem } from '@/types/reservation';
 import ScanModal from '@/components/ScanModal.vue';
 

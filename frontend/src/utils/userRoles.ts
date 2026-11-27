@@ -2,7 +2,7 @@ import type { User } from '@/stores/UsersStore.ts';
 
 export type UserRole = 'admin' | 'teacher' | 'student';
 
-export const ROLE_LABELS: Record<UserRole, string> = {
+export const roleLabels: Record<UserRole, string> = {
     admin: 'Admin',
     teacher: 'Lehrkraft',
     student: 'Schüler/in',

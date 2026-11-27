@@ -4,7 +4,9 @@ import SearchForm from '@/components/SearchForm.vue';
 import ButtonsPagination from '@/components/ButtonsPagination.vue';
 
 const props = defineProps<{
+    // eslint-disable-next-line vue/prop-name-casing
     equipmentId: string
+    // eslint-disable-next-line vue/prop-name-casing
     excludeIds: string[]
 }>();
 

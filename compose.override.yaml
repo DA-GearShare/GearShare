@@ -56,5 +56,16 @@ services:
         # Master UI, for debugging only.
         ports: [ "9333:9333" ]
 
+    ###> symfony/mailer ###
+    mailer:
+        image: axllent/mailpit
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+        environment:
+            MP_SMTP_AUTH_ACCEPT_ANY: 1
+            MP_SMTP_AUTH_ALLOW_INSECURE: 1
+###< symfony/mailer ###
+
 volumes:
     frontend_node_modules:

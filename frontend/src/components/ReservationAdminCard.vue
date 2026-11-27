@@ -4,7 +4,7 @@ import { useUsersStore } from '@/stores/UsersStore.ts';
 import { useEquipmentStore, type EquipmentPhoto } from "@/stores/EquipmentStore.ts";
 import type { Reservation } from '@/types/reservation';
 import { formatRange, formatTime } from '@/utils/dateFormat.ts';
-import RejectModal from "@/components/RejectModal.vue";
+import RejectModal from "@/modals/RejectModal.vue";
 
 const props = defineProps<{
     reservation: Reservation;

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/AuthStore.ts";
-import { useEquipmentStore } from "@/stores/EquipmentStore.ts";
 import { useCompareStore } from '@/stores/CompareStore.ts';
 import { Pencil, Trash2 } from "lucide-vue-next";
 import { ref, onMounted } from "vue";
+import DeleteModal from "@/modals/DeleteModal.vue";
 
 const props = defineProps<{
     id: string
@@ -13,11 +13,10 @@ const props = defineProps<{
     type: string
 }>();
 
-const emit = defineEmits(['deleted']);
-
 const authStore = useAuthStore();
-const equipmentStore = useEquipmentStore();
+
 const compare = useCompareStore();
+const showDelete = ref(false);
 
 interface EquipmentPhoto {
     id: number;
@@ -36,18 +35,6 @@ function toggleCompare() {
     }
 }
 
-async function onDelete() {
-    if (!confirm('Wollen Sie das Equipment wirklich löschen?')) return;
-
-    const result = await equipmentStore.deleteEquipment(props.id);
-
-    if (result.ok) {
-        emit('deleted');
-    } else {
-        alert(result.message);
-    }
-}
-
 async function loadMainPhoto() {
     try {
         const res = await fetch(`/api/v1/equipment/${props.id}/photos`, { credentials: "include" });
@@ -63,6 +50,13 @@ async function loadMainPhoto() {
 }
 
 onMounted(loadMainPhoto);
+
+function DeletePopUp() {
+    showDelete.value = true;
+}
+function closeDelete() {
+    showDelete.value = false;
+}
 </script>
 
 <template>
@@ -87,7 +81,7 @@ onMounted(loadMainPhoto);
                 <RouterLink :to="`/inventar/${id}/bearbeiten`" class="icon-button" aria-label="Equipment bearbeiten" title="Bearbeiten" @click.stop>
                     <Pencil />
                 </RouterLink>
-                <button type="button" class="icon-button delete-button" aria-label="Equipment löschen" title="Löschen" @click.prevent.stop="onDelete">
+                <button type="button" class="icon-button delete-button" aria-label="Equipment löschen" title="Löschen" @click.prevent.stop="DeletePopUp">
                     <Trash2 />
                 </button>
             </div>
@@ -99,6 +93,12 @@ onMounted(loadMainPhoto);
             <span class="chevron">›</span>
         </div>
     </RouterLink>
+    <DeleteModal
+        v-if="showDelete"
+        title="Equipment Löschen"
+        :id="props.id"
+        @close="closeDelete"
+    />
 </template>
 
 <style scoped>

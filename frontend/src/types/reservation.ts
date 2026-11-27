@@ -1,5 +1,4 @@
-export type ReservationStatus =
-    'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
+export type ReservationStatus = 'requested' | 'denied' | 'cancelled' | 'active' | 'returned';
 
 export interface ReservationItem {
     id: string;

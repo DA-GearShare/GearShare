@@ -7,7 +7,7 @@ import { useUsersStore } from '@/stores/UsersStore.ts';
 import { useEquipmentStore } from '@/stores/EquipmentStore.ts';
 import { formatRange, formatTime } from '@/utils/dateFormat.ts';
 import type { Reservation, ReservationItem } from '@/types/reservation';
-import ScanModal from '@/components/ScanModal.vue';
+import ScanModal from '@/modals/ScanModal.vue';
 
 const route = useRoute();
 const reservationStore = useReservationStore();

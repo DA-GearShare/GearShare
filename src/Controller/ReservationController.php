@@ -380,20 +380,22 @@ final class ReservationController extends AbstractController
     {
         $reservation = $reservationRepository->find($reservationId);
         $data = $request->toArray();
-        $start = new DateTimeImmutable($data['startDatetime']);
-        $end = new DateTimeImmutable($data['endDatetime']);
         if($reservation === null) {
-            return new JsonResponse(
-                ['message' => 'Reservierung wurde nicht gefunden.'],
-                Response::HTTP_CONFLICT,
-            );
+            return new JsonResponse(['message' => 'Reservierung wurde nicht gefunden.'], Response::HTTP_NOT_FOUND,);
         }
-        if (isset($data['startDatetime'])){
-            $reservation->setStartDatetime($start);
+        try{
+            if (isset($data['startDatetime'])){
+                $reservation->setStartDatetime(new DateTimeImmutable($data['startDatetime']));
+            }
+            if (isset($data['endDatetime'])){
+                $reservation->setEndDatetime(new DateTimeImmutable($data['endDatetime']));
+            }
+        } catch(Exception){
+            return new JsonResponse(['message' => 'Ungültiges Datum'], Response::HTTP_BAD_REQUEST);
         }
-        if (isset($data['endDatetime'])){
-            $reservation->setEndDatetime($end);
-        }
+        if ($reservation->getStartDatetime() >= $reservation->getEndDatetime()){
+            return new JsonResponse(['message' => 'Das Feld startDatetime muss vor endDatetime liegen.'], Response::HTTP_BAD_REQUEST);
+        };
 
         $em->flush();
 

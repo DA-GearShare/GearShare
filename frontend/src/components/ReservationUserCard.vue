@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useEquipmentStore } from '@/stores/EquipmentStore';
 import { formatRange, formatTime } from '@/utils/dateFormat.ts';
 import type { Reservation, ReservationItem } from '@/types/reservation';
+import CancelModal from "@/modals/CancelModal.vue";
 
 const props = defineProps<{
     reservation: Reservation;
@@ -12,6 +13,7 @@ const equipmentStore = useEquipmentStore();
 const expanded = ref(false);
 const equipmentById = ref<Record<string, { name: string; category: string }>>({});
 const equipmentPhotos = ref<Record<string, string>>({});
+const showCancel = ref(false);
 
 async function loadPhoto(item: ReservationItem) {
     const id = item.requestedEquipmentId;
@@ -61,6 +63,13 @@ async function toggle() {
         await loadPhoto(item);
     }
 }
+
+function CancelPopUp() {
+    showCancel.value = true;
+}
+function closeCancel() {
+    showCancel.value = false;
+}
 </script>
 
 <template>
@@ -85,22 +94,36 @@ async function toggle() {
                 </svg>
             </button>
         </div>
+        <div class="bottom">
+            <span class="hint">
+                <button v-if="reservation.status === 'requested'" @click="CancelPopUp" type="button" class="btn-secondary withdraw">
+                    zurückziehen
+                </button>
+            </span>
 
-        <button type="button" class="toggle" :aria-expanded="expanded" @click="toggle">
-            <span>{{ reservation.items.length }} Geräte</span>
-            <svg
-                class="chevron-icon"
-                :class="{ open: expanded }"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-            >
-                <path d="M9 5l7 7-7 7" />
-            </svg>
-        </button>
+            <button type="button" class="toggle" :aria-expanded="expanded" @click="toggle">
+                <span>{{ reservation.items.length }} Geräte</span>
+                <svg
+                    class="chevron-icon"
+                    :class="{ open: expanded }"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                >
+                    <path d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+
+        <CancelModal
+            v-if="showCancel"
+            title="Reservierung zurückziehen"
+            :id=reservation.id
+            @close="closeCancel"
+        />
 
         <ul v-if="expanded" class="item-list">
             <li v-for="item in reservation.items" :key="item.id" class="card-row item-row">
@@ -193,7 +216,7 @@ async function toggle() {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
-    margin: var(--space-s) 0 0 auto;
+    margin: 0 0 0 auto;
     padding: 0;
     font: inherit;
     font-size: var(--text-label-size);
@@ -221,5 +244,19 @@ async function toggle() {
     padding: var(--space-m) 0 0;
     list-style: none;
     border-top: 1px solid var(--color-border);
+}
+
+.bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-s);
+}
+
+.withdraw {
+    min-height: 0;
+    padding: 6px var(--space-m);
+    font-size: var(--text-label-size);
+    line-height: 1.2;
 }
 </style>

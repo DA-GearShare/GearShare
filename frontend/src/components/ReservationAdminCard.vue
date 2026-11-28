@@ -74,7 +74,7 @@ function closeScan() {
 
         <div class="bottom">
             <span class="hint">
-                <button @click="RejectPopUp" class="btn-secondary reject">ablehnen</button>
+                <button v-if="reservation.status === 'requested'" @click="RejectPopUp" class="btn-secondary reject">ablehnen</button>
             </span>
             <button type="button" class="open-button" @click="emit('open', reservation.id)">
                 <span>{{ reservation.items.length }} Geräte</span>

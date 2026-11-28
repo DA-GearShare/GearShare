@@ -162,5 +162,29 @@ export const useReservationStore = defineStore('reservation', () => {
         }
     }
 
-    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchIssueGlobal, fetchOverdueReservations, rejectReservation };
+    async function cancelReservation(id: string) {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const res = await fetch(`/api/v1/reservations/${id}/cancel`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(),
+            });
+
+            if (!res.ok) {
+                error.value = await readError(res, "Die Reservierung konnte nicht zurückgezogen werden.");
+                return;
+            }
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            error.value = "Die Reservierung konnte nicht zurückgezogen werden.";
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    return { reservations, reservationItems, isLoading, error, fetchReservations, fetchReservationById, fetchReservationItems, fetchIssueItem, fetchIssueGlobal, fetchOverdueReservations, rejectReservation, cancelReservation };
 });

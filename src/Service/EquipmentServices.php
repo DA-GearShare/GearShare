@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace App\Service;
 
 use App\Entity\Equipment;
 
 /**
  * Shared serialization of Equipment, matching the `Equipment` schema in docs/api.yaml.
  */
-trait SerializesEquipment
+trait EquipmentServices
 {
     /** @return array<string, mixed> */
     private function serializeEquipment(Equipment $equipment): array

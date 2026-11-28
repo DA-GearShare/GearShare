@@ -1,3 +1,15 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+
+        envelope:
+            sender: '%env(MAILER_FROM_ADDRESS)%'
+
+        headers:
+            From: '%env(MAILER_FROM_NAME)% <%env(MAILER_FROM_ADDRESS)%>'
+
+when@test:
+    framework:
+        mailer:
+            # Never deliver real mail in tests.
+            dsn: 'null://null'

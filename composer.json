@@ -1,8 +1,8 @@
 {
-    "name": "symfony/skeleton",
+    "name": "htl3r/gearshare",
     "type": "project",
     "license": "MIT",
-    "description": "A minimal Symfony project recommended to create bare bones applications",
+    "description": "A web application for managing and reserving shared laboratory equipment.",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
@@ -20,6 +20,7 @@
         "nelmio/cors-bundle": "^2.6",
         "symfony/asset": "8.1.*",
         "symfony/console": "8.1.*",
+        "symfony/doctrine-messenger": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/flex": "^2.12",
         "symfony/framework-bundle": "8.1.*",
@@ -100,6 +101,8 @@
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.3",
         "friendsofphp/php-cs-fixer": "^3.95.32",
-        "symfony/maker-bundle": "^1.68"
+        "symfony/maker-bundle": "^1.68",
+        "symfony/stopwatch": "8.1.*",
+        "symfony/web-profiler-bundle": "8.1.*"
     }
 }

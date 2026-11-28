@@ -14,13 +14,12 @@ readonly class EmailService
 {
     public function __construct(
         private MailerInterface $mailer,
-    )
-    {
+    ) {
     }
 
     /**
      * @throws TransportExceptionInterface when sent synchronously and delivery fails
-     * @throws ExceptionInterface when the message cannot be queued
+     * @throws ExceptionInterface          when the message cannot be queued
      */
     public function sendTestEmail(string $toEmail, string $toName): void
     {

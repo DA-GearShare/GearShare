@@ -1763,6 +1763,63 @@ paths:
                 '403':
                     $ref: '#/components/responses/Forbidden'
 
+    /mail/status:
+        get:
+            tags: [ Mail ]
+            summary: Status des E-Mail-Versands (Admin)
+            description: >
+                Zeigt, ob der E-Mail-Versand funktioniert. `pending` ist die Anzahl
+                der E-Mails, die noch in der Warteschlange `email` auf den Worker
+                warten (ein dauerhaft wachsender Wert deutet auf einen gestoppten
+                Worker hin). `failed` listet E-Mails, die auch nach allen
+                Wiederholungsversuchen (3 Retries: 10s, 30s, 90s) nicht zugestellt
+                werden konnten und in der Messenger-Failure-Transport-Queue `failed`
+                liegen, inklusive Fehlerursache. Solche Nachrichten bleiben dort, bis
+                sie per `bin/console messenger:failed:retry` erneut versendet oder per
+                `bin/console messenger:failed:remove` verworfen werden.
+                `healthy` ist `true`, wenn keine fehlgeschlagenen Nachrichten vorliegen.
+            parameters:
+                -   name: limit
+                    in: query
+                    required: false
+                    description: Maximale Anzahl zurückgegebener fehlgeschlagener Nachrichten.
+                    schema:
+                        type: integer
+                        minimum: 1
+                        maximum: 200
+                        default: 50
+            responses:
+                '200':
+                    description: Aktueller Status der E-Mail-Warteschlangen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailStatus'
+                '400':
+                    description: Ungültiger `limit`-Parameter.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailError'
+                            example:
+                                message: Invalide Query-Parameter
+                                details:
+                                    limit: '"limit" muss eine Ganzzahl zwischen 1 und 200 sein'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '503':
+                    description: E-Mail-Warteschlange (Datenbank) nicht erreichbar; Status konnte nicht ermittelt werden.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailError'
+                            example:
+                                message: E-Mail-Warteschlange nicht erreichbar
+                                details:
+                                    queue: 'An exception occurred while executing a query: SQLSTATE[08006] ...'
+
     /mail/test:
         post:
             tags: [ Mail ]
@@ -2040,6 +2097,86 @@ components:
                     type: string
                     format: email
                     example: "max.mustermann@htl-rennweg.at"
+
+        MailStatus:
+            type: object
+            required: [ healthy, pending, failedCount, failed ]
+            properties:
+                healthy:
+                    type: boolean
+                    nullable: true
+                    description: >
+                        `true`, wenn keine E-Mail endgültig fehlgeschlagen ist.
+                        `null`, wenn der Failure-Transport keine Zählung unterstützt.
+                    example: false
+                pending:
+                    type: integer
+                    nullable: true
+                    description: >
+                        Anzahl der E-Mails, die noch auf den Versand warten (inkl.
+                        Nachrichten, die gerade auf einen Retry warten). `null`, wenn
+                        der Transport keine Zählung unterstützt.
+                    example: 0
+                failedCount:
+                    type: integer
+                    nullable: true
+                    description: Gesamtzahl der endgültig fehlgeschlagenen Nachrichten (unabhängig von `limit`).
+                    example: 1
+                failed:
+                    type: array
+                    description: Fehlgeschlagene Nachrichten, älteste zuerst, höchstens `limit` Einträge.
+                    items:
+                        $ref: '#/components/schemas/MailFailure'
+
+        MailFailure:
+            type: object
+            required: [ id, type, subject, recipients, failedAt, error ]
+            properties:
+                id:
+                    type: string
+                    description: ID der Nachricht im Failure-Transport (für `messenger:failed:retry <id>`).
+                    example: "42"
+                type:
+                    type: string
+                    description: >
+                        PHP-Klasse der Nachricht. Für E-Mails
+                        `Symfony\Component\Mailer\Messenger\SendEmailMessage`; bei nicht
+                        dekodierbaren Nachrichten
+                        `Symfony\Component\Messenger\Exception\MessageDecodingFailedException`.
+                    example: Symfony\Component\Mailer\Messenger\SendEmailMessage
+                subject:
+                    type: string
+                    nullable: true
+                    example: GearShare - Test Email
+                recipients:
+                    type: array
+                    items:
+                        type: string
+                        format: email
+                    example: [ "max.mustermann@htl-rennweg.at" ]
+                failedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt, zu dem die Nachricht in den Failure-Transport verschoben wurde.
+                    example: "2026-11-28T17:30:12+01:00"
+                error:
+                    type: object
+                    nullable: true
+                    description: Letzter Fehler, der beim Versand aufgetreten ist.
+                    required: [ class, code, message ]
+                    properties:
+                        class:
+                            type: string
+                            example: Symfony\Component\Mailer\Exception\TransportException
+                        code:
+                            oneOf:
+                                -   type: integer
+                                -   type: string
+                            example: 0
+                        message:
+                            type: string
+                            example: 'Connection could not be established with host "smtp.example.com:587"'
 
         MailError:
             type: object

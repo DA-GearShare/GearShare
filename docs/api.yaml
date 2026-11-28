@@ -33,6 +33,8 @@ tags:
         description: Statistik-Dashboard für aktuell und historisch ausgeliehenes Equipment
     -   name: Notifications
         description: Einsicht in versendete System-E-Mails (Audit)
+    -   name: Mail
+        description: Diagnose des E-Mail-Versands
 
 security:
     -   BearerAuth: [ ]
@@ -1761,6 +1763,91 @@ paths:
                 '403':
                     $ref: '#/components/responses/Forbidden'
 
+    /mail/test:
+        post:
+            tags: [ Mail ]
+            summary: Test-E-Mail versenden (Admin)
+            description: >
+                Stellt eine Test-E-Mail an die angegebene Adresse in die
+                E-Mail-Warteschlange. Der eigentliche Versand erfolgt asynchron
+                durch den Messenger-Worker (`messenger:consume email`); ein
+                `202 Accepted` bestätigt daher nur das erfolgreiche Einreihen,
+                nicht die Zustellung. Ist der Mailer synchron konfiguriert, wird
+                ein Zustellfehler direkt als `502 Bad Gateway` gemeldet.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MailTestRequest'
+            responses:
+                '202':
+                    description: Test-E-Mail wurde in die Warteschlange gestellt.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailTestResult'
+                '400':
+                    description: >
+                        Fehlerhafte Anfrage: ungültiges JSON, Body ist kein JSON-Objekt,
+                        `email` fehlt bzw. ist ungültig oder `name` ist kein String /
+                        länger als 100 Zeichen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailError'
+                            examples:
+                                malformedJson:
+                                    summary: Ungültiges JSON
+                                    value:
+                                        message: Malformed JSON
+                                notAnObject:
+                                    summary: Body ist kein JSON-Objekt
+                                    value:
+                                        message: Body muss ein JSON Objekt sein
+                                missingEmail:
+                                    summary: Feld "email" fehlt
+                                    value:
+                                        message: Invalider Request Body
+                                        details:
+                                            email: Das Feld "email" fehlt
+                                invalidEmail:
+                                    summary: Ungültige E-Mail-Adresse
+                                    value:
+                                        message: Invalider Request Body
+                                        details:
+                                            email: '"foo@" ist keine gültige E-Mail-Adresse'
+                                invalidName:
+                                    summary: Ungültiger Name
+                                    value:
+                                        message: Invalider Request Body
+                                        details:
+                                            name: Das Feld "name" muss ein String sein
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
+                '502':
+                    description: Synchrone Zustellung durch den Mail-Transport (SMTP) fehlgeschlagen.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailError'
+                            example:
+                                message: Test-E-Mail konnte nicht zugestellt werden
+                                details:
+                                    transport: 'Connection could not be established with host "smtp.example.com:587"'
+                '503':
+                    description: E-Mail-Warteschlange nicht erreichbar; die Nachricht wurde nicht eingereiht.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MailError'
+                            example:
+                                message: Test-E-Mail konnte nicht in die Warteschlange gestellt werden
+                                details:
+                                    queue: 'An exception occurred while executing a query: SQLSTATE[08006] ...'
+
 components:
     securitySchemes:
         BearerAuth:
@@ -1925,6 +2012,49 @@ components:
                         error: You cannot remove your own admin status
 
     schemas:
+        # ---------------- Mail ----------------
+        MailTestRequest:
+            type: object
+            required: [ email ]
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: Empfängeradresse der Test-E-Mail.
+                    example: "max.mustermann@htl-rennweg.at"
+                name:
+                    type: string
+                    maxLength: 100
+                    nullable: true
+                    description: Anzeigename für Anrede und Empfänger-Header. Standard ist die E-Mail-Adresse.
+                    example: "Max Mustermann"
+
+        MailTestResult:
+            type: object
+            required: [ message, email ]
+            properties:
+                message:
+                    type: string
+                    example: Test-E-Mail wurde in die Warteschlange gestellt
+                email:
+                    type: string
+                    format: email
+                    example: "max.mustermann@htl-rennweg.at"
+
+        MailError:
+            type: object
+            required: [ message ]
+            properties:
+                message:
+                    type: string
+                    example: Invalider Request Body
+                details:
+                    type: object
+                    description: Feldbezogene Fehler bzw. Ursache des Versandfehlers.
+                    additionalProperties:
+                        type: string
+                    nullable: true
+
         Error:
             type: object
             required: [ code, message ]

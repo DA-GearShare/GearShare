@@ -8,7 +8,7 @@ FROM php:8.5-apache AS base
 RUN apt-get update -y && apt-get install -y openssl zip unzip zlib1g-dev libpq-dev libicu-dev libzip-dev curl libpng-dev git \
 	&& rm -rf /var/lib/apt/lists/*
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer
-RUN docker-php-ext-install pdo pdo_pgsql zip gd exif
+RUN docker-php-ext-install pdo pdo_pgsql zip gd exif pcntl
 
 COPY httpd-vhosts.conf /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite
@@ -26,6 +26,9 @@ RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 WORKDIR /var/www/html/
 
 COPY docker-entrypoint.sh /usr/local/bin/
+# runs messenger:consume instead of Apache
+COPY worker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 EXPOSE 80
 
 ENTRYPOINT ["docker-entrypoint.sh"]

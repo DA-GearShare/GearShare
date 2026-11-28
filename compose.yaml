@@ -42,7 +42,8 @@ services:
             dockerfile: Dockerfile
         restart: unless-stopped
         # No published port: reached through the gateway.
-        environment:
+        # &app-environment: the worker service reuses this block.
+        environment: &app-environment
             DATABASE_URL: "${DATABASE_URL:-postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8}"
             # Image storage (S3 API). The app is the only writer, all uploads go through it.
             S3_ENDPOINT: "http://seaweedfs:8333"
@@ -59,11 +60,29 @@ services:
             CONDITION_ACCEL_PREFIX: "/_internal/condition"
             MAX_PHOTO_MB: "${MAX_PHOTO_MB:-15}"
             MAX_PHOTOS_PER_EQUIPMENT: "${MAX_PHOTOS_PER_EQUIPMENT:-5}"
+        healthcheck:
+            test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost/" ]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 120s
         depends_on:
             database:
                 condition: service_healthy
             seaweedfs-init:
                 condition: service_completed_successfully
+
+    # Same image and environment as app, but runs worker-entrypoint.sh instead of Apache.
+    worker:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        entrypoint: [ "worker-entrypoint.sh" ]
+        environment: *app-environment
+        depends_on:
+            app:
+                condition: service_healthy
 
     database:
         image: postgres:${POSTGRES_VERSION:-16}-alpine

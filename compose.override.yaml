@@ -17,7 +17,7 @@ services:
         build:
             target: dev
         image: gearshare
-        environment:
+        environment: &app-dev-environment
             APP_ENV: "${APP_ENV:-dev}"
             APP_DEBUG: "${APP_DEBUG:-1}"
             # Development value only.
@@ -30,6 +30,17 @@ services:
             # Live editing: changes in src/, templates/ and config/ are served
             # immediately, no rebuild. Only public/ is reachable over HTTP.
             - .:/var/www/html:z
+
+    worker:
+        build:
+            target: dev
+        image: gearshare
+        environment: *app-dev-environment
+        volumes:
+            - .:/var/www/html:z
+        depends_on:
+            mailer:
+                condition: service_started
 
     frontend:
         # Vue 3 + Vite dev server with hot module reload. Not published on its own
